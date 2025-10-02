@@ -18,7 +18,7 @@ import base64
 import urllib.parse
 import io
 from models import ResetToken, User, Project
-
+from config import (SENDER_EMAIL, SENDER_PASSWORD)
 
 
 client = boto3.client('scheduler', region_name='eu-north-1')
@@ -210,8 +210,8 @@ def send_new_password(email, reset_token):
     
     if __name__ != "__main__":
         # Configuración del correo
-        sender_email = "soporte@planetpower.es"
-        sender_password = "Ppt946682011"
+        sender_email = SENDER_EMAIL
+        sender_password = SENDER_PASSWORD
         recipient_email = email
         
         # Crear el mensaje
