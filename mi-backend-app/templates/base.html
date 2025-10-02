@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="{{ session.get('lang', 'es') }}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+
+
+  <link href="{{ url_for('static', filename='css/output.css') }}" rel="stylesheet">
+
+  
+
+  
+
+
+  <style>
+    body {
+      caret-color: transparent;
+    }
+  </style>
+  <title>{% block title %}{{ _('Mi Aplicación') }}{% endblock %}</title>
+
+</head>
+
+
+<body class="flex h-screen"
+
+
+  data-uid="{{ uid }}"
+  data-pid="{{ pid }}"
+  data-project="{{ project_name }}"
+  data-scheduler-name="{{ scheduler_name }}"
+  data-scheduler-arn="{{ scheduler_arn }}"
+  data-s-reservas="{{ s_reservas }}">
+
+
+  <!-- Menú Lateral -->
+  <aside class="w-64 bg-green-100 shadow-md text-green-800">
+    <div class="p-4">
+      <img src="../static/Logo LEDPADEL azul y verde.png" class="h-16 mb-2" />
+      <h2 class="text-lg font-semibold">{{ _('Opciones') }}</h2>
+
+    </div>
+    <nav>
+      <ul id="menuList">
+        
+
+  
+  
+        <!-- Ofertas -->
+        <li class="relative">
+          <button onclick="toggleMenu('ofertasMenu', this)" class="menu-item block w-full text-left p-4 bg-green-100 text-green-800 hover:bg-green-200 focus:outline-none">
+            {{ _('Ofertas') }}
+          </button>
+          <ul id="ofertasMenu" class="hidden transition-all duration-300">
+            <li>
+              <a href="{{ url_for('ofertas') }}" 
+              class="block px-6 py-2 text-green-800 bg-green-100 hover:bg-green-200">{{ _('Enviar una oferta') }}</a>
+              
+            </li>
+            
+          </ul>
+        </li>
+      
+        <li class="relative">
+          <button onclick="toggleMenu('leadsMenu', this)" class="menu-item block w-full text-left p-4 bg-green-100 text-green-800 hover:bg-green-200 focus:outline-none">
+            {{ _('Leads') }}
+          </button>
+          <ul id="leadsMenu" class="hidden transition-all duration-300">
+            
+            <li>
+              <a href="{{ url_for('consultar_leads', estado='En curso') }}"
+              class="block px-6 py-2 text-green-800 bg-green-100 hover:bg-green-200">{{ _('Consultar Leads') }}</a>
+            </li>
+          </ul>
+        </li>
+        <li class="relative">
+          <button onclick="toggleMenu('marketingMenu', this)" 
+                  class="menu-item block w-full text-left p-4 bg-green-100 text-green-800 hover:bg-green-200 focus:outline-none">
+            {{ _('Marketing') }}
+          </button>
+
+          <ul id="marketingMenu" class="hidden transition-all duration-300">
+            <li class="relative">
+              <button onclick="toggleMenu('emailingSubmenu', this)"
+                      class="block w-full text-left px-6 py-2 text-green-800 bg-green-100 hover:bg-green-200 focus:outline-none">
+                {{ _('eMailing') }}
+              </button>
+
+              <ul id="emailingSubmenu" class="hidden transition-all duration-300 ml-4">
+                <li class="relative">
+
+
+
+
+
+
+                  <a href="{{ url_for('upload_template_email') }}"
+                          class="block w-full text-left px-6 py-2 text-green-800 bg-green-100 hover:bg-green-200 focus:outline-none">
+                    {{ _('Plantillas eMailing') }}
+                  </a>
+
+
+                  
+                  
+                </li>
+              </ul>
+            </li>
+            <li>
+              <a href="{{ url_for('campanas') }}"
+                class="block px-6 py-2 text-green-800 bg-green-100 hover:bg-green-200">
+                {{ _('Campañas') }}
+              </a>
+            </li>
+          </ul>
+        </li>
+
+
+        <li class="relative">
+          <button onclick="toggleMenu('redessocialesMenu', this)" class="menu-item block w-full text-left p-4 bg-green-100 text-green-800 hover:bg-green-200 focus:outline-none">
+            {{ _('Redes Sociales') }}
+          </button>
+          <ul id="redessocialesMenu" class="hidden transition-all duration-300">
+            
+            <li>
+              <a href="{{ url_for('redes') }}"
+              class="block px-6 py-2 text-green-800 bg-green-100 hover:bg-green-200">{{ _('Redes Sociales') }}</a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+
+    
+
+ <!-- Contenido Principal -->
+<div class="flex-1 flex flex-col">
+  <!-- Menú Superior -->
+  <header class="bg-blue-300 text-white p-4 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <img src="../static/Logo Planet Power.png" class="h-16" />
+    </div>
+    <div class="flex flex-col items-start gap-2">
+      
+  <!-- Línea superior: usuario -->
+      <div class="flex items-center gap-4">
+        <!-- Usuario -->
+        <div class="flex items-center gap-2">
+          <img src="{{ url_for('static', filename='icons/user.svg') }}" alt="User Icon" class="w-5 h-5">
+          <span class="text-sm text-gray-700">{{ session.get('email', 'Usuario') }}</span>
+        </div>
+
+        
+      </div>
+
+
+      <!-- Línea inferior: idioma, proyecto, salir -->
+      <div class="flex items-center gap-4">
+        <!-- Idioma -->
+        <div class="relative inline-block text-left">
+          <div>
+            <button type="button" id="langDropdownBtn"
+                    class="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none">
+              <img src="{{ url_for('static', filename='flags/' + session.get('lang', 'es') + '.svg') }}" alt="Idioma"
+                  class="w-5 h-5 mr-2">
+              {{ session.get('lang', 'es')|upper }}
+              <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                  fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd"
+                      d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.25 8.27a.75.75 0 01-.02-1.06z"
+                      clip-rule="evenodd" />
+              </svg>
+            </button>
+          </div>
+
+          <div id="langDropdownMenu"
+              class="hidden absolute right-0 z-10 mt-2 w-36 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+            <div class="py-1">
+              {% for code, label in [('es', 'Español'), ('en', 'English'), ('fr', 'Français')] %}
+              <form method="POST" action="/set_language">
+                <input type="hidden" name="language" value="{{ code }}">
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button type="submit" class="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <img src="{{ url_for('static', filename='flags/' + code + '.svg') }}" alt="{{ label }}" class="w-5 h-5 mr-2">
+                  {{ label }}
+                </button>
+              </form>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+
+    <!-- Botón de ayuda -->
+    <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#helpModal">
+      <i class="bi bi-question-circle me-1"></i> {{ _('Ayuda') }}
+      </button>
+    </button>
+ 
+        
+    <!-- Proyecto -->
+    
+
+    <!-- Salir -->
+    <form action="{{ url_for('logout') }}" method="POST" class="inline">
+      <button type="submit" class="bg-red-300 hover:bg-red-400 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+        <img src="{{ url_for('static', filename='icons/logout.svg') }}" alt="Logout Icon" class="w-5 h-5 inline-block mr-2">
+        {{ _('Salir') }}
+      </button>
+    </form>
+
+
+    
+    
+
+  </div>
+</div>
+
+  </header>
+
+<!-- Contenido Dinámico -->
+<main class="flex-1 p-6 overflow-auto">
+  {% block content %}{% endblock %}
+</main>
+
+
+
+
+
+  
+    
+    
+<script>
+
+ 
+  
+  function clearLocalStorageItems() {
+    ['estado', 'tipoAsignacion', ].forEach(key => localStorage.removeItem(key));
+  }
+
+  function toggleMenu(menuId, button) {
+    // Alterna el submenú seleccionado
+    const menu = document.getElementById(menuId);
+    const isHidden = menu.classList.contains('hidden');
+
+    // Si el menú está oculto, lo mostramos y ocultamos otros submenús al mismo nivel
+    if (isHidden) {
+      // Obtener el nivel del menú actual
+      const currentLevel = getMenuLevel(menu);
+
+      // Ocultar otros submenús al mismo nivel
+      const allMenus = document.querySelectorAll('nav ul ul');
+      allMenus.forEach((submenu) => {
+        if (submenu.id !== menuId && getMenuLevel(submenu) === currentLevel) {
+          submenu.classList.add('hidden');
+        }
+      });
+
+      menu.classList.remove('hidden');
+    } else {
+      menu.classList.add('hidden');
+    }
+
+    // Actualiza las clases de los botones para reflejar el estado activo
+    const buttons = document.querySelectorAll('.menu-item, .submenu-item');
+    buttons.forEach((btn) => {
+      btn.classList.remove('bg-green-800', 'text-white');
+      btn.classList.add('bg-green-100', 'text-green-800');
+    });
+
+    // Si el submenú está visible, marca el botón como activo
+    if (!menu.classList.contains('hidden')) {
+      button.classList.remove('bg-green-100', 'text-green-800');
+      button.classList.add('bg-green-800', 'text-white');
+    }
+  }
+
+  function getMenuLevel(element) {
+    let level = 0;
+    let parent = element.parentElement;
+    while (parent && parent.tagName !== 'NAV') {
+      if (parent.tagName === 'UL') {
+        level++;
+      }
+      parent = parent.parentElement;
+    }
+    return level;
+  }
+
+
+  document.addEventListener('DOMContentLoaded', function () {
+  const btn = document.getElementById('langDropdownBtn');
+  const menu = document.getElementById('langDropdownMenu');
+
+  btn?.addEventListener('click', function (e) {
+    e.stopPropagation();
+    menu?.classList.toggle('hidden');
+  });
+
+  document.addEventListener('click', function () {
+    menu?.classList.add('hidden');
+  });
+
+  const opciones = document.querySelectorAll('.reserva-opcion');
+
+  opciones.forEach(item => {
+    item.addEventListener('click', function () {
+      // ❌ Ya no bloqueamos el clic
+
+      // Quitar estilos activos
+      opciones.forEach(el => el.classList.remove('bg-green-300', 'font-bold'));
+
+      // Activar actual
+      this.classList.add('bg-green-300', 'font-bold');
+
+      // (Opcional) Log
+      console.log('Seleccionado:', this.dataset.value);
+    });
+  });
+});
+
+
+
+
+</script>
+
+
+
+
+{% block scripts %}
+
+
+{% endblock %}
+<!-- Modal de Ayuda (al final del body) -->
+<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="helpModalLabel">Centro de Ayuda</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <ul>
+          <li><strong>¿Cómo inicio sesión?</strong> Introduce tu correo electrónico y contraseña.</li>
+          <li><strong>¿Qué pasa si tengo varios clubes?</strong> Elige uno después del login.</li>
+          <li><strong>¿Olvidaste tu contraseña?</strong> Contacta al administrador.</li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap JS (si no está ya incluido) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(() => {
+  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+  tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
+})();
+</script>
+
+</body>
+</html>   
+
+
+
+

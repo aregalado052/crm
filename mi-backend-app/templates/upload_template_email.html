@@ -1,0 +1,721 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- Botón para abrir modal -->
+<button id="btnOpenImportModal" 
+        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+  📩 Subir Plantilla de Email
+</button>
+
+<button id="btnSeleccionPlantillas" 
+        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+  📩 Seleccionar Plantilla de Email
+</button>
+
+<button id="btnActualizarPlantillas" 
+        class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+  📩 Subir Imagenes y Archivos Adjuntos
+</button>
+
+<div class="mt-4 overflow-x-auto">
+  <table id="tplTable" class="min-w-full border rounded-lg">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="text-left p-2 border-b">Nombre</th>
+        <!--<th class="text-left p-2 border-b">Idiomas</th>-->
+        <th class="text-left p-2 border-b">Acciones</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- Modal de preview -->
+<div id="previewModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+  <div class="bg-white w-full max-w-4xl rounded-xl shadow-xl p-4">
+    <div class="flex justify-between items-center mb-3">
+      <h3 class="font-bold text-lg">Preview</h3>
+      <button id="btnClosePreview" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Cerrar</button>
+    </div>
+    <iframe id="previewFrame" class="w-full h-[70vh] border rounded"></iframe>
+  </div>
+</div>
+
+
+<!-- Modal -->
+<div id="importModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6">
+    <h2 class="text-xl font-bold mb-4">Importar Plantilla de Email</h2>
+
+    <!-- Campo para nombre de plantilla -->
+    <input id="templateName" type="text" 
+           placeholder="Nombre de la plantilla (opcional)" 
+           class="w-full border rounded-lg p-2 mb-4">
+
+           <!-- Selector de idioma -->
+    <label for="templateLang" class="block text-sm mb-2">Idioma de la plantilla</label>
+    <select id="templateLang" 
+            class="w-full border rounded-lg p-2 mb-4">
+      <option value="es" selected>Español</option>
+      <option value="en">Inglés</option>
+      <option value="fr">Francés</option>
+      <option value="pt">Portugués</option>
+      <option value="de">Alemán</option>
+    </select>
+
+    <!-- Opción 1: Pegar HTML -->
+    <textarea id="templateHtml" rows="8" 
+              placeholder="Pega aquí el HTML del email..."
+              class="w-full border rounded-lg p-2 font-mono text-sm"></textarea>
+
+    <!-- Opción 2: Subir archivo -->
+    <div class="mt-4">
+      <label class="block text-sm mb-2">O selecciona un archivo .html</label>
+      <input id="fileInput" type="file" accept=".html,.htm,.eml" 
+             class="w-full border rounded-lg p-2">
+    </div>
+
+    <!-- Botones -->
+    <div class="flex justify-end gap-2 mt-6">
+      <button id="btnCloseModal" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
+        Cancelar
+      </button>
+      <button id="btnUploadTemplate" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+        Guardar Plantilla
+      </button>
+    </div>
+
+    <!-- Vista previa -->
+    <div id="previewContainer" class="hidden mt-6 border rounded-lg p-4 bg-gray-50">
+      <h3 class="font-bold mb-2">Vista previa</h3>
+      <iframe id="previewIframe" class="w-full h-64 border rounded-lg"></iframe>
+    </div>
+  </div>
+</div>
+
+
+
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const openModalBtn     = document.getElementById("btnOpenImportModal");
+  const modal            = document.getElementById("importModal");
+  const closeModalBtn    = document.getElementById("btnCloseModal");
+  const uploadBtn        = document.getElementById("btnUploadTemplate");
+  const fileInput        = document.getElementById("fileInput");
+  const textArea         = document.getElementById("templateHtml");
+  const previewContainer = document.getElementById("previewContainer");
+  const previewIframe    = document.getElementById("previewIframe");
+  const nameInput        = document.getElementById("templateName");
+
+  // Comprobación de elementos obligatorios
+  const required = {openModalBtn, modal, closeModalBtn, uploadBtn, fileInput, textArea, nameInput};
+  for (const [k, el] of Object.entries(required)) {
+    if (!el) {
+      console.error(`[IMPORT] Falta el elemento #${k} en el DOM (revisa IDs en el HTML)`);
+    }
+  }
+  if (!openModalBtn || !modal) return; // sin estos no seguimos
+
+  // Evita petar si no existe preview
+  const safePreview = !!(previewContainer && previewIframe);
+
+  // (Opcional) establece accept si existe fileInput
+  try { fileInput && fileInput.setAttribute("accept", ".eml,.html,.htm"); } catch {}
+
+  // Mostrar/ocultar modal
+  openModalBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    modal.classList.remove("hidden");
+  });
+  closeModalBtn && closeModalBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    modal.classList.add("hidden");
+  });
+
+  function arrayBufferToBase64(buf){
+    let b = "", bytes = new Uint8Array(buf);
+    for (let i=0;i<bytes.length;i++) b += String.fromCharCode(bytes[i]);
+    return btoa(b);
+  }
+
+  // Cargar archivo
+  fileInput && fileInput.addEventListener("change", async () => {
+    const file = fileInput.files && fileInput.files[0];
+    if (!file) return;
+
+    if (/\.eml$/i.test(file.name)) {
+      textArea && (textArea.value = `# .eml seleccionado: ${file.name}\n(Se enviará como eml_base64)`);
+      if (safePreview) {
+        previewContainer.classList.add("hidden");
+        previewIframe.removeAttribute("srcdoc");
+      }
+      return;
+    }
+
+    const text = await file.text();
+    if (textArea) textArea.value = text;
+    if (safePreview) {
+      previewIframe.srcdoc = text;
+      previewContainer.classList.remove("hidden");
+    }
+  });
+
+  // Enviar
+  uploadBtn.addEventListener("click", async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("templateName").value.trim();
+    if (!name) {
+      return Swal.fire({
+        icon: "warning",
+        title: "Falta el nombre",
+        text: "Por favor, indica un nombre."
+      });
+    }
+
+    const lang = document.getElementById("templateLang")?.value || "es";  
+    const file = fileInput?.files && fileInput.files[0];
+    const payload = { name, lang };
+
+    try {
+      if (file) {
+        const buf = await file.arrayBuffer();
+        payload.eml_base64 = arrayBufferToBase64(buf);
+      } else {
+        const pastedHtml = (textArea?.value || "").trim();
+        if (!pastedHtml) {
+          return Swal.fire({
+            icon: "warning",
+            title: "Contenido vacío",
+            text: "Pega HTML o selecciona un .eml/.html"
+          });
+        }
+        payload.html = pastedHtml;
+      }
+
+      // Mensaje de cargando
+      Swal.fire({
+        title: "Procesando...",
+        text: "Guardando plantilla, por favor espera",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      console.log("[FRONT DEBUG] file?", !!file, "payload keys:", Object.keys(payload));
+
+      const res = await fetch("/upload_template_email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+      // Éxito
+      Swal.fire({
+        icon: "success",
+        title: "Plantilla guardada ✅",
+        text: `ID: ${data.template_id || data.slug || ""}`,
+        timer: 2500,
+        showConfirmButton: false
+      });
+
+    } catch (err) {
+      // Error
+      Swal.fire({
+        icon: "error",
+        title: "Error al guardar",
+        text: err.message || "Ocurrió un error inesperado"
+      });
+    }
+  });
+
+
+});
+
+
+const btn = document.getElementById("btnSeleccionPlantillas");
+const tbody = document.querySelector("#tplTable tbody");
+const previewModal = document.getElementById("previewModal");
+const previewFrame = document.getElementById("previewFrame");
+const btnClosePreview = document.getElementById("btnClosePreview");
+const btnUpdate = document.getElementById("btnActualizarPlantillas");
+
+btn.addEventListener("click", async () => {
+  try {
+    const res = await fetch("/list_email_templates");
+    if (!res.ok) throw new Error("No se pudo listar");
+    const templates = await res.json();
+
+    
+    tbody.innerHTML = "";
+
+    for (const tpl of templates) {
+      const slug  = tpl.slug || "";
+      const name  = tpl.display_name || slug;
+      const description = tpl.description || "";
+      //const langs = Object.keys(tpl.languages || {});
+      const langs = tpl.languages || {};
+      
+
+
+      // Badges de idiomas
+      const langsHtml = (langs.length > 0)
+        ? langs.map(l => `<span class="px-2 py-0.5 rounded bg-gray-100 border mr-1">${l}</span>`).join("")
+        : `<span class="text-gray-400 italic">sin idiomas</span>`;
+
+      // Botones por idioma (sin &&)
+      let actionsHtml = "";
+      if (langs.length > 0) {
+        for (const lang of langs) {
+          const ts = Date.now();
+          const rawUrl = `/templates/${slug}/${lang}/preview?raw=1&ts=${ts}`;
+          const tplUrl = `/templates/${slug}/${lang}/preview?raw=0&ts=${ts}`;
+         
+          actionsHtml += `
+            <button class="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 mr-1"
+                    onclick="window.open('${rawUrl}','_blank')">👀 ${lang}</button>
+            <button class="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 mr-2"
+                    onclick="openPreviewWindow('${tplUrl}','_blank')">🖌️ ${lang}</button>
+          `;
+        }
+      } else {
+        actionsHtml = `<span class="text-gray-400">—</span>`;
+      }
+
+        // Botón de borrado
+      const deleteButton = `
+      <button class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 btn-delete"
+              data-slug="${encodeURIComponent(slug)}">🗑️</button>
+    `;
+
+      tbody.insertAdjacentHTML("beforeend", `
+        <tr class="border-b hover:bg-gray-50">
+          <td class="p-2">${name}</td>        
+          <!-- <td class="p-2">${langsHtml}</td>-->
+          <td class="p-2"><div class="flex flex-wrap gap-1">${actionsHtml}</div></td>
+          <td class="p-2 text-right">${deleteButton}</td>
+        </tr>
+      `);
+    }
+
+
+    
+
+
+    // delegación de eventos para los botones Preview
+    tbody.querySelectorAll(".btnPreview").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        const slug = e.currentTarget.getAttribute("data-slug");
+       //onst lang = e.currentTarget.getAttribute("data-lang");
+        const r = await fetch(`/templates/${slug}/${lang}/preview`);
+        const html = await r.text();
+        previewFrame.srcdoc = html;
+        previewModal.classList.remove("hidden");
+
+
+
+
+      });
+    });
+  } catch (err) {
+    console.error(err);
+    alert("Error al cargar plantillas.");
+  }
+});
+
+
+tbody.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.btn-delete');
+  if (!btn) return;
+
+  const slug = decodeURIComponent(btn.dataset.slug);
+  await deleteRow(btn, slug);
+});
+
+// define deleteRow en el mismo scope (no dentro del addEventListener del botón principal)
+async function deleteRow(btn, slug) {
+  const row = btn.closest('tr');
+  if (!row) return;
+
+  // Confirmación con Swal en lugar de confirm()
+  const result = await Swal.fire({
+    title: `¿Seguro que quieres borrar "${slug}"?`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Sí, borrar",
+    cancelButtonText: "Cancelar",
+    reverseButtons: true
+  });
+
+  if (!result.isConfirmed) return;
+
+  btn.disabled = true;
+  try {
+    const res = await fetch(`/templates/${encodeURIComponent(slug)}`, {
+      method: "DELETE",
+      credentials: "same-origin",
+      headers: { Accept: "application/json" }
+    });
+
+    if (!res.ok) {
+      let msg = "No se pudo borrar.";
+      try {
+        const data = await res.json();
+        if (data?.error) msg = data.error;
+      } catch {}
+
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: msg
+      });
+      btn.disabled = false;
+      return;
+    }
+
+    row.remove();
+
+    // Mensaje de éxito
+    Swal.fire({
+      icon: "success",
+      title: "Borrado",
+      text: `La plantilla "${slug}" fue eliminada.`,
+      timer: 2000,
+      showConfirmButton: false
+    });
+
+  } catch {
+    await Swal.fire({
+      icon: "error",
+      title: "Error de red",
+      text: "Inténtalo de nuevo."
+    });
+    btn.disabled = false;
+  }
+}
+
+
+btnUpdate.addEventListener("click", () => {
+  window.location.href = "/upload_files_s3"; // o window.location.assign(...)
+});
+
+
+btnClosePreview.addEventListener("click", () => {
+  previewFrame.src = "about:blank";
+  previewModal.classList.add("hidden");
+});
+
+function openPreviewWindow(url) {
+  const w = window.open('', 'previewWindow', 'width=1000,height=720,resizable=yes,scrollbars=yes');
+  if (!w) { alert('El navegador bloqueó la ventana emergente.'); return; }
+
+  // Parse slug/lang desde /templates/:slug/:lang/...
+  let slug = '', lang = '';
+  try {
+    const u = new URL(url, window.location.origin);
+    const m = u.pathname.match(/\/templates\/([^/]+)\/([^/]+)\//i);
+    if (m) { slug = decodeURIComponent(m[1]); lang = decodeURIComponent(m[2]); }
+  } catch {}
+
+  // --- Esqueleto sin <script> ni onclick (CSP-safe) ---
+  const doc = w.document;
+  doc.open();
+  doc.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Vista previa</title></head><body></body></html>');
+  doc.close();
+
+  // Estilos mínimos (si tu CSP bloquea style inline, quítalos; no son obligatorios)
+  const toolbar = doc.createElement('div');
+  toolbar.style.cssText = 'display:flex;gap:8px;align-items:center;padding:8px;border-bottom:1px solid #ccc;background:#f8f8f8;font-family:system-ui';
+  const btnReload = doc.createElement('button'); btnReload.textContent = '↻ Recargar';
+  const btnEdit   = doc.createElement('button'); btnEdit.textContent   = '✍️ Editar texto';
+  const btnEditSign  = doc.createElement('button'); btnEditSign.textContent  = '✒️ Editar firma';
+  const btnClose  = doc.createElement('button'); btnClose.textContent  = '❌ Cerrar';
+  [btnReload, btnEditSign, btnEdit, btnClose].forEach(b => b.style.cssText = 'padding:6px 12px;border:0;border-radius:8px;cursor:pointer;color:#fff;background:#3b82f6');
+  btnEditSign.style.background = '#6b7280';
+  btnEdit.style.background  = '#10b981';
+  btnClose.style.background = '#e74c3c';
+  btnClose.style.marginLeft = 'auto';
+  toolbar.append(btnReload, btnEditSign, btnEdit, btnClose);
+
+  const iframe = doc.createElement('iframe');
+  iframe.style.cssText = 'border:0;width:100%;height:calc(100vh - 46px)';
+  iframe.dataset.base = url;
+  iframe.src = url;
+
+  doc.body.append(toolbar, iframe);
+
+  // --- Lógica/handlers enganchados desde el padre (no inline) ---
+  function refresh() {
+    const base = iframe.dataset.base || url;
+    const sep = base.includes('?') ? '&' : '?';
+    iframe.src = base + sep + 'ts=' + Date.now();
+  }
+
+  btnReload.addEventListener('click', refresh);
+  btnEditSign .addEventListener('click', () => openEditorSignatureWindow(slug, lang, refresh));
+  btnClose .addEventListener('click', () => w.close());
+  btnEdit  .addEventListener('click', () => openEditorWindow(slug, lang, refresh));
+
+  // -------- Ventana del editor (CSP-safe) --------
+  function openEditorWindow(slug, lang, onSaved) {
+    const w2 = window.open('', 'textEditorWindow', 'width=760,height=600,resizable=yes,scrollbars=yes');
+    if (!w2) { alert('El navegador bloqueó la ventana del editor.'); return; }
+
+    const d2 = w2.document;
+    d2.open();
+    d2.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Editar cuerpo</title></head><body></body></html>');
+    d2.close();
+
+    const bar = d2.createElement('div');
+    bar.style.cssText = 'display:flex;gap:8px;align-items:center;padding:8px;border-bottom:1px solid #ddd;font-family:system-ui';
+    const btnLoad = d2.createElement('button'); btnLoad.textContent  = 'Cargar';
+    const btnSave = d2.createElement('button'); btnSave.textContent  = 'Guardar';
+    const btnClo2 = d2.createElement('button'); btnClo2.textContent  = 'Cerrar';
+    [btnLoad, btnSave, btnClo2].forEach(b => b.style.cssText = 'padding:6px 12px;border:0;border-radius:8px;cursor:pointer;color:#fff;background:#3b82f6');
+    btnSave.style.background = '#10b981';
+    btnClo2.style.background = '#e74c3c';
+    const msg = d2.createElement('span'); msg.style.cssText = 'margin-left:auto;color:#6b7280';
+    bar.append(btnLoad, btnSave, btnClo2, msg);
+
+    const ta = d2.createElement('textarea');
+    ta.placeholder = 'Pega aquí el nuevo HTML para lang/partials/message.html';
+    ta.style.cssText = 'width:100%;height:calc(100vh - 46px);border:0;outline:none;padding:12px;box-sizing:border-box;font-family:monospace';
+
+    d2.body.append(bar, ta);
+
+    const getUrl = `/api/templates/${slug}/${lang}/partials/message`;
+
+    btnLoad.addEventListener('click', async () => {
+      try {
+        const r = await fetch(getUrl, { cache: 'no-store' });
+        if (!r.ok) throw new Error('No se pudo leer message.html');
+        ta.value = await r.text();
+        msg.textContent = 'Cargado ✔'; setTimeout(() => msg.textContent = '', 1500);
+      } catch (e) {
+        alert(e.message || e);
+      }
+    });
+
+    btnSave.addEventListener('click', async () => {
+      const body = ta.value;
+      if (!body.trim()) { alert('Pega contenido antes de guardar.'); return; }
+      try {
+        const r = await fetch(getUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+          body
+        });
+        if (!r.ok) {
+          const t = await r.text().catch(() => '');
+          throw new Error('No se pudo guardar: ' + t);
+        }
+        msg.textContent = 'Guardado ✔'; setTimeout(() => msg.textContent = '', 1500);
+        onSaved && onSaved(); // refresca el preview
+      } catch (e) {
+        alert(e.message || e);
+      }
+    });
+
+    btnClo2.addEventListener('click', () => w2.close());
+
+    // Carga inicial
+    btnLoad.click();
+  }
+
+  
+  function openEditorSignatureWindow(slug, lang, onSaved) {
+  // endpoint de firma (sin lang)
+    var sigUrl = "/api/templates/" + encodeURIComponent(slug) + "/partials/signature";
+
+    var w = window.open("", "signatureEditorWindow", "width=1100,height=750,resizable=yes,scrollbars=yes");
+    if (!w) { alert("El navegador bloqueó la ventana del editor."); return; }
+
+    // ---------- Shell básica (sin <script> embebidos) ----------
+    var d = w.document;
+    d.open();
+    d.write(
+      '<!doctype html><html lang="es"><head>' +
+        '<meta charset="utf-8"><title>Editar firma</title>' +
+        '<style>' +
+          'html,body{height:100%;margin:0;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial}' +
+          '.bar{display:flex;gap:8px;align-items:center;padding:8px;border-bottom:1px solid #e5e7eb;background:#f8fafc}' +
+          '.bar button{padding:6px 10px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;cursor:pointer}' +
+          '.bar .ok{background:#10b981;color:#fff;border-color:#10b981}' +
+          '.bar .danger{background:#ef4444;color:#fff;border-color:#ef4444}' +
+          '.bar .msg{margin-left:auto;color:#6b7280;font-size:12px}' +
+          '.wrap{display:grid;grid-template-columns:1fr 1fr;height:calc(100% - 49px)}' +
+          '.pane{height:100%}' +
+          '.code{border-right:1px solid #e5e7eb}' +
+          'textarea{width:100%;height:100%;box-sizing:border-box;border:0;outline:none;padding:12px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}' +
+          'iframe{width:100%;height:100%;border:0;background:#fff}' +
+        '</style>' +
+      '</head><body>' +
+        '<div class="bar">' +
+          '<button id="btnLoad">⟳ Cargar</button>' +
+          '<button id="btnFile">📄 Importar .html</button>' +
+          '<button id="btnPaste">📋 Pegar</button>' +
+          '<button id="btnOpenTab">🔗 Abrir vista previa</button>' +
+          '<button id="btnSave" class="ok">💾 Guardar</button>' +
+          '<button id="btnClose" class="danger">✖ Cerrar</button>' +
+          '<span id="msg" class="msg"></span>' +
+        '</div>' +
+        '<div class="wrap">' +
+          '<div class="pane code"><textarea id="ta" placeholder="Pega aquí el HTML de la firma (partials/signature.html)"></textarea></div>' +
+          '<div class="pane prev"><iframe id="pv"></iframe></div>' +
+        '</div>' +
+        '<input type="file" id="fileInput" accept=".html,text/html" style="display:none">' +
+      '</body></html>'
+    );
+    d.close();
+
+    // ---------- Referencias ----------
+    var ta = d.getElementById("ta");
+    var pv = d.getElementById("pv");
+    var msg = d.getElementById("msg");
+    var btnLoad = d.getElementById("btnLoad");
+    var btnFile = d.getElementById("btnFile");
+    var btnPaste = d.getElementById("btnPaste");
+    var btnOpenTab = d.getElementById("btnOpenTab");
+    var btnSave = d.getElementById("btnSave");
+    var btnClose = d.getElementById("btnClose");
+    var fileInput = d.getElementById("fileInput");
+
+    // ---------- Estado ----------
+    var initial = "";
+    var dirty = false;
+    function markDirty() {
+      dirty = (ta.value !== initial);
+      msg.textContent = dirty ? "• Sin guardar" : "";
+    }
+
+    // ---------- Helpers ----------
+    function updatePreview(html, baseHref) {
+      // Inyecta <base> para que rutas relativas funcionen en el iframe
+      var hasHead = /<head[^>]*>/i.test(html);
+      var baseTag = baseHref ? '<base href="' + baseHref + '">' : '';
+      var srcdoc = hasHead
+        ? html.replace(/<head[^>]*>/i, function(m){ return m + baseTag; })
+        : '<!doctype html><html><head>' + baseTag + '</head><body>' + html + '</body></html>';
+      pv.srcdoc = srcdoc;
+    }
+
+    async function loadSignature() {
+      try {
+        var r = await fetch(sigUrl, { cache: "no-store" });
+        if (!r.ok) throw new Error("No se pudo leer signature.html");
+        var txt = await r.text();
+        ta.value = txt;
+        initial = txt;
+        markDirty();
+        msg.textContent = "Cargado ✔";
+        setTimeout(function(){ msg.textContent = ""; }, 1500);
+        updatePreview(txt, window.location.origin + "/");
+      } catch (e) {
+        alert(e.message || e);
+      }
+    }
+
+    async function saveSignature() {
+      var body = ta.value;
+      if (!body.trim()) { alert("Pega contenido antes de guardar."); return; }
+      try {
+        var r = await fetch(sigUrl, {
+          method: "PUT",
+          headers: { "Content-Type": "text/plain; charset=utf-8" },
+          body: body
+        });
+        if (!r.ok) {
+          var t = "";
+          try { t = await r.text(); } catch(_) {}
+          throw new Error("No se pudo guardar: " + t);
+        }
+        initial = body; markDirty();
+        msg.textContent = "Guardado ✔";
+        setTimeout(function(){ msg.textContent = ""; }, 1500);
+        if (typeof onSaved === "function") onSaved(); // refrescar preview del padre
+      } catch (e) {
+        alert(e.message || e);
+      }
+    }
+
+    function readFile(file) {
+      var reader = new FileReader();
+      reader.onload = function() {
+        var html = String(reader.result || "");
+        ta.value = html; markDirty();
+        msg.textContent = "Importado: " + (file && file.name || "");
+        // Blob URL como base para rutas relativas
+        var blob = new Blob([html], { type: "text/html" });
+        var url = URL.createObjectURL(blob);
+        updatePreview(html, url);
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
+      };
+      reader.onerror = function(){ alert("No se pudo leer el archivo."); };
+      reader.readAsText(file, "utf-8");
+    }
+
+    // ---------- Eventos ----------
+    btnLoad.addEventListener("click", loadSignature);
+    btnSave.addEventListener("click", saveSignature);
+    btnPaste.addEventListener("click", async function(){
+      try {
+        var txt = await navigator.clipboard.readText();
+        if (!txt) { alert("El portapapeles está vacío"); return; }
+        ta.value = txt; markDirty();
+        updatePreview(txt, window.location.origin + "/");
+        msg.textContent = "Pegado ✔";
+        setTimeout(function(){ msg.textContent = ""; }, 1500);
+      } catch {
+        alert("No se pudo acceder al portapapeles. Usa Ctrl/Cmd+V.");
+        ta.focus();
+      }
+    });
+    btnOpenTab.addEventListener("click", function(){
+      var html = ta.value || "";
+      var blob = new Blob([html], { type: "text/html" });
+      var url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
+    });
+    btnClose.addEventListener("click", function(){
+      if (dirty && !confirm("Hay cambios sin guardar. ¿Cerrar de todos modos?")) return;
+      w.close();
+    });
+    btnFile.addEventListener("click", function(){ fileInput.click(); });
+    fileInput.addEventListener("change", function(){
+      var f = fileInput.files && fileInput.files[0];
+      if (f) readFile(f);
+      fileInput.value = "";
+    });
+    ta.addEventListener("input", function(){
+      markDirty();
+      updatePreview(ta.value, window.location.origin + "/");
+    });
+    d.addEventListener("keydown", function(e){
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault(); saveSignature();
+      }
+    });
+
+    // Carga inicial
+    loadSignature();
+  }
+
+
+
+
+
+}
+
+
+
+</script>
+
+{% endblock %}

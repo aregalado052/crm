@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="{{ get_locale() }}">
+
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ _('Inicio de Sesión') }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script>
+        class LoginForm {
+            constructor(passwordInputId, buttonId) {
+                this.passwordInput = document.getElementById(passwordInputId);
+                this.toggleButton = document.getElementById(buttonId);
+                this.isPasswordVisible = false;
+
+                this.toggleButton.addEventListener('click', () => this.togglePasswordVisibility());
+            }
+
+            togglePasswordVisibility() {
+                this.isPasswordVisible = !this.isPasswordVisible;
+                this.passwordInput.type = this.isPasswordVisible ? 'text' : 'password';
+
+                this.toggleButton.innerHTML = this.isPasswordVisible 
+                    ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m6 0l-3 3m3-3l-3-3m3 3a5.001 5.001 0 01-5 5m10-5a10 10 0 01-10 10m-4.5-5C3 8.75 6.5 4 12 4s9 4.75 9 8.5m-4.5 0a5.001 5.001 0 01-5 5M9 4a9.985 9.985 0 00-3 2C3 7.75 6.5 12 12 12s9-4.75 9-8.5A9.985 9.985 0 0015 4z"/></svg>`
+                    : `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12s2 8 9 8 9-8 9-8-2-8-9-8-9 8-9 8zM15 12l2 2m-2-2l-2-2m2 2H9m0 0l-2-2m2 2l2 2"/></svg>`;
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            new LoginForm('password', 'togglePasswordButton');
+        });
+    </script>
+</head>
+    
+    
+
+
+<body class="bg-gray-100 flex justify-center items-center min-h-screen">
+    <div class="bg-white p-6 rounded-lg shadow-md w-80">
+        <!-- Logos -->
+        <div class="flex justify-between mb-4">
+            <img src="../static/Logo Planet Power.png" alt="Logo 1" class="h-12 w-auto">
+            <img src="../static/Icono LED PADEL.png" alt="Logo 2" class="h-12 w-auto">
+        </div>
+
+        <!-- Selector de idioma -->
+        <div class="relative inline-block text-left">
+            <div>
+                <button type="button" id="langDropdownBtn" class="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none">
+                <img src="{{ url_for('static', filename='flags/' + session.get('lang', 'es') + '.svg') }}" alt="Idioma" class="w-5 h-5 mr-2">
+                {{ session.get('lang', 'es')|upper }}
+                <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.25 8.27a.75.75 0 01-.02-1.06z" clip-rule="evenodd" />
+                </svg>
+                </button>
+            </div>
+
+            <div id="langDropdownMenu" class="hidden absolute right-0 z-10 mt-2 w-36 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                <div class="py-1">
+                {% for code, label in [('es', 'Español'), ('en', 'English'), ('fr', 'Français')] %}
+                    <form method="POST" action="/set_language">
+                        <input type="hidden" name="language" value="{{ code }}">
+                        <button type="submit" class="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <img src="{{ url_for('static', filename='flags/' + code + '.svg') }}" alt="{{ label }}" class="w-5 h-5 mr-2">
+                        {{ label }}
+                        </button>
+                    </form>
+                {% endfor %}
+                </div>
+            </div>
+        </div>    
+
+
+        
+
+
+        <h2 class="text-2xl font-bold mb-4 text-center">{{ _('Inicio de Sesión') }}</h2>
+
+        <div id="error-message" class="mb-4 hidden">  <!-- Este es tu contenedor -->
+            <p class="text-sm text-red-700 bg-red-100 border-l-4 border-red-500 p-2 rounded-md text-center"></p>
+        </div>
+
+        <!-- Mostrar mensajes de flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mb-4">
+                    <ul>
+                        {% for category, message in messages %}
+                        <li class="text-sm p-4 rounded-md mb-2 w-70 text-center
+                            {% if category == 'error' %} text-red-700 bg-red-100 border-l-4 border-red-500
+                            {% elif category == 'success' %} text-green-700 bg-green-100 border-l-4 border-green-500
+                            {% else %} text-blue-700 bg-blue-100 border-l-4 border-blue-500
+                            {% endif %}">
+                            {{ message | safe }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                   
+                </div>
+            {% endif %}
+        {% endwith %}
+
+
+         <form id="loginForm" action="/login" method="POST">
+            <div class="mb-4">
+                <label for="email" class="block text-sm font-medium text-gray-700">{{ _('Correo Electrónico') }}</label>
+                <input type="email" id="email" name="email" required autocomplete="email"
+                    class="mt-1 block w-full border border-gray-300 p-2 rounded-md focus:ring focus:ring-blue-500"
+                    oninvalid="this.setCustomValidity(&quot;{{ _('Por favor, introduce un correo válido') }}&quot;)"
+
+                    oninput="this.setCustomValidity('')" />
+            </div>
+
+            <div class="mb-4">
+                <label for="password" class="block text-sm font-medium text-gray-700">{{ _('Contraseña') }}</label>
+                <div class="relative">
+                    <input type="password" id="password" name="password" required
+                        class="mt-1 block w-full border border-gray-300 p-2 rounded-md focus:ring focus:ring-blue-500"
+                        oninvalid="this.setCustomValidity(&quot;{{ _('Por favor, introduce tu contraseña') }}&quot;)"
+
+
+                        oninput="this.setCustomValidity('')" />
+                    <button type="button" id="togglePasswordButton"
+                        class="absolute right-2 top-1/2 transform -translate-y-1/2 text-sm text-blue-500">
+                        {{ _('Mostrar') }}
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit"
+                class="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition duration-200">
+                {{ _('Iniciar Sesión') }}
+            </button>
+        </form>
+
+        <p class="mt-4 text-center text-sm text-gray-600">
+            {{ _('¿No tienes una cuenta?') }} <a href="/register" class="text-blue-500 hover:underline">{{ _('Registrarse') }}</a>
+        </p>
+        <p class="mt-4 text-center text-sm text-gray-600">
+            <a href="/forgot_password" class="text-blue-500 hover:underline">{{ _('¿Olvidaste tu contraseña?') }}</a>
+        </p>
+        
+    </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+
+
+
+    
+
+
+
+
+    async function accederAPaginaProtegida() {
+           
+            const uid = localStorage.getItem('uid');
+            const pid = localStorage.getItem('pid');
+            let ruta_login = localStorage.getItem('ruta_login'); // Obtener la ruta de redirección
+            const clubs = localStorage.getItem('clubs'); // Obtener los clubes (si es necesario)
+            const parsedClubs = JSON.parse(clubs); // Parsear los clubes si es necesario
+            const encodedClubs = encodeURIComponent(JSON.stringify(parsedClubs));
+
+
+
+
+            //const ruta_login = `${baseUrl}/load_data`; // esto será 'http://localhost:8000/load_data'
+            
+            
+
+            
+            if (!ruta_login) {
+                console.error('No se encontró ruta_login en localStorage');
+                return;
+            }
+           
+            let url = `${ruta_login}?uid=${uid}&clubs=${encodedClubs}`;
+
+            // ✅ Solo incluir `pid` si es válido (ni null, ni undefined, ni string 'undefined')
+            if (pid && pid !== 'null' && pid !== 'undefined') {
+                url += `&pid=${pid}`;
+            } else {
+                console.warn("🚫 'pid' no válido:", pid);
+            }
+            
+            
+           
+            
+           
+            
+           
+            
+
+            
+
+                // 🔧 Construir la URL completa dinámicamente
+            
+            
+            
+
+            
+                
+
+            const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                
+                'Content-Type': 'application/json', // Opcional para GET
+                'Accept': '*/*',
+                'Accept-Encoding': 'gzip, deflate, br, zstd',
+                'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8,it;q=0.7'
+            },
+            credentials: 'include'
+                
+            });
+
+            
+
+            if (!response.ok) {
+                                
+                                
+            
+                // Manejar el error, podría ser redirigir a la página de login
+                console.error('❌ Código de estado:', response.status);
+                alert('No tienes permiso para acceder a esa página de selecion . Inicia sesión. : ', response);
+                window.location.href = '/login'; // Página de login
+            }
+            else {
+
+                //localStorage.setItem('ruta_login', "/load_data"); // Almacenar la ruta de redirección
+
+                const html = await response.text();
+                
+
+                document.open(); 
+                document.write(html)
+                document.close(); 
+
+                
+            }
+
+
+
+
+
+            
+
+            
+
+            
+
+
+
+                
+            
+                
+                
+        };
+
+
+
+
+    async function handleLogin(event) {
+
+    //document.getElementById('registerForm').addEventListener('submit', function(event) {
+        event.preventDefault(); // Evitar el comportamiento por defecto del formulario
+
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const data = { email, password };
+
+        try {
+            const response = await fetch('/login', {  // Cambia esto al endpoint de tu API
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: "include",
+                body: JSON.stringify(data)
+            })
+            const result = await response.json();
+            
+            console.log("🧪 Resultado completo:", result);
+                
+            if (!response.ok) {
+                
+                
+                throw new Error(result.msg);
+            }
+            else {
+                
+                
+                const uid = result.uid; // Obtener el usuario (si es necesario)
+                const ruta_login = result.ruta_login; // Obtener la ruta de redirección
+                const pid = result.pid; // Obtener el pid (si es necesario)
+                const clubs =result.clubs; // Obtener los clubes (si es necesario)
+                
+                localStorage.setItem('uid', uid);
+                localStorage.setItem('ruta_login', ruta_login); // Almacenar la ruta de redirección
+                localStorage.setItem('pid', pid); // Almacenar el pid (si es necesario)
+                
+
+                localStorage.setItem('clubs', JSON.stringify(clubs)); // Almacenar los clubes en localStorage
+                
+                // Almacenar el token en localStorage
+                accederAPaginaProtegida();
+            }
+        }        
+        catch (error) {
+            handleLoginError(error);
+            }  
+    }
+
+    function handleLoginError(error) {
+        const errorMessageDiv = document.getElementById('error-message');
+        const errorMessageParagraph = errorMessageDiv.querySelector('p');
+
+
+        // Ajusta el mensaje para eliminar información innecesaria
+       errorMessageParagraph.innerHTML = "{{ _('Ocurrió un error al iniciar sesión: <br>') }}" + error.message;
+
+      
+
+        // Mostrar el contenedor del mensaje
+        errorMessageDiv.classList.remove('hidden');
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', handleLogin);
+
+
+    document.getElementById('langDropdownBtn').addEventListener('click', function (e) {
+    const menu = document.getElementById('langDropdownMenu');
+    menu.classList.toggle('hidden');
+  });
+
+  // Opcional: cerrar el menú si haces clic fuera
+  document.addEventListener('click', function (e) {
+    const btn = document.getElementById('langDropdownBtn');
+    const menu = document.getElementById('langDropdownMenu');
+    if (!btn.contains(e.target) && !menu.contains(e.target)) {
+      menu.classList.add('hidden');
+    }
+  });
+</script>
+</body>
+</html>

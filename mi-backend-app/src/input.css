@@ -1,0 +1,17 @@
+/* @tailwind directives removed: make sure to use Tailwind CLI or PostCSS if you want to use them */
+
+
+@import "./styles.css"; /* Tu clase personalizada */
+.mes-item {
+  background-color: #fff;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.mes-item:hover {
+  background-color: #bfdbfe;
+}
+

@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="mt-4 overflow-x-auto">
+  <table id="tplTable" class="min-w-full border rounded-lg">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="text-left p-2 border-b">Nombre</th>
+        <!--<th class="text-left p-2 border-b">Idiomas</th>-->
+        <th class="text-left p-2 border-b">Acciones</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // 1) Inyectar 'items' desde Jinja como JSON al JS del navegador
+
+ 
+
+  const itemData = {{ (items or [])|tojson|safe }};
+
+  
+
+ 
+
+  // Ejecutar cuando el DOM esté listo (por si el script no va al final del body)
+  document.addEventListener("DOMContentLoaded", () => {
+    const tbody = document.querySelector("#tplTable tbody");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+
+    for (const tpl of itemData) {
+     
+      const slug  = tpl.slug || "";
+      const name  = tpl.display_name || slug;
+      const description = tpl.description || "";
+      //const langs = Object.keys(tpl.languages || {});
+      const langs = tpl.languages || {};
+      
+
+
+      // Badges de idiomas
+      const langsHtml = (langs.length > 0)
+        ? langs.map(l => `<span class="px-2 py-0.5 rounded bg-gray-100 border mr-1">${l}</span>`).join("")
+        : `<span class="text-gray-400 italic">sin idiomas</span>`;
+
+      // Botones por idioma (sin &&)
+      let actionsHtml = "";
+      if (langs.length > 0) {
+        for (const lang of langs) {
+          const ts = Date.now();
+         
+          const tplUrl = `/templates/${slug}/${lang}/preview?raw=0&ts=${ts}`;
+
+          alert("Template URL: " + tplUrl);
+         
+          actionsHtml += `
+          <button
+            class="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 mr-2"
+            data-url="${tplUrl}"
+            onclick="openPreviewWindow(this.dataset.url)">
+            🖌️ ${lang}
+          </button>
+        `;
+
+        
+        }
+      } else {
+        actionsHtml = `<span class="text-gray-400">—</span>`;
+      }
+
+      tbody.insertAdjacentHTML("beforeend", `
+        <tr class="border-b hover:bg-gray-50">
+          <td class="p-2">${name}</td>
+        
+          <!-- <td class="p-2">${langsHtml}</td>-->
+          <td class="p-2"><div class="flex flex-wrap gap-1">${actionsHtml}</div></td>
+        </tr>
+      `);
+    }
+    
+/** Usa SIEMPRE la función global */
+    
+
+
+  window.openPreviewWindow = function (url) {
+    const w = window.open('about:blank', 'previewWindow',
+      'width=1000,height=720,resizable=yes,scrollbars=yes');
+    if (!w) { alert('El navegador bloqueó la ventana emergente.'); return; }
+
+    // ---------- construir DOM básico sin <script> inline ----------
+    const doc = w.document;
+    doc.open();
+    doc.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Template Preview</title></head><body></body></html>');
+    doc.close();
+
+    // Contenedor toolbar + iframe
+    const bar = doc.createElement('div');
+    const iframe = doc.createElement('iframe');
+    const urlSpan = doc.createElement('span');
+
+    // Estilos mínimos (si tu CSP también bloquea style-inline, puedes quitarlos)
+    bar.style.cssText = 'display:flex;gap:8px;align-items:center;padding:8px;border-bottom:1px solid #ddd;font-family:system-ui';
+    iframe.style.cssText = 'border:0;width:100%;height:calc(100vh - 46px)';
+    urlSpan.style.cssText = 'margin-left:auto;color:#6b7280;font-size:12px;max-width:50%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+
+    // Botones
+    const btnReload = doc.createElement('button');
+    btnReload.textContent = '↻ Recargar';
+
+    
+
+    const btnEdit = doc.createElement('button');
+    btnEdit.textContent = '✍️ Editar texto';
+
+    const btnEditSign = doc.createElement('button');
+    btnEditSign.textContent = '✒️ Editar firma';
+    
+    const btnClose = doc.createElement('button');
+    btnClose.textContent = '❌ Cerrar';
+
+    // Un poquito de estilo a botones (opcional)
+    [btnReload, btnEdit, btnClose].forEach(b=>{
+      b.style.cssText = 'padding:6px 12px;border:0;border-radius:8px;cursor:pointer;background:#3b82f6;color:#fff';
+    });
+    btnClose.style.background = '#ef4444';
+    btnEdit.style.background = '#10b981';
+    btnEditSign.style.background = '#6b7280';
+
+    urlSpan.textContent = url;
+
+    bar.append(btnReload, btnEditSign, btnEdit, btnClose, urlSpan);
+    doc.body.append(bar, iframe);
+
+    // ---------- lógica desde el padre (sin scripts inline en el hijo) ----------
+    // Cargar HTML del preview con fetch y meterlo en srcdoc (evita X-Frame-Options/CSP del endpoint)
+    async function loadHtml() {
+      try {
+        const u = new URL(url, window.location.origin);
+        u.searchParams.set('ts', Date.now().toString());
+        const r = await fetch(u.toString(), { cache: 'no-store', credentials: 'same-origin' });
+        const html = await r.text();
+        iframe.srcdoc = html;
+      } catch (e) {
+        iframe.srcdoc = `<pre style="padding:12px;color:#b91c1c;background:#fff0f0">No se pudo cargar el preview\n${e?.message||''}</pre>`;
+      }
+    }
+
+    // Extraer slug/lang de la URL para el editor
+    let slug = '', lang = '';
+    try {
+      const u = new URL(url, window.location.origin);
+      const m = u.pathname.match(/\/templates\/([^/]+)\/([^/]+)\//i);
+      if (m) { slug = decodeURIComponent(m[1]); lang = decodeURIComponent(m[2]); }
+    } catch {}
+
+    function openEditorWindow() {
+      const w2 = window.open('about:blank','textEditorWindow',
+        'width=760,height=600,resizable=yes,scrollbars=yes');
+      if (!w2) { alert('El navegador bloqueó la ventana del editor.'); return; }
+
+      const d2 = w2.document;
+      d2.open();
+      d2.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Editar cuerpo</title></head><body></body></html>');
+      d2.close();
+
+      const bar2 = d2.createElement('div');
+      bar2.style.cssText = 'display:flex;gap:8px;align-items:center;padding:8px;border-bottom:1px solid #ddd;font-family:system-ui';
+      const msg = d2.createElement('span'); msg.style.cssText = 'margin-left:auto;color:#6b7280';
+      const btnLoad = d2.createElement('button'); btnLoad.textContent = 'Cargar';
+      const btnSave = d2.createElement('button'); btnSave.textContent = 'Guardar';
+      const btnClose2 = d2.createElement('button'); btnClose2.textContent = 'Cerrar';
+      [btnLoad, btnSave, btnClose2].forEach(b=>{ b.style.cssText = 'padding:6px 12px;border:0;border-radius:8px;cursor:pointer;background:#3b82f6;color:#fff'; });
+      btnSave.style.background = '#10b981';
+      btnClose2.style.background = '#ef4444';
+
+      bar2.append(btnLoad, btnSave, btnClose2, msg);
+      const ta = d2.createElement('textarea');
+      ta.placeholder = 'Pega aquí el nuevo HTML para lang/partials/message.html';
+      ta.style.cssText = 'width:100%;height:calc(100vh - 46px);border:0;outline:none;padding:12px;box-sizing:border-box;font-family:monospace';
+
+      d2.body.append(bar2, ta);
+
+      const getUrl = `/api/templates/${slug}/${lang}/partials/message`;
+      const putUrl = getUrl;
+
+      btnLoad.addEventListener('click', async ()=>{
+        try {
+          const r = await fetch(getUrl, { cache: 'no-store' });
+          if (!r.ok) throw new Error('No se pudo leer message.html');
+          ta.value = await r.text();
+          msg.textContent = 'Cargado ✔'; setTimeout(()=>msg.textContent='',1500);
+        } catch(e) { alert(e.message); }
+      });
+
+
+      
+      btnSave.addEventListener('click', async () => {
+        let body = ta.value;
+        if (!body.trim()) {
+          alert('Pega contenido antes de guardar.');
+          return;
+        }
+
+        // 🔧 convertir caracteres especiales y saltos de línea a HTML seguro
+        body = body
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\r?\n/g, "<br>");
+
+        try {
+          const r = await fetch(putUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body
+          });
+          if (!r.ok) throw new Error('No se pudo guardar');
+          msg.textContent = 'Guardado ✔';
+          setTimeout(() => msg.textContent = '', 1500);
+          // refrescar preview
+          loadHtml();
+        } catch (e) {
+          alert(e.message);
+        }
+      });
+
+
+      btnClose2.addEventListener('click', ()=> w2.close());
+
+      // carga inicial
+      btnLoad.click();
+    }
+
+
+    function openEditorSignWindow() {
+      const w2 = window.open('about:blank','textEditorWindow',
+        'width=760,height=600,resizable=yes,scrollbars=yes');
+      if (!w2) { alert('El navegador bloqueó la ventana del editor.'); return; }
+
+      const d2 = w2.document;
+      d2.open();
+      d2.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Editar cuerpo</title></head><body></body></html>');
+      d2.close();
+
+      const bar2 = d2.createElement('div');
+      bar2.style.cssText = 'display:flex;gap:8px;align-items:center;padding:8px;border-bottom:1px solid #ddd;font-family:system-ui';
+      const msg = d2.createElement('span'); msg.style.cssText = 'margin-left:auto;color:#6b7280';
+      const btnLoad = d2.createElement('button'); btnLoad.textContent = 'Cargar';
+      const btnSave = d2.createElement('button'); btnSave.textContent = 'Guardar';
+      const btnClose2 = d2.createElement('button'); btnClose2.textContent = 'Cerrar';
+      [btnLoad, btnSave, btnClose2].forEach(b=>{ b.style.cssText = 'padding:6px 12px;border:0;border-radius:8px;cursor:pointer;background:#3b82f6;color:#fff'; });
+      btnSave.style.background = '#10b981';
+      btnClose2.style.background = '#ef4444';
+
+      bar2.append(btnLoad, btnSave, btnClose2, msg);
+      const ta = d2.createElement('textarea');
+      ta.placeholder = 'Pega aquí el nuevo HTML para lang/partials/message.html';
+      ta.style.cssText = 'width:100%;height:calc(100vh - 46px);border:0;outline:none;padding:12px;box-sizing:border-box;font-family:monospace';
+
+      d2.body.append(bar2, ta);
+
+      const getUrl = `/api/templates/${slug}/${lang}/partials/message`;
+      const putUrl = getUrl;
+
+      btnLoad.addEventListener('click', async ()=>{
+        try {
+          const r = await fetch(getUrl, { cache: 'no-store' });
+          if (!r.ok) throw new Error('No se pudo leer message.html');
+          ta.value = await r.text();
+          msg.textContent = 'Cargado ✔'; setTimeout(()=>msg.textContent='',1500);
+        } catch(e) { alert(e.message); }
+      });
+
+
+      
+      btnSave.addEventListener('click', async () => {
+        let body = ta.value;
+        if (!body.trim()) {
+          alert('Pega contenido antes de guardar.');
+          return;
+        }
+
+        // 🔧 convertir caracteres especiales y saltos de línea a HTML seguro
+        body = body
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\r?\n/g, "<br>");
+
+        try {
+          const r = await fetch(putUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body
+          });
+          if (!r.ok) throw new Error('No se pudo guardar');
+          msg.textContent = 'Guardado ✔';
+          setTimeout(() => msg.textContent = '', 1500);
+          // refrescar preview
+          loadHtml();
+        } catch (e) {
+          alert(e.message);
+        }
+      });
+
+
+      btnClose2.addEventListener('click', ()=> w2.close());
+
+      // carga inicial
+      btnLoad.click();
+    
+
+    // listeners
+    btnReload.addEventListener('click', loadHtml);
+    btnEditSign.addEventListener('click', openEditorSignWindow);
+    btnEdit.addEventListener('click', openEditorWindow);
+    btnClose.addEventListener('click', ()=> w.close());
+
+    // primera carga
+    loadHtml();
+  };
+  
+// 
+    
+
+ });
+ 
+  
+</script>
+
+
+
+
+{% endblock %}

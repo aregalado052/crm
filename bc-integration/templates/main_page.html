@@ -1,0 +1,649 @@
+{% extends "base.html" %}
+
+
+
+{% block content %}
+
+
+<body 
+  class="flex h-screen bg-gray-100"
+  data-uid="{{ uid }}"
+  data-pid="{{ pid }}"
+  data-project="{{ project_name }}"
+  data-scheduler-name="{{ scheduler_name }}"
+  data-scheduler-arn="{{ scheduler_arn }}"
+  numero-link-pistas ="{{ numero_link_pistas }}">
+
+<script id="linkPistasData" type="application/json">
+  {{ (link_pistas or []) | tojson | safe }}
+</script>
+
+<script>
+  
+  const raw = document.getElementById("linkPistasData").textContent;
+
+  try {
+    const linkPistas = JSON.parse(raw);
+    console.log("✅ Datos recibidos en frontend:", linkPistas);
+    // Puedes seguir depurando aquí
+  } catch (e) {
+    console.error("❌ Error parseando linkPistasData:", e);
+    console.log("Contenido bruto:", raw);
+  }
+</script>
+
+  
+  
+
+ 
+  
+  <!-- Contenido Principal -->
+  <div class="flex-1 flex flex-col">
+    
+    
+
+    
+
+    <!-- Contenido -->
+    <div id="messageContainer" class="mt-4"></div>
+
+     
+    <script>
+      window.translations = {
+          conectado: "{{ _('EL SISTEMA DE RESERVAS ESTÁ CONECTADO')|escapejs }}",
+          manual: "{{ _('EL SISTEMA ESTÁ EN MODO MANUAL')|escapejs }}",
+          habilitarManual: "{{ _('Habilitar Modo Manual')|escapejs }}",
+          conectarSistema: "{{ _('Conectar Sistema de Reservas')|escapejs }}"
+      };
+    </script>
+
+    <script src="{{ url_for('static', filename='js/estadoSistema.js') }}"></script>
+
+
+
+
+
+    <main class="flex-1 p-6">
+      <h2 class="text-3xl font-extrabold text-slate-700 tracking-tight">
+        {{ _('Panel de Control de las Pistas') }}
+      </h2>
+
+      <div id="noConnectionMessage" class="p-6 bg-red-100 text-red-800 font-semibold rounded-lg text-center hidden">
+        <p class="mb-4">{{ _('Error de Conexión.') }}</p>
+        <p class="mb-4">{{ _('No es posible conectar con las pistas, inténtelo en unos minutos...') }}</p>
+        <button id="reconnectBtn" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+          {{ _('Intentar Conectar') }}
+        </button>
+      </div>
+
+      <!-- Panel principal de pistas -->
+      
+       
+
+      
+      <div id="loaderPistas" class="hidden text-center py-6">
+        <h2 class="text-3xl font-semibold text-blue-600 mb-4 animate-pulse">
+          ⏳ {{ _('Recopilando información de las Pistas...') }}
+        </h2>
+        <p class="text-gray-700">
+          {{ _('Esto puede tardar unos segundos, por favor espera.') }}
+        </p>
+      </div>
+
+      <div id="messageContainer" class="mb-4"></div>
+
+      <div id="actualizacionHora" class="text-xs text-gray-500 italic mb-4 text-right">
+        <!-- Este se actualizará con JavaScript, probablemente no necesita traducción aquí -->
+      </div>
+
+      <div id="noConnectionErrorMessage" class="p-6 bg-red-100 text-red-800 font-semibold rounded-lg text-center hidden">
+        <p class="mb-4">{{ _('Error de Conexión.') }}</p>
+        <p class="mb-4">
+          {{ _('No es posible conectar con las pistas, inténtelo en unos minutos...') }}
+        </p>
+        <button id="reconnectBtn" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+          {{ _('Intentar Conectar') }}
+        </button>
+      </div>
+
+      <div id="panel-control" class="grid grid-cols-5 gap-6 p-4 w-full"></div>
+
+
+  </div>
+
+  
+{% endblock %}  
+
+{% block scripts %}
+{{ super() }}
+
+  <!-- Script para manejar nombre de usuario y logout -->
+<script>
+
+  function toggleMenu(menuId, button) {
+    // Alterna el submenú seleccionado
+  const menu = document.getElementById(menuId);
+  const isHidden = menu.classList.contains('hidden');
+
+  // Si el menú está oculto, lo mostramos y ocultamos otros submenús al mismo nivel
+  if (isHidden) {
+    // Obtener el nivel del menú actual
+    const currentLevel = getMenuLevel(menu);
+
+    // Ocultar otros submenús al mismo nivel
+    const allMenus = document.querySelectorAll('nav ul ul');
+    allMenus.forEach((submenu) => {
+      if (submenu.id !== menuId && getMenuLevel(submenu) === currentLevel) {
+        submenu.classList.add('hidden');
+      }
+    });
+
+    menu.classList.remove('hidden');
+  } else {
+    menu.classList.add('hidden');
+  }
+
+  // Actualiza las clases de los botones para reflejar el estado activo
+  const buttons = document.querySelectorAll('.menu-item, .submenu-item');
+  buttons.forEach((btn) => {
+    btn.classList.remove('bg-green-800', 'text-white');
+    btn.classList.add('bg-green-100', 'text-green-800');
+  });
+
+  // Si el submenú está visible, marca el botón como activo
+  if (!menu.classList.contains('hidden')) {
+    button.classList.remove('bg-green-100', 'text-green-800');
+    button.classList.add('bg-green-800', 'text-white');
+  }
+}
+
+  function getMenuLevel(element) {
+    let level = 0;
+    let parent = element.parentElement;
+    while (parent && parent.tagName !== 'NAV') {
+      if (parent.tagName === 'UL') {
+        level++;
+      }
+      parent = parent.parentElement;
+    }
+    return level;
+  }
+
+  
+
+
+
+
+
+  const uid = document.body.dataset.uid;
+  const pid = document.body.dataset.pid;
+  const projectName = document.body.dataset.project;
+  const schedulerName = document.body.dataset.schedulerName;
+  const schedulerArn = document.body.dataset.schedulerArn;
+
+
+// ✅ Extraer el JSON desde <script type="application/json">
+  const rawJSON = document.getElementById('linkPistasData').textContent;
+  const link_pistas = JSON.parse(rawJSON);
+  
+
+
+
+
+
+  
+
+  document.getElementById("username").textContent = projectName;
+
+
+  function logout() {
+    localStorage.clear();
+    window.location.href = "/login";
+  }
+
+  async function irAReservas() {
+    const url = `/reservas`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': '*/*',
+      },
+      credentials: 'include'
+    });
+
+    alert("ESTOY AQUÍ  ");
+
+    if (!response.ok) {
+      Swal.fire({
+        icon: 'error',
+        title: '❌ {{ _("Conexión fallida") }}',
+        text: '{{ _("No fue posible establecer conexión con las pistas.") }}',
+        confirmButtonText: '{{ _("Aceptar") }}'
+      }).then(() => {
+        window.location.href = "/login";
+      });
+    } else {
+      const html = await response.text();
+      document.open(); 
+      document.write(html);
+      document.close();
+    
+
+      
+    }
+  }
+
+  
+
+  async function conectarDesconectar() {
+    if (!uid || !token) return alert("⚠️ UID o token no disponible.");
+    const url = `/plug_booking_system`;  
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': '*/*',
+      },
+      credentials : 'include'
+    });
+
+    alert ("ESTOY AQUÍ  ");
+    if (!response.ok) {
+      Swal.fire({
+        icon: 'error',
+        title: '{{ _("❌ Conexión fallida")|escapejs }}',
+        text: '{{ _("No fue posible establecer conexión con las pistas.")|escapejs }}',
+        confirmButtonText: '{{ _("Aceptar")|escapejs }}'
+              }).then(() => {
+        window.location.href = "/login";
+      });
+    }else {
+      const html = await response.text();
+      document.open(); 
+      document.write(html);
+      document.close();
+    }
+    
+  }
+
+  function renderizarPistas(link_pistas) {
+    const panel = document.getElementById("panel-control");
+    const mensaje = document.getElementById("noConnectionMessage");
+
+    console.log("🔧 renderizarPistas - sistemaReservasActivo:", sistemaReservasActivo);
+
+    panel.innerHTML = '';
+
+    if (!Array.isArray(link_pistas) || link_pistas.length === 0) {
+      mensaje.classList.remove("hidden");
+      panel.classList.add("hidden");
+
+      const messageContainer = document.getElementById("messageContainer");
+      if (messageContainer) {
+        messageContainer.classList.add("hidden");
+      }
+      return;
+    }
+
+    const totalPistas = link_pistas.length;
+    let gridColsClass = "grid-cols-1";
+    if (totalPistas <= 4) gridColsClass = "grid-cols-2";
+    else if (totalPistas <= 10) gridColsClass = "grid-cols-4";
+    else gridColsClass = "grid-cols-5";
+    panel.classList.add(gridColsClass);
+
+    link_pistas.forEach((pista, index) => {
+      const id = index + 1;
+      
+      const estaEncendida = Number(pista["On/Off"]) === 1;
+      const rawLight = pista.lightness != null ? parseInt(pista.lightness) : 50;
+      const sliderInicial = rawLight;
+      const brillo = estaEncendida ? (1.5 * rawLight) + 50 : 50;
+
+      const pistaDiv = document.createElement("div");
+      pistaDiv.className = "bg-white p-4 rounded-lg shadow-md flex flex-col items-center";
+
+      pistaDiv.innerHTML = `
+        <h3 class="text-lg font-semibold mb-2 truncate w-full text-center" title="${pista.PistaHT}">${pista.PistaHT}</h3>
+        <img id="logo${id}" src="../static/Pista Padel 3D central con LOGO.jpg"
+            alt="${pista.PistaHT}"
+            class="h-24 mb-4 transition-all duration-300"
+            style="filter: brightness(${brillo}%)" />
+
+        <button id="btn${id}" 
+          ${sistemaReservasActivo ? "disabled" : ""}
+          class="${
+            sistemaReservasActivo
+              ? (estaEncendida
+                  ? 'bg-green-300 text-white px-4 py-2 rounded mb-4 cursor-not-allowed'
+                  : 'bg-red-300 text-white px-4 py-2 rounded mb-4 cursor-not-allowed')
+              : (estaEncendida
+                  ? 'bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded mb-4'
+                  : 'bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded mb-4')
+          }"
+          title="{% if sistemaReservasActivo %}{{ _('Control bloqueado por sistema de reservas activo') }}{% endif %}">
+            {{ _('ON') if estaEncendida else _('OFF') }}
+        </button>
+
+        <label for="range{{ id }}" class="block text-sm font-medium mb-2">  {{ _('Regulación') }} </label>
+        <span id="porcentaje${id}" class="mb-1 text-sm">${estaEncendida ? `${sliderInicial}%` : '0%'}</span>        
+        <input id="range${id}" type="range" min="0" max="100" value="${sliderInicial}"
+              ${!estaEncendida || sistemaReservasActivo ? 'disabled' : ''}
+              class="w-full accent-blue-500 ${!estaEncendida || sistemaReservasActivo ? 'opacity-50 cursor-not-allowed' : ''}" />
+      `;
+
+      panel.appendChild(pistaDiv);
+
+      if (!sistemaReservasActivo) {
+        const btn = document.getElementById(`btn${id}`);
+        const range = document.getElementById(`range${id}`);
+        const logo = document.getElementById(`logo${id}`);
+        const porcentaje = document.getElementById(`porcentaje${id}`);
+
+        let isOn = estaEncendida;
+
+        if (isOn) {
+          const sliderValue = parseInt(range.value);
+          const brightnessValue = 50 + (sliderValue * 1.5);
+          logo.style.filter = `brightness(${brightnessValue}%)`;
+          porcentaje.textContent = `${sliderValue}%`;
+          range.classList.remove("cursor-not-allowed");
+          range.classList.add("cursor-pointer");
+        } else {
+          range.classList.add("cursor-not-allowed");
+          range.classList.remove("cursor-pointer");
+        }
+
+        btn.addEventListener("click", async () => {
+          isOn = !isOn;
+          const sliderValue = parseInt(range.value);
+          const brightnessValue = 50 + (sliderValue * 1.5);
+
+          if (isOn) {
+            logo.style.filter = `brightness(${brightnessValue}%)`;
+            range.disabled = false;
+            range.classList.remove("cursor-not-allowed");
+            range.classList.add("cursor-pointer");
+            btn.textContent = "ON";
+            btn.classList.remove("bg-red-500", "hover:bg-red-600");
+            btn.classList.add("bg-green-500", "hover:bg-green-600");
+            porcentaje.textContent = `${sliderValue}%`;
+
+            try {
+              const response = await fetch("/set_light", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                credentials : 'include',
+                body: JSON.stringify({
+                  nid: pista.NID,
+                  lightID: pista.lightID,
+                  brightness: sliderValue
+                })
+              });
+               if (!response.ok || result.status === "error") {
+                Swal.fire({
+                  icon: "error",
+                  title: "{{ _('Error al apagar la luz') | escapejs }}",
+                  text: result.message || "{{ _('Error desconocido') | escapejs }}"
+                });
+                return;
+              }
+
+              } catch (err) {
+                console.error("⚠️ Error de red al encender la luz:", err);
+                Swal.fire({
+                  icon: "error",
+                  title: "{{ _('Error de red') | escapejs }}",
+                  text: "{{ _('Error de red al encender la luz') | escapejs }}"
+                });
+              }
+
+
+
+          } else {
+            logo.style.filter = "brightness(50%)";
+            range.disabled = true;
+            range.classList.add("cursor-not-allowed");
+            range.classList.remove("cursor-pointer");
+            btn.textContent = "OFF";
+            btn.classList.remove("bg-green-500", "hover:bg-green-600");
+            btn.classList.add("bg-red-500", "hover:bg-red-600");
+            porcentaje.textContent = "0%";
+
+            try {
+              const response = await fetch("/set_off_light", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                credentials : 'include',
+                body: JSON.stringify({
+                  uid: uid,
+                  nid: pista.NID,
+                  lightID: pista.lightID
+                })
+              });
+              if (!response.ok || result.status === "error") {
+                Swal.fire({
+                  icon: "error",
+                  title: "{{ _('Error al apagar la luz') | escapejs }}",
+                  text: result.message || "{{ _('Error desconocido') | escapejs }}"
+                });
+                return;
+              }
+
+            } catch (err) {
+              console.error("⚠️ Error de red al apagar luz:", err);
+              Swal.fire({
+                icon: "error",
+                title: "{{ _('Error de red') | escapejs }}",
+                text: "{{ _('No se pudo contactar con el servidor.') | escapejs }}"
+              });
+            }
+
+
+          }
+        });
+
+        range.addEventListener("input", () => {
+          if (isOn) {
+            const sliderValue = parseInt(range.value);
+            const brightnessValue = 50 + (sliderValue * 1.5);
+            logo.style.filter = `brightness(${brightnessValue}%)`;
+            porcentaje.textContent = `${sliderValue}%`;
+          }
+        });
+
+        range.addEventListener("change", async () => {
+          if (!isOn) return;
+
+          const sliderValue = parseInt(range.value);
+          try {
+            const response = await fetch("/set_light", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              credentials : 'include',
+              body: JSON.stringify({
+                
+                nid: pista.NID,
+                lightID: pista.lightID,
+                brightness: sliderValue
+              })
+            });
+
+            if (!response.ok) {
+              console.error("❌ Error al enviar el brillo al servidor");
+            } else {
+              console.log("✅ Brillo actualizado correctamente");
+            }
+          } catch (err) {
+            console.error("⚠️ Error de red al actualizar brillo:", err);
+          }
+        });
+      }
+    });
+  }
+
+
+
+  window.addEventListener('DOMContentLoaded', async () => {
+    const estadoGuardado = localStorage.getItem('estadoSistemaReservas');
+    const numeroLinkPistas = parseInt(document.body.getAttribute("numero-link-pistas")) || 0;
+    
+    if (numeroLinkPistas === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: "{{ _('Sin pistas configuradas') | escapejs }}",
+        text: "{{ _('Para comenzar, primero debes configurar las pistas.') | escapejs }}",
+        confirmButtonText: "{{ _('Ir a configuración de pistas') | escapejs }}",
+        allowOutsideClick: false
+      }).then(() => {
+        // 1. Llamar a configuración inicial (POST)
+        return fetch("/cargar_configuracion_inicial_pistas", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + localStorage.getItem("access_token")  
+          },
+          body: JSON.stringify({})
+        });
+      }).then(response => {
+        if (!response.ok) {
+          throw new Error("{{ _('Error al cargar la configuración inicial') | escapejs }}");
+        }
+        // 2. Redirigir si todo salió bien
+        window.location.href = "/courts_configuration";
+      }).catch(err => {
+        Swal.fire({
+          icon: "error",
+          title: "{{ _('Error') | escapejs }}",
+          text: err.message
+        });
+      });
+    }
+
+    if (estadoGuardado) {
+      console.log("🗂️ Estado almacenado:", estadoGuardado);
+    }
+    
+    
+
+    await mostrarEstadoSistema({
+      schedulerName,
+      schedulerArn,
+      actualizarPistasDesdeServidor
+    });
+    //await actualizarPistasDesdeServidor();
+
+    // Guardar el ID del setInterval para poder cancelarlo después
+    //autoUpdateIntervalId = setInterval(actualizarPistasDesdeServidor, 120000);
+  });
+
+
+
+
+    
+
+
+  async function actualizarPistasDesdeServidor() {
+    const loader = document.getElementById("loaderPistas");
+    const panel = document.getElementById("panel-control");
+    const noConnectionErrorMessage = document.getElementById("noConnectionErrorMessage");
+    
+    // 🟦 Mostrar loader y ocultar pistas
+    if (loader) loader.classList.remove("hidden");
+    if (panel) panel.classList.add("hidden");
+    if (noConnectionErrorMessage) noConnectionErrorMessage.classList.add("hidden");
+
+    console.log("🔄 Actualizando pistas automáticamente...", link_pistas);
+
+    try {
+      const response = await fetch("/get_pistas", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials : 'include',
+        body: JSON.stringify({
+          link_pistas: link_pistas, 
+          
+        })
+      });
+
+      
+      
+      if (response.status!==200) {
+        throw new Error("No se pudo actualizar la información de las pistas.");
+      }
+
+
+      if (!response.ok) {
+        throw new Error("No se pudo actualizar la información de las pistas.");
+      }
+
+      const data = await response.json();
+
+      // Actualizar contenido oculto si aplica
+      const linkDataScript = document.getElementById("linkPistasData");
+      if (linkDataScript) {
+        linkDataScript.textContent = JSON.stringify(data);
+      }
+
+      // Renderizar pistas
+      renderizarPistas(data);
+
+      // Mostrar hora
+      const ahora = new Date();
+      const horaContainer = document.getElementById("actualizacionHora");
+      if (horaContainer) {
+        if (sistemaReservasActivo) {
+          const horas = ahora.getHours().toString().padStart(2, '0');
+          const minutos = ahora.getMinutes().toString().padStart(2, '0');
+          horaContainer.textContent = `Actualizado: ${horas}:${minutos}`;
+        } else {
+          horaContainer.textContent = ''; // 👈 Limpia el mensaje en modo manual
+        }
+      }
+
+    } catch (error) {
+      console.error("❌ Error al actualizar pistas automáticamente:", error);
+
+      const errorMessageElement = document.getElementById("noConnectionErrorMessage");
+      console.log("Elemento obtenido:", errorMessageElement);
+      if (errorMessageElement) {
+
+        
+        errorMessageElement.classList.remove("hidden"); // Mostrar el mensaje de error
+        errorMessageElement.innerText = error.message;
+      } else {
+        console.error("Elemento 'noConnectionErrorMessage' no encontrado en el DOM.");
+      }
+      
+
+
+    } finally {
+      // ✅ Ocultar loader y mostrar pistas
+      if (loader) loader.classList.add("hidden");
+      if (panel) panel.classList.remove("hidden");
+    }
+  }
+
+
+
+</script>
+
+{% endblock %}
+    
+  
+  
+</body>
+</html>
+
+

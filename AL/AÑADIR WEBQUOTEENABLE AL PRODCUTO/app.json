@@ -1,0 +1,30 @@
+{
+  "id": "f4289755-28d4-49bd-ab16-9fd37850dd42",
+  "name": "ENABLE QUOTATION WEB",
+  "publisher": "AREGALADO",
+  "version": "1.0.0.10",
+  "runtime": "12.0",
+  "target": "Cloud",
+  "application": "23.0.0.0",
+  "platform": "26.0.39765.0",
+  "resourceExposurePolicy": {
+    "allowDebugging": true,
+    "allowDownloadingSource": true,
+    "includeSourceInSymbolFile": true,
+    "applyToDevExtension": false
+  },
+  "features": [
+    "NOIMPLICITWITH"
+  ],
+  "idRanges": [
+    {
+      "from": 50100,
+      "to": 50450
+    }
+  ],
+  "build": {
+    "by": "AL Language Extension,15.2.1630495",
+    "timestamp": "2025-08-29T16:45:22.1024801+00:00",
+    "compilerVersion": "15.2.24.57679"
+  }
+}

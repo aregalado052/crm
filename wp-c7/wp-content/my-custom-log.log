@@ -1,0 +1,2494 @@
+[2025-09-10 05:59:30] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 05:59:30] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":false,"pais":"España","pistas_perimetrales":1,"pistas_laterales":1,"mailorigen":"soporte@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 05:59:40] ❌ WP_Error enviando a backend: cURL error 28: Operation timed out after 10004 milliseconds with 0 bytes received
+[2025-09-10 06:11:08] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 06:11:08] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Español","pais":"España","pistas_perimetrales":1,"pistas_laterales":1,"mailorigen":"soporte@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 06:11:18] ❌ WP_Error enviando a backend: cURL error 28: Operation timed out after 10004 milliseconds with 0 bytes received
+[2025-09-10 06:13:21] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 06:13:21] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Español","pais":"Spain","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"soporte@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 06:13:23] ✅ Respuesta backend (500): <!doctype html>
+<html lang=en>
+  <head>
+    <title>UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+ // Werkzeug Debugger</title>
+    <link rel="stylesheet" href="?__debugger__=yes&amp;cmd=resource&amp;f=style.css">
+    <link rel="shortcut icon"
+        href="?__debugger__=yes&amp;cmd=resource&amp;f=console.png">
+    <script src="?__debugger__=yes&amp;cmd=resource&amp;f=debugger.js"></script>
+    <script>
+      var CONSOLE_MODE = false,
+          EVALEX = true,
+          EVALEX_TRUSTED = false,
+          SECRET = "wxcsz9pR8Xv1n4W8NlYB";
+    </script>
+  </head>
+  <body style="background-color: #fff">
+    <div class="debugger">
+<h1>UnboundLocalError</h1>
+<div class="detail">
+  <p class="errormsg">UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+</p>
+</div>
+<h2 class="traceback">Traceback <em>(most recent call last)</em></h2>
+<div class="traceback">
+  <h3></h3>
+  <ul><li><div class="frame" id="frame-2126976607296">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1536</em>,
+      in <code class="function">__call__</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">    </span>) -&gt; cabc.Iterable[bytes]:</pre>
+<pre class="line before"><span class="ws">        </span>&#34;&#34;&#34;The WSGI server calls the Flask application object as the</pre>
+<pre class="line before"><span class="ws">        </span>WSGI application. This calls :meth:`wsgi_app`, which can be</pre>
+<pre class="line before"><span class="ws">        </span>wrapped to apply middleware.</pre>
+<pre class="line before"><span class="ws">        </span>&#34;&#34;&#34;</pre>
+<pre class="line current"><span class="ws">        </span>return self.wsgi_app(environ, start_response)
+<span class="ws">        </span>       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre></div>
+</div>
+
+<li><div class="frame" id="frame-2126976608448">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1514</em>,
+      in <code class="function">wsgi_app</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>try:</pre>
+<pre class="line before"><span class="ws">                </span>ctx.push()</pre>
+<pre class="line before"><span class="ws">                </span>response = self.full_dispatch_request()</pre>
+<pre class="line before"><span class="ws">            </span>except Exception as e:</pre>
+<pre class="line before"><span class="ws">                </span>error = e</pre>
+<pre class="line current"><span class="ws">                </span>response = self.handle_exception(e)
+<span class="ws">                </span>           ^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">            </span>except:  # noqa: B001</pre>
+<pre class="line after"><span class="ws">                </span>error = sys.exc_info()[1]</pre>
+<pre class="line after"><span class="ws">                </span>raise</pre>
+<pre class="line after"><span class="ws">            </span>return response(environ, start_response)</pre>
+<pre class="line after"><span class="ws">        </span>finally:</pre></div>
+</div>
+
+<li><div class="frame" id="frame-2126976610752">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1511</em>,
+      in <code class="function">wsgi_app</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">        </span>ctx = self.request_context(environ)</pre>
+<pre class="line before"><span class="ws">        </span>error: BaseException | None = None</pre>
+<pre class="line before"><span class="ws">        </span>try:</pre>
+<pre class="line before"><span class="ws">            </span>try:</pre>
+<pre class="line before"><span class="ws">                </span>ctx.push()</pre>
+<pre class="line current"><span class="ws">                </span>response = self.full_dispatch_request()
+<span class="ws">                </span>           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">            </span>except Exception as e:</pre>
+<pre class="line after"><span class="ws">                </span>error = e</pre>
+<pre class="line after"><span class="ws">                </span>response = self.handle_exception(e)</pre>
+<pre class="line after"><span class="ws">            </span>except:  # noqa: B001</pre>
+<pre class="line after"><span class="ws">                </span>error = sys.exc_info()[1]</pre></div>
+</div>
+
+<li><div class="frame" id="frame-2126976611328">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">919</em>,
+      in <code class="function">full_dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>request_started.send(self, _async_wrapper=self.ensure_sync)</pre>
+<pre class="line before"><span class="ws">            </span>rv = self.preprocess_request()</pre>
+<pre class="line before"><span class="ws">            </span>if rv is None:</pre>
+<pre class="line before"><span class="ws">                </span>rv = self.dispatch_request()</pre>
+<pre class="line before"><span class="ws">        </span>except Exception as e:</pre>
+<pre class="line current"><span class="ws">            </span>rv = self.handle_user_exception(e)
+<span class="ws">            </span>     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">        </span>return self.finalize_request(rv)</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def finalize_request(</pre>
+<pre class="line after"><span class="ws">        </span>self,</pre>
+<pre class="line after"><span class="ws">        </span>rv: ft.ResponseReturnValue | HTTPException,</pre></div>
+</div>
+
+<li><div class="frame" id="frame-2126976610320">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">917</em>,
+      in <code class="function">full_dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws"></span> </pre>
+<pre class="line before"><span class="ws">        </span>try:</pre>
+<pre class="line before"><span class="ws">            </span>request_started.send(self, _async_wrapper=self.ensure_sync)</pre>
+<pre class="line before"><span class="ws">            </span>rv = self.preprocess_request()</pre>
+<pre class="line before"><span class="ws">            </span>if rv is None:</pre>
+<pre class="line current"><span class="ws">                </span>rv = self.dispatch_request()
+<span class="ws">                </span>     ^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">        </span>except Exception as e:</pre>
+<pre class="line after"><span class="ws">            </span>rv = self.handle_user_exception(e)</pre>
+<pre class="line after"><span class="ws">        </span>return self.finalize_request(rv)</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def finalize_request(</pre></div>
+</div>
+
+<li><div class="frame" id="frame-2126976610896">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">902</em>,
+      in <code class="function">dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>and req.method == &#34;OPTIONS&#34;</pre>
+<pre class="line before"><span class="ws">        </span>):</pre>
+<pre class="line before"><span class="ws">            </span>return self.make_default_options_response()</pre>
+<pre class="line before"><span class="ws">        </span># otherwise dispatch to the handler for that endpoint</pre>
+<pre class="line before"><span class="ws">        </span>view_args: dict[str, t.Any] = req.view_args  # type: ignore[assignment]</pre>
+<pre class="line current"><span class="ws">        </span>return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+<span class="ws">        </span>       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def full_dispatch_request(self) -&gt; Response:</pre>
+<pre class="line after"><span class="ws">        </span>&#34;&#34;&#34;Dispatches the request and on top of that performs request</pre>
+<pre class="line after"><span class="ws">        </span>pre and postprocessing as well as HTTP exception catching and</pre>
+<pre class="line after"><span class="ws">        </span>error handling.</pre></div>
+</div>
+
+<li><div class="frame" id="frame-2126976610032">
+  <h4>File <cite class="filename">"C:\Desarrollo\crm\bc-integration/link-bc.py"</cite>,
+      line <em class="line">1095</em>,
+      in <code class="function">contacto</code></h4>
+  <div class="source "><pre class="line before"><span class="ws">    </span>elif mercado == &#39;UE&#39; and idioma == &#34;Inglés&#34;:</pre>
+<pre class="line before"><span class="ws">        </span>customer_template = &#34;QUOTELEAD U I&#34;</pre>
+<pre class="line before"><span class="ws">    </span>elif mercado == &#39;UE&#39; and idioma == &#34;Español&#34;:</pre>
+<pre class="line before"><span class="ws">        </span>customer_template = &#34;QUOTELEAD U E&#34;</pre>
+<pre class="line before"><span class="ws"></span> </pre>
+<pre class="line current"><span class="ws">    </span>print(f&#34;Plantilla de cliente: {customer_template}&#34;)
+<span class="ws">    </span>                               ^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>token=get_token()</pre>
+<pre class="line after"><span class="ws"></span> </pre></div>
+</div>
+</ul>
+  <blockquote>UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+</blockquote>
+</div>
+
+<div class="plain">
+    <p>
+      This is the Copy/Paste friendly version of the traceback.
+    </p>
+    <textarea cols="50" rows="10" name="code" readonly>Traceback (most recent call last):
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1514, in wsgi_app
+    response = self.handle_exception(e)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;C:\Desarrollo\crm\bc-integration/link-bc.py&#34;, line 1095, in contacto
+    print(f&#34;Plantilla de cliente: {customer_template}&#34;)
+                                   ^^^^^^^^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+</textarea>
+</div>
+<div class="explanation">
+  The debugger caught an exception in your WSGI application.  You can now
+  look at the traceback which led to the error.  <span class="nojavascript">
+  If you enable JavaScript you can also use additional features such as code
+  execution (if the evalex feature is enabled), automatic pasting of the
+  exceptions and much more.</span>
+</div>
+      <div class="footer">
+        Brought to you by <strong class="arthur">DON'T PANIC</strong>, your
+        friendly Werkzeug powered traceback interpreter.
+      </div>
+    </div>
+
+    <div class="pin-prompt">
+      <div class="inner">
+        <h3>Console Locked</h3>
+        <p>
+          The console is locked and needs to be unlocked by entering the PIN.
+          You can find the PIN printed out on the standard output of your
+          shell that runs the server.
+        <form>
+          <p>PIN:
+            <input type=text name=pin size=14>
+            <input type=submit name=btn value="Confirm Pin">
+        </form>
+      </div>
+    </div>
+  </body>
+</html>
+
+<!--
+
+Traceback (most recent call last):
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1514, in wsgi_app
+    response = self.handle_exception(e)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Desarrollo\crm\bc-integration/link-bc.py", line 1095, in contacto
+    print(f"Plantilla de cliente: {customer_template}")
+                                   ^^^^^^^^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'customer_template' where it is not associated with a value
+
+
+-->
+
+[2025-09-10 06:49:26] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 06:49:26] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Español","pais":"Costa Rica","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"soporte@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 06:49:36] ❌ WP_Error enviando a backend: cURL error 28: Operation timed out after 10005 milliseconds with 0 bytes received
+[2025-09-10 06:50:39] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 06:50:39] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Español","pais":"Costa Rica","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"soporte@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 06:50:49] ❌ WP_Error enviando a backend: cURL error 28: Operation timed out after 10014 milliseconds with 0 bytes received
+[2025-09-10 06:59:34] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 06:59:34] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"","pais":"España","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"soporte@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 06:59:44] ❌ WP_Error enviando a backend: cURL error 28: Operation timed out after 10010 milliseconds with 0 bytes received
+[2025-09-10 07:03:48] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 07:03:48] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Español","pais":"España","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"soporte@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 07:03:50] ❌ WP_Error enviando a backend: cURL error 7: Failed to connect to 127.0.0.1 port 5000 after 2029 ms: Couldn't connect to server
+[2025-09-10 07:04:26] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 07:04:26] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Español","pais":"España","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"soporte@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 07:04:36] ❌ WP_Error enviando a backend: cURL error 28: Operation timed out after 10009 milliseconds with 0 bytes received
+[2025-09-10 07:05:18] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 07:05:18] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"English","pais":"Spain","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"soporte@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 07:05:20] ✅ Respuesta backend (500): <!doctype html>
+<html lang=en>
+  <head>
+    <title>UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+ // Werkzeug Debugger</title>
+    <link rel="stylesheet" href="?__debugger__=yes&amp;cmd=resource&amp;f=style.css">
+    <link rel="shortcut icon"
+        href="?__debugger__=yes&amp;cmd=resource&amp;f=console.png">
+    <script src="?__debugger__=yes&amp;cmd=resource&amp;f=debugger.js"></script>
+    <script>
+      var CONSOLE_MODE = false,
+          EVALEX = true,
+          EVALEX_TRUSTED = false,
+          SECRET = "5StmBCdacwq2GA1Hy0d5";
+    </script>
+  </head>
+  <body style="background-color: #fff">
+    <div class="debugger">
+<h1>UnboundLocalError</h1>
+<div class="detail">
+  <p class="errormsg">UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+</p>
+</div>
+<h2 class="traceback">Traceback <em>(most recent call last)</em></h2>
+<div class="traceback">
+  <h3></h3>
+  <ul><li><div class="frame" id="frame-1574404263648">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1536</em>,
+      in <code class="function">__call__</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">    </span>) -&gt; cabc.Iterable[bytes]:</pre>
+<pre class="line before"><span class="ws">        </span>&#34;&#34;&#34;The WSGI server calls the Flask application object as the</pre>
+<pre class="line before"><span class="ws">        </span>WSGI application. This calls :meth:`wsgi_app`, which can be</pre>
+<pre class="line before"><span class="ws">        </span>wrapped to apply middleware.</pre>
+<pre class="line before"><span class="ws">        </span>&#34;&#34;&#34;</pre>
+<pre class="line current"><span class="ws">        </span>return self.wsgi_app(environ, start_response)
+<span class="ws">        </span>       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574404270704">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1514</em>,
+      in <code class="function">wsgi_app</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>try:</pre>
+<pre class="line before"><span class="ws">                </span>ctx.push()</pre>
+<pre class="line before"><span class="ws">                </span>response = self.full_dispatch_request()</pre>
+<pre class="line before"><span class="ws">            </span>except Exception as e:</pre>
+<pre class="line before"><span class="ws">                </span>error = e</pre>
+<pre class="line current"><span class="ws">                </span>response = self.handle_exception(e)
+<span class="ws">                </span>           ^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">            </span>except:  # noqa: B001</pre>
+<pre class="line after"><span class="ws">                </span>error = sys.exc_info()[1]</pre>
+<pre class="line after"><span class="ws">                </span>raise</pre>
+<pre class="line after"><span class="ws">            </span>return response(environ, start_response)</pre>
+<pre class="line after"><span class="ws">        </span>finally:</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574404271136">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1511</em>,
+      in <code class="function">wsgi_app</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">        </span>ctx = self.request_context(environ)</pre>
+<pre class="line before"><span class="ws">        </span>error: BaseException | None = None</pre>
+<pre class="line before"><span class="ws">        </span>try:</pre>
+<pre class="line before"><span class="ws">            </span>try:</pre>
+<pre class="line before"><span class="ws">                </span>ctx.push()</pre>
+<pre class="line current"><span class="ws">                </span>response = self.full_dispatch_request()
+<span class="ws">                </span>           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">            </span>except Exception as e:</pre>
+<pre class="line after"><span class="ws">                </span>error = e</pre>
+<pre class="line after"><span class="ws">                </span>response = self.handle_exception(e)</pre>
+<pre class="line after"><span class="ws">            </span>except:  # noqa: B001</pre>
+<pre class="line after"><span class="ws">                </span>error = sys.exc_info()[1]</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574404272288">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">919</em>,
+      in <code class="function">full_dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>request_started.send(self, _async_wrapper=self.ensure_sync)</pre>
+<pre class="line before"><span class="ws">            </span>rv = self.preprocess_request()</pre>
+<pre class="line before"><span class="ws">            </span>if rv is None:</pre>
+<pre class="line before"><span class="ws">                </span>rv = self.dispatch_request()</pre>
+<pre class="line before"><span class="ws">        </span>except Exception as e:</pre>
+<pre class="line current"><span class="ws">            </span>rv = self.handle_user_exception(e)
+<span class="ws">            </span>     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">        </span>return self.finalize_request(rv)</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def finalize_request(</pre>
+<pre class="line after"><span class="ws">        </span>self,</pre>
+<pre class="line after"><span class="ws">        </span>rv: ft.ResponseReturnValue | HTTPException,</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574404273728">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">917</em>,
+      in <code class="function">full_dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws"></span> </pre>
+<pre class="line before"><span class="ws">        </span>try:</pre>
+<pre class="line before"><span class="ws">            </span>request_started.send(self, _async_wrapper=self.ensure_sync)</pre>
+<pre class="line before"><span class="ws">            </span>rv = self.preprocess_request()</pre>
+<pre class="line before"><span class="ws">            </span>if rv is None:</pre>
+<pre class="line current"><span class="ws">                </span>rv = self.dispatch_request()
+<span class="ws">                </span>     ^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">        </span>except Exception as e:</pre>
+<pre class="line after"><span class="ws">            </span>rv = self.handle_user_exception(e)</pre>
+<pre class="line after"><span class="ws">        </span>return self.finalize_request(rv)</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def finalize_request(</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574404274880">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">902</em>,
+      in <code class="function">dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>and req.method == &#34;OPTIONS&#34;</pre>
+<pre class="line before"><span class="ws">        </span>):</pre>
+<pre class="line before"><span class="ws">            </span>return self.make_default_options_response()</pre>
+<pre class="line before"><span class="ws">        </span># otherwise dispatch to the handler for that endpoint</pre>
+<pre class="line before"><span class="ws">        </span>view_args: dict[str, t.Any] = req.view_args  # type: ignore[assignment]</pre>
+<pre class="line current"><span class="ws">        </span>return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+<span class="ws">        </span>       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def full_dispatch_request(self) -&gt; Response:</pre>
+<pre class="line after"><span class="ws">        </span>&#34;&#34;&#34;Dispatches the request and on top of that performs request</pre>
+<pre class="line after"><span class="ws">        </span>pre and postprocessing as well as HTTP exception catching and</pre>
+<pre class="line after"><span class="ws">        </span>error handling.</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574404275456">
+  <h4>File <cite class="filename">"C:\Desarrollo\crm\bc-integration/link-bc.py"</cite>,
+      line <em class="line">1095</em>,
+      in <code class="function">contacto</code></h4>
+  <div class="source "><pre class="line before"><span class="ws">    </span>elif mercado == &#39;UE&#39; and idioma == &#34;Inglés&#34;:</pre>
+<pre class="line before"><span class="ws">        </span>customer_template = &#34;QUOTELEAD U I&#34;</pre>
+<pre class="line before"><span class="ws">    </span>elif mercado == &#39;UE&#39; and idioma == &#34;Español&#34;:</pre>
+<pre class="line before"><span class="ws">        </span>customer_template = &#34;QUOTELEAD U E&#34;</pre>
+<pre class="line before"><span class="ws"></span> </pre>
+<pre class="line current"><span class="ws">    </span>print(f&#34;Plantilla de cliente: {customer_template}&#34;)
+<span class="ws">    </span>                               ^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>token=get_token()</pre>
+<pre class="line after"><span class="ws"></span> </pre></div>
+</div>
+</ul>
+  <blockquote>UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+</blockquote>
+</div>
+
+<div class="plain">
+    <p>
+      This is the Copy/Paste friendly version of the traceback.
+    </p>
+    <textarea cols="50" rows="10" name="code" readonly>Traceback (most recent call last):
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1514, in wsgi_app
+    response = self.handle_exception(e)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;C:\Desarrollo\crm\bc-integration/link-bc.py&#34;, line 1095, in contacto
+    print(f&#34;Plantilla de cliente: {customer_template}&#34;)
+                                   ^^^^^^^^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+</textarea>
+</div>
+<div class="explanation">
+  The debugger caught an exception in your WSGI application.  You can now
+  look at the traceback which led to the error.  <span class="nojavascript">
+  If you enable JavaScript you can also use additional features such as code
+  execution (if the evalex feature is enabled), automatic pasting of the
+  exceptions and much more.</span>
+</div>
+      <div class="footer">
+        Brought to you by <strong class="arthur">DON'T PANIC</strong>, your
+        friendly Werkzeug powered traceback interpreter.
+      </div>
+    </div>
+
+    <div class="pin-prompt">
+      <div class="inner">
+        <h3>Console Locked</h3>
+        <p>
+          The console is locked and needs to be unlocked by entering the PIN.
+          You can find the PIN printed out on the standard output of your
+          shell that runs the server.
+        <form>
+          <p>PIN:
+            <input type=text name=pin size=14>
+            <input type=submit name=btn value="Confirm Pin">
+        </form>
+      </div>
+    </div>
+  </body>
+</html>
+
+<!--
+
+Traceback (most recent call last):
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1514, in wsgi_app
+    response = self.handle_exception(e)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Desarrollo\crm\bc-integration/link-bc.py", line 1095, in contacto
+    print(f"Plantilla de cliente: {customer_template}")
+                                   ^^^^^^^^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'customer_template' where it is not associated with a value
+
+
+-->
+
+[2025-09-10 07:06:17] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 07:06:17] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Italiano","pais":"Croazia","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"soporte@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 07:06:18] ✅ Respuesta backend (500): <!doctype html>
+<html lang=en>
+  <head>
+    <title>UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+ // Werkzeug Debugger</title>
+    <link rel="stylesheet" href="?__debugger__=yes&amp;cmd=resource&amp;f=style.css">
+    <link rel="shortcut icon"
+        href="?__debugger__=yes&amp;cmd=resource&amp;f=console.png">
+    <script src="?__debugger__=yes&amp;cmd=resource&amp;f=debugger.js"></script>
+    <script>
+      var CONSOLE_MODE = false,
+          EVALEX = true,
+          EVALEX_TRUSTED = false,
+          SECRET = "5StmBCdacwq2GA1Hy0d5";
+    </script>
+  </head>
+  <body style="background-color: #fff">
+    <div class="debugger">
+<h1>UnboundLocalError</h1>
+<div class="detail">
+  <p class="errormsg">UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+</p>
+</div>
+<h2 class="traceback">Traceback <em>(most recent call last)</em></h2>
+<div class="traceback">
+  <h3></h3>
+  <ul><li><div class="frame" id="frame-1574405693376">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1536</em>,
+      in <code class="function">__call__</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">    </span>) -&gt; cabc.Iterable[bytes]:</pre>
+<pre class="line before"><span class="ws">        </span>&#34;&#34;&#34;The WSGI server calls the Flask application object as the</pre>
+<pre class="line before"><span class="ws">        </span>WSGI application. This calls :meth:`wsgi_app`, which can be</pre>
+<pre class="line before"><span class="ws">        </span>wrapped to apply middleware.</pre>
+<pre class="line before"><span class="ws">        </span>&#34;&#34;&#34;</pre>
+<pre class="line current"><span class="ws">        </span>return self.wsgi_app(environ, start_response)
+<span class="ws">        </span>       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574405696112">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1514</em>,
+      in <code class="function">wsgi_app</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>try:</pre>
+<pre class="line before"><span class="ws">                </span>ctx.push()</pre>
+<pre class="line before"><span class="ws">                </span>response = self.full_dispatch_request()</pre>
+<pre class="line before"><span class="ws">            </span>except Exception as e:</pre>
+<pre class="line before"><span class="ws">                </span>error = e</pre>
+<pre class="line current"><span class="ws">                </span>response = self.handle_exception(e)
+<span class="ws">                </span>           ^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">            </span>except:  # noqa: B001</pre>
+<pre class="line after"><span class="ws">                </span>error = sys.exc_info()[1]</pre>
+<pre class="line after"><span class="ws">                </span>raise</pre>
+<pre class="line after"><span class="ws">            </span>return response(environ, start_response)</pre>
+<pre class="line after"><span class="ws">        </span>finally:</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574405695968">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1511</em>,
+      in <code class="function">wsgi_app</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">        </span>ctx = self.request_context(environ)</pre>
+<pre class="line before"><span class="ws">        </span>error: BaseException | None = None</pre>
+<pre class="line before"><span class="ws">        </span>try:</pre>
+<pre class="line before"><span class="ws">            </span>try:</pre>
+<pre class="line before"><span class="ws">                </span>ctx.push()</pre>
+<pre class="line current"><span class="ws">                </span>response = self.full_dispatch_request()
+<span class="ws">                </span>           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">            </span>except Exception as e:</pre>
+<pre class="line after"><span class="ws">                </span>error = e</pre>
+<pre class="line after"><span class="ws">                </span>response = self.handle_exception(e)</pre>
+<pre class="line after"><span class="ws">            </span>except:  # noqa: B001</pre>
+<pre class="line after"><span class="ws">                </span>error = sys.exc_info()[1]</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574405695824">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">919</em>,
+      in <code class="function">full_dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>request_started.send(self, _async_wrapper=self.ensure_sync)</pre>
+<pre class="line before"><span class="ws">            </span>rv = self.preprocess_request()</pre>
+<pre class="line before"><span class="ws">            </span>if rv is None:</pre>
+<pre class="line before"><span class="ws">                </span>rv = self.dispatch_request()</pre>
+<pre class="line before"><span class="ws">        </span>except Exception as e:</pre>
+<pre class="line current"><span class="ws">            </span>rv = self.handle_user_exception(e)
+<span class="ws">            </span>     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">        </span>return self.finalize_request(rv)</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def finalize_request(</pre>
+<pre class="line after"><span class="ws">        </span>self,</pre>
+<pre class="line after"><span class="ws">        </span>rv: ft.ResponseReturnValue | HTTPException,</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574405694384">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">917</em>,
+      in <code class="function">full_dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws"></span> </pre>
+<pre class="line before"><span class="ws">        </span>try:</pre>
+<pre class="line before"><span class="ws">            </span>request_started.send(self, _async_wrapper=self.ensure_sync)</pre>
+<pre class="line before"><span class="ws">            </span>rv = self.preprocess_request()</pre>
+<pre class="line before"><span class="ws">            </span>if rv is None:</pre>
+<pre class="line current"><span class="ws">                </span>rv = self.dispatch_request()
+<span class="ws">                </span>     ^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">        </span>except Exception as e:</pre>
+<pre class="line after"><span class="ws">            </span>rv = self.handle_user_exception(e)</pre>
+<pre class="line after"><span class="ws">        </span>return self.finalize_request(rv)</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def finalize_request(</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574405694240">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">902</em>,
+      in <code class="function">dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>and req.method == &#34;OPTIONS&#34;</pre>
+<pre class="line before"><span class="ws">        </span>):</pre>
+<pre class="line before"><span class="ws">            </span>return self.make_default_options_response()</pre>
+<pre class="line before"><span class="ws">        </span># otherwise dispatch to the handler for that endpoint</pre>
+<pre class="line before"><span class="ws">        </span>view_args: dict[str, t.Any] = req.view_args  # type: ignore[assignment]</pre>
+<pre class="line current"><span class="ws">        </span>return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+<span class="ws">        </span>       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def full_dispatch_request(self) -&gt; Response:</pre>
+<pre class="line after"><span class="ws">        </span>&#34;&#34;&#34;Dispatches the request and on top of that performs request</pre>
+<pre class="line after"><span class="ws">        </span>pre and postprocessing as well as HTTP exception catching and</pre>
+<pre class="line after"><span class="ws">        </span>error handling.</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574405695104">
+  <h4>File <cite class="filename">"C:\Desarrollo\crm\bc-integration/link-bc.py"</cite>,
+      line <em class="line">1095</em>,
+      in <code class="function">contacto</code></h4>
+  <div class="source "><pre class="line before"><span class="ws">    </span>elif mercado == &#39;UE&#39; and idioma == &#34;Inglés&#34;:</pre>
+<pre class="line before"><span class="ws">        </span>customer_template = &#34;QUOTELEAD U I&#34;</pre>
+<pre class="line before"><span class="ws">    </span>elif mercado == &#39;UE&#39; and idioma == &#34;Español&#34;:</pre>
+<pre class="line before"><span class="ws">        </span>customer_template = &#34;QUOTELEAD U E&#34;</pre>
+<pre class="line before"><span class="ws"></span> </pre>
+<pre class="line current"><span class="ws">    </span>print(f&#34;Plantilla de cliente: {customer_template}&#34;)
+<span class="ws">    </span>                               ^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>token=get_token()</pre>
+<pre class="line after"><span class="ws"></span> </pre></div>
+</div>
+</ul>
+  <blockquote>UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+</blockquote>
+</div>
+
+<div class="plain">
+    <p>
+      This is the Copy/Paste friendly version of the traceback.
+    </p>
+    <textarea cols="50" rows="10" name="code" readonly>Traceback (most recent call last):
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1514, in wsgi_app
+    response = self.handle_exception(e)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;C:\Desarrollo\crm\bc-integration/link-bc.py&#34;, line 1095, in contacto
+    print(f&#34;Plantilla de cliente: {customer_template}&#34;)
+                                   ^^^^^^^^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+</textarea>
+</div>
+<div class="explanation">
+  The debugger caught an exception in your WSGI application.  You can now
+  look at the traceback which led to the error.  <span class="nojavascript">
+  If you enable JavaScript you can also use additional features such as code
+  execution (if the evalex feature is enabled), automatic pasting of the
+  exceptions and much more.</span>
+</div>
+      <div class="footer">
+        Brought to you by <strong class="arthur">DON'T PANIC</strong>, your
+        friendly Werkzeug powered traceback interpreter.
+      </div>
+    </div>
+
+    <div class="pin-prompt">
+      <div class="inner">
+        <h3>Console Locked</h3>
+        <p>
+          The console is locked and needs to be unlocked by entering the PIN.
+          You can find the PIN printed out on the standard output of your
+          shell that runs the server.
+        <form>
+          <p>PIN:
+            <input type=text name=pin size=14>
+            <input type=submit name=btn value="Confirm Pin">
+        </form>
+      </div>
+    </div>
+  </body>
+</html>
+
+<!--
+
+Traceback (most recent call last):
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1514, in wsgi_app
+    response = self.handle_exception(e)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Desarrollo\crm\bc-integration/link-bc.py", line 1095, in contacto
+    print(f"Plantilla de cliente: {customer_template}")
+                                   ^^^^^^^^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'customer_template' where it is not associated with a value
+
+
+-->
+
+[2025-09-10 07:07:09] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 07:07:09] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Français","pais":"Colombie","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"soporte@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 07:07:11] ✅ Respuesta backend (500): <!doctype html>
+<html lang=en>
+  <head>
+    <title>UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+ // Werkzeug Debugger</title>
+    <link rel="stylesheet" href="?__debugger__=yes&amp;cmd=resource&amp;f=style.css">
+    <link rel="shortcut icon"
+        href="?__debugger__=yes&amp;cmd=resource&amp;f=console.png">
+    <script src="?__debugger__=yes&amp;cmd=resource&amp;f=debugger.js"></script>
+    <script>
+      var CONSOLE_MODE = false,
+          EVALEX = true,
+          EVALEX_TRUSTED = false,
+          SECRET = "5StmBCdacwq2GA1Hy0d5";
+    </script>
+  </head>
+  <body style="background-color: #fff">
+    <div class="debugger">
+<h1>UnboundLocalError</h1>
+<div class="detail">
+  <p class="errormsg">UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+</p>
+</div>
+<h2 class="traceback">Traceback <em>(most recent call last)</em></h2>
+<div class="traceback">
+  <h3></h3>
+  <ul><li><div class="frame" id="frame-1574405694096">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1536</em>,
+      in <code class="function">__call__</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">    </span>) -&gt; cabc.Iterable[bytes]:</pre>
+<pre class="line before"><span class="ws">        </span>&#34;&#34;&#34;The WSGI server calls the Flask application object as the</pre>
+<pre class="line before"><span class="ws">        </span>WSGI application. This calls :meth:`wsgi_app`, which can be</pre>
+<pre class="line before"><span class="ws">        </span>wrapped to apply middleware.</pre>
+<pre class="line before"><span class="ws">        </span>&#34;&#34;&#34;</pre>
+<pre class="line current"><span class="ws">        </span>return self.wsgi_app(environ, start_response)
+<span class="ws">        </span>       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574405693952">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1514</em>,
+      in <code class="function">wsgi_app</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>try:</pre>
+<pre class="line before"><span class="ws">                </span>ctx.push()</pre>
+<pre class="line before"><span class="ws">                </span>response = self.full_dispatch_request()</pre>
+<pre class="line before"><span class="ws">            </span>except Exception as e:</pre>
+<pre class="line before"><span class="ws">                </span>error = e</pre>
+<pre class="line current"><span class="ws">                </span>response = self.handle_exception(e)
+<span class="ws">                </span>           ^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">            </span>except:  # noqa: B001</pre>
+<pre class="line after"><span class="ws">                </span>error = sys.exc_info()[1]</pre>
+<pre class="line after"><span class="ws">                </span>raise</pre>
+<pre class="line after"><span class="ws">            </span>return response(environ, start_response)</pre>
+<pre class="line after"><span class="ws">        </span>finally:</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574405693664">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1511</em>,
+      in <code class="function">wsgi_app</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">        </span>ctx = self.request_context(environ)</pre>
+<pre class="line before"><span class="ws">        </span>error: BaseException | None = None</pre>
+<pre class="line before"><span class="ws">        </span>try:</pre>
+<pre class="line before"><span class="ws">            </span>try:</pre>
+<pre class="line before"><span class="ws">                </span>ctx.push()</pre>
+<pre class="line current"><span class="ws">                </span>response = self.full_dispatch_request()
+<span class="ws">                </span>           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">            </span>except Exception as e:</pre>
+<pre class="line after"><span class="ws">                </span>error = e</pre>
+<pre class="line after"><span class="ws">                </span>response = self.handle_exception(e)</pre>
+<pre class="line after"><span class="ws">            </span>except:  # noqa: B001</pre>
+<pre class="line after"><span class="ws">                </span>error = sys.exc_info()[1]</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574405695392">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">919</em>,
+      in <code class="function">full_dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>request_started.send(self, _async_wrapper=self.ensure_sync)</pre>
+<pre class="line before"><span class="ws">            </span>rv = self.preprocess_request()</pre>
+<pre class="line before"><span class="ws">            </span>if rv is None:</pre>
+<pre class="line before"><span class="ws">                </span>rv = self.dispatch_request()</pre>
+<pre class="line before"><span class="ws">        </span>except Exception as e:</pre>
+<pre class="line current"><span class="ws">            </span>rv = self.handle_user_exception(e)
+<span class="ws">            </span>     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">        </span>return self.finalize_request(rv)</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def finalize_request(</pre>
+<pre class="line after"><span class="ws">        </span>self,</pre>
+<pre class="line after"><span class="ws">        </span>rv: ft.ResponseReturnValue | HTTPException,</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574405695248">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">917</em>,
+      in <code class="function">full_dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws"></span> </pre>
+<pre class="line before"><span class="ws">        </span>try:</pre>
+<pre class="line before"><span class="ws">            </span>request_started.send(self, _async_wrapper=self.ensure_sync)</pre>
+<pre class="line before"><span class="ws">            </span>rv = self.preprocess_request()</pre>
+<pre class="line before"><span class="ws">            </span>if rv is None:</pre>
+<pre class="line current"><span class="ws">                </span>rv = self.dispatch_request()
+<span class="ws">                </span>     ^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">        </span>except Exception as e:</pre>
+<pre class="line after"><span class="ws">            </span>rv = self.handle_user_exception(e)</pre>
+<pre class="line after"><span class="ws">        </span>return self.finalize_request(rv)</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def finalize_request(</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574405694528">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">902</em>,
+      in <code class="function">dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>and req.method == &#34;OPTIONS&#34;</pre>
+<pre class="line before"><span class="ws">        </span>):</pre>
+<pre class="line before"><span class="ws">            </span>return self.make_default_options_response()</pre>
+<pre class="line before"><span class="ws">        </span># otherwise dispatch to the handler for that endpoint</pre>
+<pre class="line before"><span class="ws">        </span>view_args: dict[str, t.Any] = req.view_args  # type: ignore[assignment]</pre>
+<pre class="line current"><span class="ws">        </span>return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+<span class="ws">        </span>       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def full_dispatch_request(self) -&gt; Response:</pre>
+<pre class="line after"><span class="ws">        </span>&#34;&#34;&#34;Dispatches the request and on top of that performs request</pre>
+<pre class="line after"><span class="ws">        </span>pre and postprocessing as well as HTTP exception catching and</pre>
+<pre class="line after"><span class="ws">        </span>error handling.</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574405694960">
+  <h4>File <cite class="filename">"C:\Desarrollo\crm\bc-integration/link-bc.py"</cite>,
+      line <em class="line">1095</em>,
+      in <code class="function">contacto</code></h4>
+  <div class="source "><pre class="line before"><span class="ws">    </span>elif mercado == &#39;UE&#39; and idioma == &#34;Inglés&#34;:</pre>
+<pre class="line before"><span class="ws">        </span>customer_template = &#34;QUOTELEAD U I&#34;</pre>
+<pre class="line before"><span class="ws">    </span>elif mercado == &#39;UE&#39; and idioma == &#34;Español&#34;:</pre>
+<pre class="line before"><span class="ws">        </span>customer_template = &#34;QUOTELEAD U E&#34;</pre>
+<pre class="line before"><span class="ws"></span> </pre>
+<pre class="line current"><span class="ws">    </span>print(f&#34;Plantilla de cliente: {customer_template}&#34;)
+<span class="ws">    </span>                               ^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>token=get_token()</pre>
+<pre class="line after"><span class="ws"></span> </pre></div>
+</div>
+</ul>
+  <blockquote>UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+</blockquote>
+</div>
+
+<div class="plain">
+    <p>
+      This is the Copy/Paste friendly version of the traceback.
+    </p>
+    <textarea cols="50" rows="10" name="code" readonly>Traceback (most recent call last):
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1514, in wsgi_app
+    response = self.handle_exception(e)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;C:\Desarrollo\crm\bc-integration/link-bc.py&#34;, line 1095, in contacto
+    print(f&#34;Plantilla de cliente: {customer_template}&#34;)
+                                   ^^^^^^^^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+</textarea>
+</div>
+<div class="explanation">
+  The debugger caught an exception in your WSGI application.  You can now
+  look at the traceback which led to the error.  <span class="nojavascript">
+  If you enable JavaScript you can also use additional features such as code
+  execution (if the evalex feature is enabled), automatic pasting of the
+  exceptions and much more.</span>
+</div>
+      <div class="footer">
+        Brought to you by <strong class="arthur">DON'T PANIC</strong>, your
+        friendly Werkzeug powered traceback interpreter.
+      </div>
+    </div>
+
+    <div class="pin-prompt">
+      <div class="inner">
+        <h3>Console Locked</h3>
+        <p>
+          The console is locked and needs to be unlocked by entering the PIN.
+          You can find the PIN printed out on the standard output of your
+          shell that runs the server.
+        <form>
+          <p>PIN:
+            <input type=text name=pin size=14>
+            <input type=submit name=btn value="Confirm Pin">
+        </form>
+      </div>
+    </div>
+  </body>
+</html>
+
+<!--
+
+Traceback (most recent call last):
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1514, in wsgi_app
+    response = self.handle_exception(e)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Desarrollo\crm\bc-integration/link-bc.py", line 1095, in contacto
+    print(f"Plantilla de cliente: {customer_template}")
+                                   ^^^^^^^^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'customer_template' where it is not associated with a value
+
+
+-->
+
+[2025-09-10 07:09:47] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 07:09:47] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Frances","pais":"Allemagne","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"soporte@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 07:09:49] ✅ Respuesta backend (500): <!doctype html>
+<html lang=en>
+  <head>
+    <title>UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+ // Werkzeug Debugger</title>
+    <link rel="stylesheet" href="?__debugger__=yes&amp;cmd=resource&amp;f=style.css">
+    <link rel="shortcut icon"
+        href="?__debugger__=yes&amp;cmd=resource&amp;f=console.png">
+    <script src="?__debugger__=yes&amp;cmd=resource&amp;f=debugger.js"></script>
+    <script>
+      var CONSOLE_MODE = false,
+          EVALEX = true,
+          EVALEX_TRUSTED = false,
+          SECRET = "5StmBCdacwq2GA1Hy0d5";
+    </script>
+  </head>
+  <body style="background-color: #fff">
+    <div class="debugger">
+<h1>UnboundLocalError</h1>
+<div class="detail">
+  <p class="errormsg">UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+</p>
+</div>
+<h2 class="traceback">Traceback <em>(most recent call last)</em></h2>
+<div class="traceback">
+  <h3></h3>
+  <ul><li><div class="frame" id="frame-1574405696400">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1536</em>,
+      in <code class="function">__call__</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">    </span>) -&gt; cabc.Iterable[bytes]:</pre>
+<pre class="line before"><span class="ws">        </span>&#34;&#34;&#34;The WSGI server calls the Flask application object as the</pre>
+<pre class="line before"><span class="ws">        </span>WSGI application. This calls :meth:`wsgi_app`, which can be</pre>
+<pre class="line before"><span class="ws">        </span>wrapped to apply middleware.</pre>
+<pre class="line before"><span class="ws">        </span>&#34;&#34;&#34;</pre>
+<pre class="line current"><span class="ws">        </span>return self.wsgi_app(environ, start_response)
+<span class="ws">        </span>       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574405696256">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1514</em>,
+      in <code class="function">wsgi_app</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>try:</pre>
+<pre class="line before"><span class="ws">                </span>ctx.push()</pre>
+<pre class="line before"><span class="ws">                </span>response = self.full_dispatch_request()</pre>
+<pre class="line before"><span class="ws">            </span>except Exception as e:</pre>
+<pre class="line before"><span class="ws">                </span>error = e</pre>
+<pre class="line current"><span class="ws">                </span>response = self.handle_exception(e)
+<span class="ws">                </span>           ^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">            </span>except:  # noqa: B001</pre>
+<pre class="line after"><span class="ws">                </span>error = sys.exc_info()[1]</pre>
+<pre class="line after"><span class="ws">                </span>raise</pre>
+<pre class="line after"><span class="ws">            </span>return response(environ, start_response)</pre>
+<pre class="line after"><span class="ws">        </span>finally:</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574405693808">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1511</em>,
+      in <code class="function">wsgi_app</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">        </span>ctx = self.request_context(environ)</pre>
+<pre class="line before"><span class="ws">        </span>error: BaseException | None = None</pre>
+<pre class="line before"><span class="ws">        </span>try:</pre>
+<pre class="line before"><span class="ws">            </span>try:</pre>
+<pre class="line before"><span class="ws">                </span>ctx.push()</pre>
+<pre class="line current"><span class="ws">                </span>response = self.full_dispatch_request()
+<span class="ws">                </span>           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">            </span>except Exception as e:</pre>
+<pre class="line after"><span class="ws">                </span>error = e</pre>
+<pre class="line after"><span class="ws">                </span>response = self.handle_exception(e)</pre>
+<pre class="line after"><span class="ws">            </span>except:  # noqa: B001</pre>
+<pre class="line after"><span class="ws">                </span>error = sys.exc_info()[1]</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574405696544">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">919</em>,
+      in <code class="function">full_dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>request_started.send(self, _async_wrapper=self.ensure_sync)</pre>
+<pre class="line before"><span class="ws">            </span>rv = self.preprocess_request()</pre>
+<pre class="line before"><span class="ws">            </span>if rv is None:</pre>
+<pre class="line before"><span class="ws">                </span>rv = self.dispatch_request()</pre>
+<pre class="line before"><span class="ws">        </span>except Exception as e:</pre>
+<pre class="line current"><span class="ws">            </span>rv = self.handle_user_exception(e)
+<span class="ws">            </span>     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">        </span>return self.finalize_request(rv)</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def finalize_request(</pre>
+<pre class="line after"><span class="ws">        </span>self,</pre>
+<pre class="line after"><span class="ws">        </span>rv: ft.ResponseReturnValue | HTTPException,</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574405696688">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">917</em>,
+      in <code class="function">full_dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws"></span> </pre>
+<pre class="line before"><span class="ws">        </span>try:</pre>
+<pre class="line before"><span class="ws">            </span>request_started.send(self, _async_wrapper=self.ensure_sync)</pre>
+<pre class="line before"><span class="ws">            </span>rv = self.preprocess_request()</pre>
+<pre class="line before"><span class="ws">            </span>if rv is None:</pre>
+<pre class="line current"><span class="ws">                </span>rv = self.dispatch_request()
+<span class="ws">                </span>     ^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">        </span>except Exception as e:</pre>
+<pre class="line after"><span class="ws">            </span>rv = self.handle_user_exception(e)</pre>
+<pre class="line after"><span class="ws">        </span>return self.finalize_request(rv)</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def finalize_request(</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574405696832">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">902</em>,
+      in <code class="function">dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>and req.method == &#34;OPTIONS&#34;</pre>
+<pre class="line before"><span class="ws">        </span>):</pre>
+<pre class="line before"><span class="ws">            </span>return self.make_default_options_response()</pre>
+<pre class="line before"><span class="ws">        </span># otherwise dispatch to the handler for that endpoint</pre>
+<pre class="line before"><span class="ws">        </span>view_args: dict[str, t.Any] = req.view_args  # type: ignore[assignment]</pre>
+<pre class="line current"><span class="ws">        </span>return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+<span class="ws">        </span>       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def full_dispatch_request(self) -&gt; Response:</pre>
+<pre class="line after"><span class="ws">        </span>&#34;&#34;&#34;Dispatches the request and on top of that performs request</pre>
+<pre class="line after"><span class="ws">        </span>pre and postprocessing as well as HTTP exception catching and</pre>
+<pre class="line after"><span class="ws">        </span>error handling.</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1574405696976">
+  <h4>File <cite class="filename">"C:\Desarrollo\crm\bc-integration/link-bc.py"</cite>,
+      line <em class="line">1095</em>,
+      in <code class="function">contacto</code></h4>
+  <div class="source "><pre class="line before"><span class="ws">    </span>elif mercado == &#39;UE&#39; and idioma == &#34;Inglés&#34;:</pre>
+<pre class="line before"><span class="ws">        </span>customer_template = &#34;QUOTELEAD U I&#34;</pre>
+<pre class="line before"><span class="ws">    </span>elif mercado == &#39;UE&#39; and idioma == &#34;Español&#34;:</pre>
+<pre class="line before"><span class="ws">        </span>customer_template = &#34;QUOTELEAD U E&#34;</pre>
+<pre class="line before"><span class="ws"></span> </pre>
+<pre class="line current"><span class="ws">    </span>print(f&#34;Plantilla de cliente: {customer_template}&#34;)
+<span class="ws">    </span>                               ^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>token=get_token()</pre>
+<pre class="line after"><span class="ws"></span> </pre></div>
+</div>
+</ul>
+  <blockquote>UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+</blockquote>
+</div>
+
+<div class="plain">
+    <p>
+      This is the Copy/Paste friendly version of the traceback.
+    </p>
+    <textarea cols="50" rows="10" name="code" readonly>Traceback (most recent call last):
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1514, in wsgi_app
+    response = self.handle_exception(e)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;C:\Desarrollo\crm\bc-integration/link-bc.py&#34;, line 1095, in contacto
+    print(f&#34;Plantilla de cliente: {customer_template}&#34;)
+                                   ^^^^^^^^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+</textarea>
+</div>
+<div class="explanation">
+  The debugger caught an exception in your WSGI application.  You can now
+  look at the traceback which led to the error.  <span class="nojavascript">
+  If you enable JavaScript you can also use additional features such as code
+  execution (if the evalex feature is enabled), automatic pasting of the
+  exceptions and much more.</span>
+</div>
+      <div class="footer">
+        Brought to you by <strong class="arthur">DON'T PANIC</strong>, your
+        friendly Werkzeug powered traceback interpreter.
+      </div>
+    </div>
+
+    <div class="pin-prompt">
+      <div class="inner">
+        <h3>Console Locked</h3>
+        <p>
+          The console is locked and needs to be unlocked by entering the PIN.
+          You can find the PIN printed out on the standard output of your
+          shell that runs the server.
+        <form>
+          <p>PIN:
+            <input type=text name=pin size=14>
+            <input type=submit name=btn value="Confirm Pin">
+        </form>
+      </div>
+    </div>
+  </body>
+</html>
+
+<!--
+
+Traceback (most recent call last):
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1514, in wsgi_app
+    response = self.handle_exception(e)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Desarrollo\crm\bc-integration/link-bc.py", line 1095, in contacto
+    print(f"Plantilla de cliente: {customer_template}")
+                                   ^^^^^^^^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'customer_template' where it is not associated with a value
+
+
+-->
+
+[2025-09-10 07:18:32] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 07:18:32] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Frances","pais":"Allemagne","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"soporte@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 07:18:34] ✅ Respuesta backend (500): <!doctype html>
+<html lang=en>
+  <head>
+    <title>NameError: name &#39;idiom&#39; is not defined. Did you mean: &#39;idioma&#39;?
+ // Werkzeug Debugger</title>
+    <link rel="stylesheet" href="?__debugger__=yes&amp;cmd=resource&amp;f=style.css">
+    <link rel="shortcut icon"
+        href="?__debugger__=yes&amp;cmd=resource&amp;f=console.png">
+    <script src="?__debugger__=yes&amp;cmd=resource&amp;f=debugger.js"></script>
+    <script>
+      var CONSOLE_MODE = false,
+          EVALEX = true,
+          EVALEX_TRUSTED = false,
+          SECRET = "mYhSTdstYwv7fwXoiGbK";
+    </script>
+  </head>
+  <body style="background-color: #fff">
+    <div class="debugger">
+<h1>NameError</h1>
+<div class="detail">
+  <p class="errormsg">NameError: name &#39;idiom&#39; is not defined. Did you mean: &#39;idioma&#39;?
+</p>
+</div>
+<h2 class="traceback">Traceback <em>(most recent call last)</em></h2>
+<div class="traceback">
+  <h3></h3>
+  <ul><li><div class="frame" id="frame-1861708385872">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1536</em>,
+      in <code class="function">__call__</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">    </span>) -&gt; cabc.Iterable[bytes]:</pre>
+<pre class="line before"><span class="ws">        </span>&#34;&#34;&#34;The WSGI server calls the Flask application object as the</pre>
+<pre class="line before"><span class="ws">        </span>WSGI application. This calls :meth:`wsgi_app`, which can be</pre>
+<pre class="line before"><span class="ws">        </span>wrapped to apply middleware.</pre>
+<pre class="line before"><span class="ws">        </span>&#34;&#34;&#34;</pre>
+<pre class="line current"><span class="ws">        </span>return self.wsgi_app(environ, start_response)
+<span class="ws">        </span>       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1861708387168">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1514</em>,
+      in <code class="function">wsgi_app</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>try:</pre>
+<pre class="line before"><span class="ws">                </span>ctx.push()</pre>
+<pre class="line before"><span class="ws">                </span>response = self.full_dispatch_request()</pre>
+<pre class="line before"><span class="ws">            </span>except Exception as e:</pre>
+<pre class="line before"><span class="ws">                </span>error = e</pre>
+<pre class="line current"><span class="ws">                </span>response = self.handle_exception(e)
+<span class="ws">                </span>           ^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">            </span>except:  # noqa: B001</pre>
+<pre class="line after"><span class="ws">                </span>error = sys.exc_info()[1]</pre>
+<pre class="line after"><span class="ws">                </span>raise</pre>
+<pre class="line after"><span class="ws">            </span>return response(environ, start_response)</pre>
+<pre class="line after"><span class="ws">        </span>finally:</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1861708387600">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1511</em>,
+      in <code class="function">wsgi_app</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">        </span>ctx = self.request_context(environ)</pre>
+<pre class="line before"><span class="ws">        </span>error: BaseException | None = None</pre>
+<pre class="line before"><span class="ws">        </span>try:</pre>
+<pre class="line before"><span class="ws">            </span>try:</pre>
+<pre class="line before"><span class="ws">                </span>ctx.push()</pre>
+<pre class="line current"><span class="ws">                </span>response = self.full_dispatch_request()
+<span class="ws">                </span>           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">            </span>except Exception as e:</pre>
+<pre class="line after"><span class="ws">                </span>error = e</pre>
+<pre class="line after"><span class="ws">                </span>response = self.handle_exception(e)</pre>
+<pre class="line after"><span class="ws">            </span>except:  # noqa: B001</pre>
+<pre class="line after"><span class="ws">                </span>error = sys.exc_info()[1]</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1861708388752">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">919</em>,
+      in <code class="function">full_dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>request_started.send(self, _async_wrapper=self.ensure_sync)</pre>
+<pre class="line before"><span class="ws">            </span>rv = self.preprocess_request()</pre>
+<pre class="line before"><span class="ws">            </span>if rv is None:</pre>
+<pre class="line before"><span class="ws">                </span>rv = self.dispatch_request()</pre>
+<pre class="line before"><span class="ws">        </span>except Exception as e:</pre>
+<pre class="line current"><span class="ws">            </span>rv = self.handle_user_exception(e)
+<span class="ws">            </span>     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">        </span>return self.finalize_request(rv)</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def finalize_request(</pre>
+<pre class="line after"><span class="ws">        </span>self,</pre>
+<pre class="line after"><span class="ws">        </span>rv: ft.ResponseReturnValue | HTTPException,</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1861708389472">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">917</em>,
+      in <code class="function">full_dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws"></span> </pre>
+<pre class="line before"><span class="ws">        </span>try:</pre>
+<pre class="line before"><span class="ws">            </span>request_started.send(self, _async_wrapper=self.ensure_sync)</pre>
+<pre class="line before"><span class="ws">            </span>rv = self.preprocess_request()</pre>
+<pre class="line before"><span class="ws">            </span>if rv is None:</pre>
+<pre class="line current"><span class="ws">                </span>rv = self.dispatch_request()
+<span class="ws">                </span>     ^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">        </span>except Exception as e:</pre>
+<pre class="line after"><span class="ws">            </span>rv = self.handle_user_exception(e)</pre>
+<pre class="line after"><span class="ws">        </span>return self.finalize_request(rv)</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def finalize_request(</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1861708389760">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">902</em>,
+      in <code class="function">dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>and req.method == &#34;OPTIONS&#34;</pre>
+<pre class="line before"><span class="ws">        </span>):</pre>
+<pre class="line before"><span class="ws">            </span>return self.make_default_options_response()</pre>
+<pre class="line before"><span class="ws">        </span># otherwise dispatch to the handler for that endpoint</pre>
+<pre class="line before"><span class="ws">        </span>view_args: dict[str, t.Any] = req.view_args  # type: ignore[assignment]</pre>
+<pre class="line current"><span class="ws">        </span>return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+<span class="ws">        </span>       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def full_dispatch_request(self) -&gt; Response:</pre>
+<pre class="line after"><span class="ws">        </span>&#34;&#34;&#34;Dispatches the request and on top of that performs request</pre>
+<pre class="line after"><span class="ws">        </span>pre and postprocessing as well as HTTP exception catching and</pre>
+<pre class="line after"><span class="ws">        </span>error handling.</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1861708390048">
+  <h4>File <cite class="filename">"C:\Desarrollo\crm\bc-integration/link-bc.py"</cite>,
+      line <em class="line">1096</em>,
+      in <code class="function">contacto</code></h4>
+  <div class="source "><pre class="line before"><span class="ws">    </span>environment=ENVIRONMENT</pre>
+<pre class="line before"><span class="ws">    </span>send_email=SEND_EMAIL</pre>
+<pre class="line before"><span class="ws"></span> </pre>
+<pre class="line before"><span class="ws">    </span>session_id= store_session(name, email, mailorigen, idioma, origen, bd, email_user, email_password, url_contacto, url_ofertas, api_key, environment, send_email)</pre>
+<pre class="line before"><span class="ws"></span> </pre>
+<pre class="line current"><span class="ws">    </span>codigo_pais, mercado, zona = obtener_datos_pais (pais, idioma)
+<span class="ws">    </span>                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>if idioma == &#34;Español&#34;:</pre>
+<pre class="line after"><span class="ws">        </span>codigo_idioma = &#34;ESP&#34;</pre>
+<pre class="line after"><span class="ws">    </span>else:</pre>
+<pre class="line after"><span class="ws">        </span>codigo_idioma = &#34;ENU&#34;</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1861709181520">
+  <h4>File <cite class="filename">"C:\Desarrollo\crm\bc-integration/link-bc.py"</cite>,
+      line <em class="line">343</em>,
+      in <code class="function">obtener_datos_pais</code></h4>
+  <div class="source "><pre class="line before"><span class="ws">    </span>&#39;Ingles&#39;: &#39;en&#39;,</pre>
+<pre class="line before"><span class="ws">    </span>&#39;Frances&#39;: &#39;fr&#39;,</pre>
+<pre class="line before"><span class="ws">    </span>&#39;Italiano&#39;: &#39;it&#39;,</pre>
+<pre class="line before"><span class="ws"></span>}</pre>
+<pre class="line before"><span class="ws"></span> </pre>
+<pre class="line current"><span class="ws">    </span>slug = LABEL_TO_SLUG.get(idiom, &#39;es&#39;)  # fallback &#39;es&#39;
+<span class="ws">    </span>                         ^^^^^</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span># Paso 2: slug -&gt; columna</pre>
+<pre class="line after"><span class="ws">    </span>COL_BY_LANG = {</pre>
+<pre class="line after"><span class="ws">        </span>&#39;es&#39;: &#39;pais_es&#39;,</pre>
+<pre class="line after"><span class="ws">        </span>&#39;en&#39;: &#39;pais_en&#39;,</pre></div>
+</div>
+</ul>
+  <blockquote>NameError: name &#39;idiom&#39; is not defined. Did you mean: &#39;idioma&#39;?
+</blockquote>
+</div>
+
+<div class="plain">
+    <p>
+      This is the Copy/Paste friendly version of the traceback.
+    </p>
+    <textarea cols="50" rows="10" name="code" readonly>Traceback (most recent call last):
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1514, in wsgi_app
+    response = self.handle_exception(e)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;C:\Desarrollo\crm\bc-integration/link-bc.py&#34;, line 1096, in contacto
+    codigo_pais, mercado, zona = obtener_datos_pais (pais, idioma)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;C:\Desarrollo\crm\bc-integration/link-bc.py&#34;, line 343, in obtener_datos_pais
+    slug = LABEL_TO_SLUG.get(idiom, &#39;es&#39;)  # fallback &#39;es&#39;
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+NameError: name &#39;idiom&#39; is not defined. Did you mean: &#39;idioma&#39;?
+</textarea>
+</div>
+<div class="explanation">
+  The debugger caught an exception in your WSGI application.  You can now
+  look at the traceback which led to the error.  <span class="nojavascript">
+  If you enable JavaScript you can also use additional features such as code
+  execution (if the evalex feature is enabled), automatic pasting of the
+  exceptions and much more.</span>
+</div>
+      <div class="footer">
+        Brought to you by <strong class="arthur">DON'T PANIC</strong>, your
+        friendly Werkzeug powered traceback interpreter.
+      </div>
+    </div>
+
+    <div class="pin-prompt">
+      <div class="inner">
+        <h3>Console Locked</h3>
+        <p>
+          The console is locked and needs to be unlocked by entering the PIN.
+          You can find the PIN printed out on the standard output of your
+          shell that runs the server.
+        <form>
+          <p>PIN:
+            <input type=text name=pin size=14>
+            <input type=submit name=btn value="Confirm Pin">
+        </form>
+      </div>
+    </div>
+  </body>
+</html>
+
+<!--
+
+Traceback (most recent call last):
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1514, in wsgi_app
+    response = self.handle_exception(e)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Desarrollo\crm\bc-integration/link-bc.py", line 1096, in contacto
+    codigo_pais, mercado, zona = obtener_datos_pais (pais, idioma)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Desarrollo\crm\bc-integration/link-bc.py", line 343, in obtener_datos_pais
+    slug = LABEL_TO_SLUG.get(idiom, 'es')  # fallback 'es'
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+NameError: name 'idiom' is not defined. Did you mean: 'idioma'?
+
+
+-->
+
+[2025-09-10 07:19:48] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 07:19:48] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Frances","pais":"Allemagne","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"soporte@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 07:19:50] ✅ Respuesta backend (500): <!doctype html>
+<html lang=en>
+  <head>
+    <title>pymysql.err.OperationalError: (1054, &#34;Unknown column &#39;pais_fr&#39; in &#39;where clause&#39;&#34;)
+ // Werkzeug Debugger</title>
+    <link rel="stylesheet" href="?__debugger__=yes&amp;cmd=resource&amp;f=style.css">
+    <link rel="shortcut icon"
+        href="?__debugger__=yes&amp;cmd=resource&amp;f=console.png">
+    <script src="?__debugger__=yes&amp;cmd=resource&amp;f=debugger.js"></script>
+    <script>
+      var CONSOLE_MODE = false,
+          EVALEX = true,
+          EVALEX_TRUSTED = false,
+          SECRET = "EL35mrHfFRIv9p4UkeeD";
+    </script>
+  </head>
+  <body style="background-color: #fff">
+    <div class="debugger">
+<h1>OperationalError</h1>
+<div class="detail">
+  <p class="errormsg">pymysql.err.OperationalError: (1054, &#34;Unknown column &#39;pais_fr&#39; in &#39;where clause&#39;&#34;)
+</p>
+</div>
+<h2 class="traceback">Traceback <em>(most recent call last)</em></h2>
+<div class="traceback">
+  <h3></h3>
+  <ul><li><div class="frame" id="frame-1840135966288">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1536</em>,
+      in <code class="function">__call__</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">    </span>) -&gt; cabc.Iterable[bytes]:</pre>
+<pre class="line before"><span class="ws">        </span>&#34;&#34;&#34;The WSGI server calls the Flask application object as the</pre>
+<pre class="line before"><span class="ws">        </span>WSGI application. This calls :meth:`wsgi_app`, which can be</pre>
+<pre class="line before"><span class="ws">        </span>wrapped to apply middleware.</pre>
+<pre class="line before"><span class="ws">        </span>&#34;&#34;&#34;</pre>
+<pre class="line current"><span class="ws">        </span>return self.wsgi_app(environ, start_response)
+<span class="ws">        </span>       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1840135967440">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1514</em>,
+      in <code class="function">wsgi_app</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>try:</pre>
+<pre class="line before"><span class="ws">                </span>ctx.push()</pre>
+<pre class="line before"><span class="ws">                </span>response = self.full_dispatch_request()</pre>
+<pre class="line before"><span class="ws">            </span>except Exception as e:</pre>
+<pre class="line before"><span class="ws">                </span>error = e</pre>
+<pre class="line current"><span class="ws">                </span>response = self.handle_exception(e)
+<span class="ws">                </span>           ^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">            </span>except:  # noqa: B001</pre>
+<pre class="line after"><span class="ws">                </span>error = sys.exc_info()[1]</pre>
+<pre class="line after"><span class="ws">                </span>raise</pre>
+<pre class="line after"><span class="ws">            </span>return response(environ, start_response)</pre>
+<pre class="line after"><span class="ws">        </span>finally:</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1840135967872">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1511</em>,
+      in <code class="function">wsgi_app</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">        </span>ctx = self.request_context(environ)</pre>
+<pre class="line before"><span class="ws">        </span>error: BaseException | None = None</pre>
+<pre class="line before"><span class="ws">        </span>try:</pre>
+<pre class="line before"><span class="ws">            </span>try:</pre>
+<pre class="line before"><span class="ws">                </span>ctx.push()</pre>
+<pre class="line current"><span class="ws">                </span>response = self.full_dispatch_request()
+<span class="ws">                </span>           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">            </span>except Exception as e:</pre>
+<pre class="line after"><span class="ws">                </span>error = e</pre>
+<pre class="line after"><span class="ws">                </span>response = self.handle_exception(e)</pre>
+<pre class="line after"><span class="ws">            </span>except:  # noqa: B001</pre>
+<pre class="line after"><span class="ws">                </span>error = sys.exc_info()[1]</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1840135969024">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">919</em>,
+      in <code class="function">full_dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>request_started.send(self, _async_wrapper=self.ensure_sync)</pre>
+<pre class="line before"><span class="ws">            </span>rv = self.preprocess_request()</pre>
+<pre class="line before"><span class="ws">            </span>if rv is None:</pre>
+<pre class="line before"><span class="ws">                </span>rv = self.dispatch_request()</pre>
+<pre class="line before"><span class="ws">        </span>except Exception as e:</pre>
+<pre class="line current"><span class="ws">            </span>rv = self.handle_user_exception(e)
+<span class="ws">            </span>     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">        </span>return self.finalize_request(rv)</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def finalize_request(</pre>
+<pre class="line after"><span class="ws">        </span>self,</pre>
+<pre class="line after"><span class="ws">        </span>rv: ft.ResponseReturnValue | HTTPException,</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1840135969744">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">917</em>,
+      in <code class="function">full_dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws"></span> </pre>
+<pre class="line before"><span class="ws">        </span>try:</pre>
+<pre class="line before"><span class="ws">            </span>request_started.send(self, _async_wrapper=self.ensure_sync)</pre>
+<pre class="line before"><span class="ws">            </span>rv = self.preprocess_request()</pre>
+<pre class="line before"><span class="ws">            </span>if rv is None:</pre>
+<pre class="line current"><span class="ws">                </span>rv = self.dispatch_request()
+<span class="ws">                </span>     ^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">        </span>except Exception as e:</pre>
+<pre class="line after"><span class="ws">            </span>rv = self.handle_user_exception(e)</pre>
+<pre class="line after"><span class="ws">        </span>return self.finalize_request(rv)</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def finalize_request(</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1840135970032">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">902</em>,
+      in <code class="function">dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>and req.method == &#34;OPTIONS&#34;</pre>
+<pre class="line before"><span class="ws">        </span>):</pre>
+<pre class="line before"><span class="ws">            </span>return self.make_default_options_response()</pre>
+<pre class="line before"><span class="ws">        </span># otherwise dispatch to the handler for that endpoint</pre>
+<pre class="line before"><span class="ws">        </span>view_args: dict[str, t.Any] = req.view_args  # type: ignore[assignment]</pre>
+<pre class="line current"><span class="ws">        </span>return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+<span class="ws">        </span>       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def full_dispatch_request(self) -&gt; Response:</pre>
+<pre class="line after"><span class="ws">        </span>&#34;&#34;&#34;Dispatches the request and on top of that performs request</pre>
+<pre class="line after"><span class="ws">        </span>pre and postprocessing as well as HTTP exception catching and</pre>
+<pre class="line after"><span class="ws">        </span>error handling.</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1840135970320">
+  <h4>File <cite class="filename">"C:\Desarrollo\crm\bc-integration/link-bc.py"</cite>,
+      line <em class="line">1096</em>,
+      in <code class="function">contacto</code></h4>
+  <div class="source "><pre class="line before"><span class="ws">    </span>environment=ENVIRONMENT</pre>
+<pre class="line before"><span class="ws">    </span>send_email=SEND_EMAIL</pre>
+<pre class="line before"><span class="ws"></span> </pre>
+<pre class="line before"><span class="ws">    </span>session_id= store_session(name, email, mailorigen, idioma, origen, bd, email_user, email_password, url_contacto, url_ofertas, api_key, environment, send_email)</pre>
+<pre class="line before"><span class="ws"></span> </pre>
+<pre class="line current"><span class="ws">    </span>codigo_pais, mercado, zona = obtener_datos_pais (pais, idioma)
+<span class="ws">    </span>                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>if idioma == &#34;Español&#34;:</pre>
+<pre class="line after"><span class="ws">        </span>codigo_idioma = &#34;ESP&#34;</pre>
+<pre class="line after"><span class="ws">    </span>else:</pre>
+<pre class="line after"><span class="ws">        </span>codigo_idioma = &#34;ENU&#34;</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1840136761792">
+  <h4>File <cite class="filename">"C:\Desarrollo\crm\bc-integration/link-bc.py"</cite>,
+      line <em class="line">364</em>,
+      in <code class="function">obtener_datos_pais</code></h4>
+  <div class="source "><pre class="line before"><span class="ws">                </span>SELECT codigo_pais, zona, mercado</pre>
+<pre class="line before"><span class="ws">                </span>FROM pais</pre>
+<pre class="line before"><span class="ws">                </span>WHERE {col} = %s</pre>
+<pre class="line before"><span class="ws">                </span>LIMIT 1</pre>
+<pre class="line before"><span class="ws">            </span>&#34;&#34;&#34;</pre>
+<pre class="line current"><span class="ws">            </span>cursor.execute(sql, (pais,))
+<span class="ws">            </span>^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">            </span>result = cursor.fetchone()</pre>
+<pre class="line after"><span class="ws">    </span>finally:</pre>
+<pre class="line after"><span class="ws">        </span>connection.close()</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws"></span> </pre></div>
+</div>
+
+<li><div class="frame" id="frame-1840136762080">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\cursors.py"</cite>,
+      line <em class="line">153</em>,
+      in <code class="function">execute</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">        </span>while self.nextset():</pre>
+<pre class="line before"><span class="ws">            </span>pass</pre>
+<pre class="line before"><span class="ws"></span> </pre>
+<pre class="line before"><span class="ws">        </span>query = self.mogrify(query, args)</pre>
+<pre class="line before"><span class="ws"></span> </pre>
+<pre class="line current"><span class="ws">        </span>result = self._query(query)
+<span class="ws">        </span>         ^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">        </span>self._executed = query</pre>
+<pre class="line after"><span class="ws">        </span>return result</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def executemany(self, query, args):</pre>
+<pre class="line after"><span class="ws">        </span>&#34;&#34;&#34;Run several data against one query.</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1840136762368">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\cursors.py"</cite>,
+      line <em class="line">322</em>,
+      in <code class="function">_query</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">        </span>self.rownumber = r</pre>
+<pre class="line before"><span class="ws"></span> </pre>
+<pre class="line before"><span class="ws">    </span>def _query(self, q):</pre>
+<pre class="line before"><span class="ws">        </span>conn = self._get_db()</pre>
+<pre class="line before"><span class="ws">        </span>self._clear_result()</pre>
+<pre class="line current"><span class="ws">        </span>conn.query(q)
+<span class="ws">        </span>^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">        </span>self._do_get_result()</pre>
+<pre class="line after"><span class="ws">        </span>return self.rowcount</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def _clear_result(self):</pre>
+<pre class="line after"><span class="ws">        </span>self.rownumber = 0</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1840136762944">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\connections.py"</cite>,
+      line <em class="line">563</em>,
+      in <code class="function">query</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">        </span># if DEBUG:</pre>
+<pre class="line before"><span class="ws">        </span>#     print(&#34;DEBUG: sending query:&#34;, sql)</pre>
+<pre class="line before"><span class="ws">        </span>if isinstance(sql, str):</pre>
+<pre class="line before"><span class="ws">            </span>sql = sql.encode(self.encoding, &#34;surrogateescape&#34;)</pre>
+<pre class="line before"><span class="ws">        </span>self._execute_command(COMMAND.COM_QUERY, sql)</pre>
+<pre class="line current"><span class="ws">        </span>self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+<span class="ws">        </span>                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">        </span>return self._affected_rows</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def next_result(self, unbuffered=False):</pre>
+<pre class="line after"><span class="ws">        </span>self._affected_rows = self._read_query_result(unbuffered=unbuffered)</pre>
+<pre class="line after"><span class="ws">        </span>return self._affected_rows</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1840137380784">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\connections.py"</cite>,
+      line <em class="line">825</em>,
+      in <code class="function">_read_query_result</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">                </span>result.unbuffered_active = False</pre>
+<pre class="line before"><span class="ws">                </span>result.connection = None</pre>
+<pre class="line before"><span class="ws">                </span>raise</pre>
+<pre class="line before"><span class="ws">        </span>else:</pre>
+<pre class="line before"><span class="ws">            </span>result = MySQLResult(self)</pre>
+<pre class="line current"><span class="ws">            </span>result.read()
+<span class="ws">            </span>^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">        </span>self._result = result</pre>
+<pre class="line after"><span class="ws">        </span>if result.server_status is not None:</pre>
+<pre class="line after"><span class="ws">            </span>self.server_status = result.server_status</pre>
+<pre class="line after"><span class="ws">        </span>return result.affected_rows</pre>
+<pre class="line after"><span class="ws"></span> </pre></div>
+</div>
+
+<li><div class="frame" id="frame-1840137380928">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\connections.py"</cite>,
+      line <em class="line">1199</em>,
+      in <code class="function">read</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">        </span>if self.unbuffered_active:</pre>
+<pre class="line before"><span class="ws">            </span>self._finish_unbuffered_query()</pre>
+<pre class="line before"><span class="ws"></span> </pre>
+<pre class="line before"><span class="ws">    </span>def read(self):</pre>
+<pre class="line before"><span class="ws">        </span>try:</pre>
+<pre class="line current"><span class="ws">            </span>first_packet = self.connection._read_packet()
+<span class="ws">            </span>               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">            </span>if first_packet.is_ok_packet():</pre>
+<pre class="line after"><span class="ws">                </span>self._read_ok_packet(first_packet)</pre>
+<pre class="line after"><span class="ws">            </span>elif first_packet.is_load_local_packet():</pre>
+<pre class="line after"><span class="ws">                </span>self._read_load_local_packet(first_packet)</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1840137381072">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\connections.py"</cite>,
+      line <em class="line">775</em>,
+      in <code class="function">_read_packet</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws"></span> </pre>
+<pre class="line before"><span class="ws">        </span>packet = packet_type(bytes(buff), self.encoding)</pre>
+<pre class="line before"><span class="ws">        </span>if packet.is_error_packet():</pre>
+<pre class="line before"><span class="ws">            </span>if self._result is not None and self._result.unbuffered_active is True:</pre>
+<pre class="line before"><span class="ws">                </span>self._result.unbuffered_active = False</pre>
+<pre class="line current"><span class="ws">            </span>packet.raise_for_error()
+<span class="ws">            </span>^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">        </span>return packet</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def _read_bytes(self, num_bytes):</pre>
+<pre class="line after"><span class="ws">        </span>self._sock.settimeout(self._read_timeout)</pre>
+<pre class="line after"><span class="ws">        </span>while True:</pre></div>
+</div>
+
+<li><div class="frame" id="frame-1840137381216">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\protocol.py"</cite>,
+      line <em class="line">219</em>,
+      in <code class="function">raise_for_error</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">        </span>self.rewind()</pre>
+<pre class="line before"><span class="ws">        </span>self.advance(1)  # field_count == error (we already know that)</pre>
+<pre class="line before"><span class="ws">        </span>errno = self.read_uint16()</pre>
+<pre class="line before"><span class="ws">        </span>if DEBUG:</pre>
+<pre class="line before"><span class="ws">            </span>print(&#34;errno =&#34;, errno)</pre>
+<pre class="line current"><span class="ws">        </span>err.raise_mysql_exception(self._data)
+<span class="ws">        </span>^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def dump(self):</pre>
+<pre class="line after"><span class="ws">        </span>dump_packet(self._data)</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws"></span> </pre></div>
+</div>
+
+<li><div class="frame" id="frame-1840137381648">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\err.py"</cite>,
+      line <em class="line">150</em>,
+      in <code class="function">raise_mysql_exception</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">    </span>else:</pre>
+<pre class="line before"><span class="ws">        </span>errval = data[3:].decode(&#34;utf-8&#34;, &#34;replace&#34;)</pre>
+<pre class="line before"><span class="ws">    </span>errorclass = error_map.get(errno)</pre>
+<pre class="line before"><span class="ws">    </span>if errorclass is None:</pre>
+<pre class="line before"><span class="ws">        </span>errorclass = InternalError if errno &lt; 1000 else OperationalError</pre>
+<pre class="line current"><span class="ws">    </span>raise errorclass(errno, errval)
+<span class="ws">    </span>^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre></div>
+</div>
+</ul>
+  <blockquote>pymysql.err.OperationalError: (1054, &#34;Unknown column &#39;pais_fr&#39; in &#39;where clause&#39;&#34;)
+</blockquote>
+</div>
+
+<div class="plain">
+    <p>
+      This is the Copy/Paste friendly version of the traceback.
+    </p>
+    <textarea cols="50" rows="10" name="code" readonly>Traceback (most recent call last):
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1514, in wsgi_app
+    response = self.handle_exception(e)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;C:\Desarrollo\crm\bc-integration/link-bc.py&#34;, line 1096, in contacto
+    codigo_pais, mercado, zona = obtener_datos_pais (pais, idioma)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;C:\Desarrollo\crm\bc-integration/link-bc.py&#34;, line 364, in obtener_datos_pais
+    cursor.execute(sql, (pais,))
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\cursors.py&#34;, line 153, in execute
+    result = self._query(query)
+             ^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\cursors.py&#34;, line 322, in _query
+    conn.query(q)
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\connections.py&#34;, line 563, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\connections.py&#34;, line 825, in _read_query_result
+    result.read()
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\connections.py&#34;, line 1199, in read
+    first_packet = self.connection._read_packet()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\connections.py&#34;, line 775, in _read_packet
+    packet.raise_for_error()
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\protocol.py&#34;, line 219, in raise_for_error
+    err.raise_mysql_exception(self._data)
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\err.py&#34;, line 150, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, &#34;Unknown column &#39;pais_fr&#39; in &#39;where clause&#39;&#34;)
+</textarea>
+</div>
+<div class="explanation">
+  The debugger caught an exception in your WSGI application.  You can now
+  look at the traceback which led to the error.  <span class="nojavascript">
+  If you enable JavaScript you can also use additional features such as code
+  execution (if the evalex feature is enabled), automatic pasting of the
+  exceptions and much more.</span>
+</div>
+      <div class="footer">
+        Brought to you by <strong class="arthur">DON'T PANIC</strong>, your
+        friendly Werkzeug powered traceback interpreter.
+      </div>
+    </div>
+
+    <div class="pin-prompt">
+      <div class="inner">
+        <h3>Console Locked</h3>
+        <p>
+          The console is locked and needs to be unlocked by entering the PIN.
+          You can find the PIN printed out on the standard output of your
+          shell that runs the server.
+        <form>
+          <p>PIN:
+            <input type=text name=pin size=14>
+            <input type=submit name=btn value="Confirm Pin">
+        </form>
+      </div>
+    </div>
+  </body>
+</html>
+
+<!--
+
+Traceback (most recent call last):
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1514, in wsgi_app
+    response = self.handle_exception(e)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Desarrollo\crm\bc-integration/link-bc.py", line 1096, in contacto
+    codigo_pais, mercado, zona = obtener_datos_pais (pais, idioma)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Desarrollo\crm\bc-integration/link-bc.py", line 364, in obtener_datos_pais
+    cursor.execute(sql, (pais,))
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\cursors.py", line 153, in execute
+    result = self._query(query)
+             ^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\cursors.py", line 322, in _query
+    conn.query(q)
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\connections.py", line 563, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\connections.py", line 825, in _read_query_result
+    result.read()
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\connections.py", line 1199, in read
+    first_packet = self.connection._read_packet()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_packet
+    packet.raise_for_error()
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\protocol.py", line 219, in raise_for_error
+    err.raise_mysql_exception(self._data)
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\pymysql\err.py", line 150, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'pais_fr' in 'where clause'")
+
+
+-->
+
+[2025-09-10 07:24:26] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 07:24:26] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Frances","pais":"Allemagne","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"soporte@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 07:24:28] ✅ Respuesta backend (500): <!doctype html>
+<html lang=en>
+  <head>
+    <title>UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+ // Werkzeug Debugger</title>
+    <link rel="stylesheet" href="?__debugger__=yes&amp;cmd=resource&amp;f=style.css">
+    <link rel="shortcut icon"
+        href="?__debugger__=yes&amp;cmd=resource&amp;f=console.png">
+    <script src="?__debugger__=yes&amp;cmd=resource&amp;f=debugger.js"></script>
+    <script>
+      var CONSOLE_MODE = false,
+          EVALEX = true,
+          EVALEX_TRUSTED = false,
+          SECRET = "rrkfnpokmqwIPniRI0TX";
+    </script>
+  </head>
+  <body style="background-color: #fff">
+    <div class="debugger">
+<h1>UnboundLocalError</h1>
+<div class="detail">
+  <p class="errormsg">UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+</p>
+</div>
+<h2 class="traceback">Traceback <em>(most recent call last)</em></h2>
+<div class="traceback">
+  <h3></h3>
+  <ul><li><div class="frame" id="frame-2676521863632">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1536</em>,
+      in <code class="function">__call__</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">    </span>) -&gt; cabc.Iterable[bytes]:</pre>
+<pre class="line before"><span class="ws">        </span>&#34;&#34;&#34;The WSGI server calls the Flask application object as the</pre>
+<pre class="line before"><span class="ws">        </span>WSGI application. This calls :meth:`wsgi_app`, which can be</pre>
+<pre class="line before"><span class="ws">        </span>wrapped to apply middleware.</pre>
+<pre class="line before"><span class="ws">        </span>&#34;&#34;&#34;</pre>
+<pre class="line current"><span class="ws">        </span>return self.wsgi_app(environ, start_response)
+<span class="ws">        </span>       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre></div>
+</div>
+
+<li><div class="frame" id="frame-2676521866368">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1514</em>,
+      in <code class="function">wsgi_app</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>try:</pre>
+<pre class="line before"><span class="ws">                </span>ctx.push()</pre>
+<pre class="line before"><span class="ws">                </span>response = self.full_dispatch_request()</pre>
+<pre class="line before"><span class="ws">            </span>except Exception as e:</pre>
+<pre class="line before"><span class="ws">                </span>error = e</pre>
+<pre class="line current"><span class="ws">                </span>response = self.handle_exception(e)
+<span class="ws">                </span>           ^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">            </span>except:  # noqa: B001</pre>
+<pre class="line after"><span class="ws">                </span>error = sys.exc_info()[1]</pre>
+<pre class="line after"><span class="ws">                </span>raise</pre>
+<pre class="line after"><span class="ws">            </span>return response(environ, start_response)</pre>
+<pre class="line after"><span class="ws">        </span>finally:</pre></div>
+</div>
+
+<li><div class="frame" id="frame-2676521867520">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1511</em>,
+      in <code class="function">wsgi_app</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">        </span>ctx = self.request_context(environ)</pre>
+<pre class="line before"><span class="ws">        </span>error: BaseException | None = None</pre>
+<pre class="line before"><span class="ws">        </span>try:</pre>
+<pre class="line before"><span class="ws">            </span>try:</pre>
+<pre class="line before"><span class="ws">                </span>ctx.push()</pre>
+<pre class="line current"><span class="ws">                </span>response = self.full_dispatch_request()
+<span class="ws">                </span>           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">            </span>except Exception as e:</pre>
+<pre class="line after"><span class="ws">                </span>error = e</pre>
+<pre class="line after"><span class="ws">                </span>response = self.handle_exception(e)</pre>
+<pre class="line after"><span class="ws">            </span>except:  # noqa: B001</pre>
+<pre class="line after"><span class="ws">                </span>error = sys.exc_info()[1]</pre></div>
+</div>
+
+<li><div class="frame" id="frame-2676521868240">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">919</em>,
+      in <code class="function">full_dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>request_started.send(self, _async_wrapper=self.ensure_sync)</pre>
+<pre class="line before"><span class="ws">            </span>rv = self.preprocess_request()</pre>
+<pre class="line before"><span class="ws">            </span>if rv is None:</pre>
+<pre class="line before"><span class="ws">                </span>rv = self.dispatch_request()</pre>
+<pre class="line before"><span class="ws">        </span>except Exception as e:</pre>
+<pre class="line current"><span class="ws">            </span>rv = self.handle_user_exception(e)
+<span class="ws">            </span>     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">        </span>return self.finalize_request(rv)</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def finalize_request(</pre>
+<pre class="line after"><span class="ws">        </span>self,</pre>
+<pre class="line after"><span class="ws">        </span>rv: ft.ResponseReturnValue | HTTPException,</pre></div>
+</div>
+
+<li><div class="frame" id="frame-2676521868528">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">917</em>,
+      in <code class="function">full_dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws"></span> </pre>
+<pre class="line before"><span class="ws">        </span>try:</pre>
+<pre class="line before"><span class="ws">            </span>request_started.send(self, _async_wrapper=self.ensure_sync)</pre>
+<pre class="line before"><span class="ws">            </span>rv = self.preprocess_request()</pre>
+<pre class="line before"><span class="ws">            </span>if rv is None:</pre>
+<pre class="line current"><span class="ws">                </span>rv = self.dispatch_request()
+<span class="ws">                </span>     ^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">        </span>except Exception as e:</pre>
+<pre class="line after"><span class="ws">            </span>rv = self.handle_user_exception(e)</pre>
+<pre class="line after"><span class="ws">        </span>return self.finalize_request(rv)</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def finalize_request(</pre></div>
+</div>
+
+<li><div class="frame" id="frame-2676521868816">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">902</em>,
+      in <code class="function">dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>and req.method == &#34;OPTIONS&#34;</pre>
+<pre class="line before"><span class="ws">        </span>):</pre>
+<pre class="line before"><span class="ws">            </span>return self.make_default_options_response()</pre>
+<pre class="line before"><span class="ws">        </span># otherwise dispatch to the handler for that endpoint</pre>
+<pre class="line before"><span class="ws">        </span>view_args: dict[str, t.Any] = req.view_args  # type: ignore[assignment]</pre>
+<pre class="line current"><span class="ws">        </span>return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+<span class="ws">        </span>       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def full_dispatch_request(self) -&gt; Response:</pre>
+<pre class="line after"><span class="ws">        </span>&#34;&#34;&#34;Dispatches the request and on top of that performs request</pre>
+<pre class="line after"><span class="ws">        </span>pre and postprocessing as well as HTTP exception catching and</pre>
+<pre class="line after"><span class="ws">        </span>error handling.</pre></div>
+</div>
+
+<li><div class="frame" id="frame-2676521869104">
+  <h4>File <cite class="filename">"C:\Desarrollo\crm\bc-integration/link-bc.py"</cite>,
+      line <em class="line">1116</em>,
+      in <code class="function">contacto</code></h4>
+  <div class="source "><pre class="line before"><span class="ws">    </span>elif mercado == &#39;UE&#39; and idioma == &#34;Inglés&#34;:</pre>
+<pre class="line before"><span class="ws">        </span>customer_template = &#34;QUOTELEAD U I&#34;</pre>
+<pre class="line before"><span class="ws">    </span>elif mercado == &#39;UE&#39; and idioma == &#34;Español&#34;:</pre>
+<pre class="line before"><span class="ws">        </span>customer_template = &#34;QUOTELEAD U E&#34;</pre>
+<pre class="line before"><span class="ws"></span> </pre>
+<pre class="line current"><span class="ws">    </span>print(f&#34;Plantilla de cliente: {customer_template}&#34;)
+<span class="ws">    </span>                               ^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>token=get_token()</pre>
+<pre class="line after"><span class="ws"></span> </pre></div>
+</div>
+</ul>
+  <blockquote>UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+</blockquote>
+</div>
+
+<div class="plain">
+    <p>
+      This is the Copy/Paste friendly version of the traceback.
+    </p>
+    <textarea cols="50" rows="10" name="code" readonly>Traceback (most recent call last):
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1514, in wsgi_app
+    response = self.handle_exception(e)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;C:\Desarrollo\crm\bc-integration/link-bc.py&#34;, line 1116, in contacto
+    print(f&#34;Plantilla de cliente: {customer_template}&#34;)
+                                   ^^^^^^^^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+</textarea>
+</div>
+<div class="explanation">
+  The debugger caught an exception in your WSGI application.  You can now
+  look at the traceback which led to the error.  <span class="nojavascript">
+  If you enable JavaScript you can also use additional features such as code
+  execution (if the evalex feature is enabled), automatic pasting of the
+  exceptions and much more.</span>
+</div>
+      <div class="footer">
+        Brought to you by <strong class="arthur">DON'T PANIC</strong>, your
+        friendly Werkzeug powered traceback interpreter.
+      </div>
+    </div>
+
+    <div class="pin-prompt">
+      <div class="inner">
+        <h3>Console Locked</h3>
+        <p>
+          The console is locked and needs to be unlocked by entering the PIN.
+          You can find the PIN printed out on the standard output of your
+          shell that runs the server.
+        <form>
+          <p>PIN:
+            <input type=text name=pin size=14>
+            <input type=submit name=btn value="Confirm Pin">
+        </form>
+      </div>
+    </div>
+  </body>
+</html>
+
+<!--
+
+Traceback (most recent call last):
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1514, in wsgi_app
+    response = self.handle_exception(e)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Desarrollo\crm\bc-integration/link-bc.py", line 1116, in contacto
+    print(f"Plantilla de cliente: {customer_template}")
+                                   ^^^^^^^^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'customer_template' where it is not associated with a value
+
+
+-->
+
+[2025-09-10 07:28:35] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 07:28:35] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Frances","pais":"Allemagne","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"soporte@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 07:28:37] ✅ Respuesta backend (500): <!doctype html>
+<html lang=en>
+  <head>
+    <title>UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+ // Werkzeug Debugger</title>
+    <link rel="stylesheet" href="?__debugger__=yes&amp;cmd=resource&amp;f=style.css">
+    <link rel="shortcut icon"
+        href="?__debugger__=yes&amp;cmd=resource&amp;f=console.png">
+    <script src="?__debugger__=yes&amp;cmd=resource&amp;f=debugger.js"></script>
+    <script>
+      var CONSOLE_MODE = false,
+          EVALEX = true,
+          EVALEX_TRUSTED = false,
+          SECRET = "DXcrf8hy1blg0w3gBVv1";
+    </script>
+  </head>
+  <body style="background-color: #fff">
+    <div class="debugger">
+<h1>UnboundLocalError</h1>
+<div class="detail">
+  <p class="errormsg">UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+</p>
+</div>
+<h2 class="traceback">Traceback <em>(most recent call last)</em></h2>
+<div class="traceback">
+  <h3></h3>
+  <ul><li><div class="frame" id="frame-2086620727760">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1536</em>,
+      in <code class="function">__call__</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">    </span>) -&gt; cabc.Iterable[bytes]:</pre>
+<pre class="line before"><span class="ws">        </span>&#34;&#34;&#34;The WSGI server calls the Flask application object as the</pre>
+<pre class="line before"><span class="ws">        </span>WSGI application. This calls :meth:`wsgi_app`, which can be</pre>
+<pre class="line before"><span class="ws">        </span>wrapped to apply middleware.</pre>
+<pre class="line before"><span class="ws">        </span>&#34;&#34;&#34;</pre>
+<pre class="line current"><span class="ws">        </span>return self.wsgi_app(environ, start_response)
+<span class="ws">        </span>       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre></div>
+</div>
+
+<li><div class="frame" id="frame-2086620730496">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1514</em>,
+      in <code class="function">wsgi_app</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>try:</pre>
+<pre class="line before"><span class="ws">                </span>ctx.push()</pre>
+<pre class="line before"><span class="ws">                </span>response = self.full_dispatch_request()</pre>
+<pre class="line before"><span class="ws">            </span>except Exception as e:</pre>
+<pre class="line before"><span class="ws">                </span>error = e</pre>
+<pre class="line current"><span class="ws">                </span>response = self.handle_exception(e)
+<span class="ws">                </span>           ^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">            </span>except:  # noqa: B001</pre>
+<pre class="line after"><span class="ws">                </span>error = sys.exc_info()[1]</pre>
+<pre class="line after"><span class="ws">                </span>raise</pre>
+<pre class="line after"><span class="ws">            </span>return response(environ, start_response)</pre>
+<pre class="line after"><span class="ws">        </span>finally:</pre></div>
+</div>
+
+<li><div class="frame" id="frame-2086620731648">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">1511</em>,
+      in <code class="function">wsgi_app</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">        </span>ctx = self.request_context(environ)</pre>
+<pre class="line before"><span class="ws">        </span>error: BaseException | None = None</pre>
+<pre class="line before"><span class="ws">        </span>try:</pre>
+<pre class="line before"><span class="ws">            </span>try:</pre>
+<pre class="line before"><span class="ws">                </span>ctx.push()</pre>
+<pre class="line current"><span class="ws">                </span>response = self.full_dispatch_request()
+<span class="ws">                </span>           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">            </span>except Exception as e:</pre>
+<pre class="line after"><span class="ws">                </span>error = e</pre>
+<pre class="line after"><span class="ws">                </span>response = self.handle_exception(e)</pre>
+<pre class="line after"><span class="ws">            </span>except:  # noqa: B001</pre>
+<pre class="line after"><span class="ws">                </span>error = sys.exc_info()[1]</pre></div>
+</div>
+
+<li><div class="frame" id="frame-2086620732368">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">919</em>,
+      in <code class="function">full_dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>request_started.send(self, _async_wrapper=self.ensure_sync)</pre>
+<pre class="line before"><span class="ws">            </span>rv = self.preprocess_request()</pre>
+<pre class="line before"><span class="ws">            </span>if rv is None:</pre>
+<pre class="line before"><span class="ws">                </span>rv = self.dispatch_request()</pre>
+<pre class="line before"><span class="ws">        </span>except Exception as e:</pre>
+<pre class="line current"><span class="ws">            </span>rv = self.handle_user_exception(e)
+<span class="ws">            </span>     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">        </span>return self.finalize_request(rv)</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def finalize_request(</pre>
+<pre class="line after"><span class="ws">        </span>self,</pre>
+<pre class="line after"><span class="ws">        </span>rv: ft.ResponseReturnValue | HTTPException,</pre></div>
+</div>
+
+<li><div class="frame" id="frame-2086620732656">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">917</em>,
+      in <code class="function">full_dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws"></span> </pre>
+<pre class="line before"><span class="ws">        </span>try:</pre>
+<pre class="line before"><span class="ws">            </span>request_started.send(self, _async_wrapper=self.ensure_sync)</pre>
+<pre class="line before"><span class="ws">            </span>rv = self.preprocess_request()</pre>
+<pre class="line before"><span class="ws">            </span>if rv is None:</pre>
+<pre class="line current"><span class="ws">                </span>rv = self.dispatch_request()
+<span class="ws">                </span>     ^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws">        </span>except Exception as e:</pre>
+<pre class="line after"><span class="ws">            </span>rv = self.handle_user_exception(e)</pre>
+<pre class="line after"><span class="ws">        </span>return self.finalize_request(rv)</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def finalize_request(</pre></div>
+</div>
+
+<li><div class="frame" id="frame-2086620732944">
+  <h4>File <cite class="filename">"c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py"</cite>,
+      line <em class="line">902</em>,
+      in <code class="function">dispatch_request</code></h4>
+  <div class="source library"><pre class="line before"><span class="ws">            </span>and req.method == &#34;OPTIONS&#34;</pre>
+<pre class="line before"><span class="ws">        </span>):</pre>
+<pre class="line before"><span class="ws">            </span>return self.make_default_options_response()</pre>
+<pre class="line before"><span class="ws">        </span># otherwise dispatch to the handler for that endpoint</pre>
+<pre class="line before"><span class="ws">        </span>view_args: dict[str, t.Any] = req.view_args  # type: ignore[assignment]</pre>
+<pre class="line current"><span class="ws">        </span>return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+<span class="ws">        </span>       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>def full_dispatch_request(self) -&gt; Response:</pre>
+<pre class="line after"><span class="ws">        </span>&#34;&#34;&#34;Dispatches the request and on top of that performs request</pre>
+<pre class="line after"><span class="ws">        </span>pre and postprocessing as well as HTTP exception catching and</pre>
+<pre class="line after"><span class="ws">        </span>error handling.</pre></div>
+</div>
+
+<li><div class="frame" id="frame-2086620733232">
+  <h4>File <cite class="filename">"C:\Desarrollo\crm\bc-integration/link-bc.py"</cite>,
+      line <em class="line">1116</em>,
+      in <code class="function">contacto</code></h4>
+  <div class="source "><pre class="line before"><span class="ws">    </span>elif mercado == &#39;UE&#39; and idioma == &#34;Inglés&#34;:</pre>
+<pre class="line before"><span class="ws">        </span>customer_template = &#34;QUOTELEAD U I&#34;</pre>
+<pre class="line before"><span class="ws">    </span>elif mercado == &#39;UE&#39; and idioma == &#34;Español&#34;:</pre>
+<pre class="line before"><span class="ws">        </span>customer_template = &#34;QUOTELEAD U E&#34;</pre>
+<pre class="line before"><span class="ws"></span> </pre>
+<pre class="line current"><span class="ws">    </span>print(f&#34;Plantilla de cliente: {customer_template}&#34;)
+<span class="ws">    </span>                               ^^^^^^^^^^^^^^^^^</pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws"></span> </pre>
+<pre class="line after"><span class="ws">    </span>token=get_token()</pre>
+<pre class="line after"><span class="ws"></span> </pre></div>
+</div>
+</ul>
+  <blockquote>UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+</blockquote>
+</div>
+
+<div class="plain">
+    <p>
+      This is the Copy/Paste friendly version of the traceback.
+    </p>
+    <textarea cols="50" rows="10" name="code" readonly>Traceback (most recent call last):
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1514, in wsgi_app
+    response = self.handle_exception(e)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py&#34;, line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;C:\Desarrollo\crm\bc-integration/link-bc.py&#34;, line 1116, in contacto
+    print(f&#34;Plantilla de cliente: {customer_template}&#34;)
+                                   ^^^^^^^^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable &#39;customer_template&#39; where it is not associated with a value
+</textarea>
+</div>
+<div class="explanation">
+  The debugger caught an exception in your WSGI application.  You can now
+  look at the traceback which led to the error.  <span class="nojavascript">
+  If you enable JavaScript you can also use additional features such as code
+  execution (if the evalex feature is enabled), automatic pasting of the
+  exceptions and much more.</span>
+</div>
+      <div class="footer">
+        Brought to you by <strong class="arthur">DON'T PANIC</strong>, your
+        friendly Werkzeug powered traceback interpreter.
+      </div>
+    </div>
+
+    <div class="pin-prompt">
+      <div class="inner">
+        <h3>Console Locked</h3>
+        <p>
+          The console is locked and needs to be unlocked by entering the PIN.
+          You can find the PIN printed out on the standard output of your
+          shell that runs the server.
+        <form>
+          <p>PIN:
+            <input type=text name=pin size=14>
+            <input type=submit name=btn value="Confirm Pin">
+        </form>
+      </div>
+    </div>
+  </body>
+</html>
+
+<!--
+
+Traceback (most recent call last):
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1514, in wsgi_app
+    response = self.handle_exception(e)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Desarrollo\crm\bc-integration\venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Desarrollo\crm\bc-integration/link-bc.py", line 1116, in contacto
+    print(f"Plantilla de cliente: {customer_template}")
+                                   ^^^^^^^^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'customer_template' where it is not associated with a value
+
+
+-->
+
+[2025-09-10 07:31:43] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 07:31:43] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Frances","pais":"Allemagne","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"soporte@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 07:31:53] ❌ WP_Error enviando a backend: cURL error 28: Operation timed out after 10013 milliseconds with 0 bytes received
+[2025-09-10 08:08:07] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 08:08:07] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Frances","pais":"Allemagne","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"soporte@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 08:08:17] ❌ WP_Error enviando a backend: cURL error 28: Operation timed out after 10012 milliseconds with 0 bytes received
+[2025-09-10 08:12:36] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 08:12:36] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Italiano","pais":"Cipro","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 08:12:46] ❌ WP_Error enviando a backend: cURL error 28: Operation timed out after 10007 milliseconds with 0 bytes received
+[2025-09-10 09:28:31] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 09:28:31] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Español","pais":"España","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 09:28:42] ❌ WP_Error enviando a backend: cURL error 28: Operation timed out after 10008 milliseconds with 0 bytes received
+[2025-09-10 09:29:28] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 09:29:28] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Español","pais":"España","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 09:29:38] ❌ WP_Error enviando a backend: cURL error 28: Operation timed out after 10003 milliseconds with 0 bytes received
+[2025-09-10 09:42:53] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 09:42:53] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Español","pais":"España","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 09:43:03] ❌ WP_Error enviando a backend: cURL error 28: Operation timed out after 10007 milliseconds with 0 bytes received
+[2025-09-10 10:11:50] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 10:11:50] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Español","pais":"España","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 10:11:51] ✅ Respuesta backend (500): {"message":"Internal Server Error"}
+[2025-09-10 10:16:38] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 10:16:38] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Español","pais":"España","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 10:16:42] ✅ Respuesta backend (500): {"message":"Internal Server Error"}
+[2025-09-10 10:20:03] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 10:20:03] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Español","pais":"España","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 10:20:05] ✅ Respuesta backend (500): {"message":"Internal Server Error"}
+[2025-09-10 10:24:42] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 10:24:42] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Español","pais":"España","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 10:24:44] ✅ Respuesta backend (500): {"message":"Internal Server Error"}
+[2025-09-10 10:30:50] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 10:30:50] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Español","pais":"España","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 10:30:52] ✅ Respuesta backend (500): {"message":"Internal Server Error"}
+[2025-09-10 10:32:27] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 10:32:27] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Español","pais":"España","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 10:32:37] ❌ WP_Error enviando a backend: cURL error 28: Operation timed out after 10003 milliseconds with 0 bytes received
+[2025-09-10 10:35:17] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 10:35:17] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Español","pais":"España","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 10:35:25] ✅ Respuesta backend (200): {"message": "Contacto y oferta creados exitosamente", "quoteNumber": "WO-000637", "descuentoTotal": 15.0, "cantidadTotal": 0.0}
+[2025-09-10 10:37:23] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 10:37:23] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Español","pais":"España","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 10:37:31] ✅ Respuesta backend (200): {"message": "Contacto y oferta creados exitosamente", "quoteNumber": "WO-000638", "descuentoTotal": 15.0, "cantidadTotal": 6434.5}
+[2025-09-10 10:41:48] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 10:41:48] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Español","pais":"España","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 10:41:58] ❌ WP_Error enviando a backend: cURL error 28: Operation timed out after 10015 milliseconds with 0 bytes received
+[2025-09-10 10:47:55] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 10:47:55] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Italiano","pais":"Italia","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 10:48:05] ❌ WP_Error enviando a backend: cURL error 28: Operation timed out after 10003 milliseconds with 0 bytes received
+[2025-09-10 11:09:16] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 11:09:16] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Frances","pais":"France","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 11:09:32] ✅ Respuesta backend (200): {"message": "Contacto y oferta creados exitosamente", "quoteNumber": "WO-000641", "descuentoTotal": 10.0, "cantidadTotal": 6813.0}
+[2025-09-10 11:15:08] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 11:15:08] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Frances","pais":"France","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 11:15:19] ✅ Respuesta backend (200): {"message": "Contacto y oferta creados exitosamente", "quoteNumber": "WO-000642", "descuentoTotal": 10.0, "cantidadTotal": 6813.0}
+[2025-09-10 11:24:16] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-10 11:24:16] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Frances","pais":"Indonésie","pistas_perimetrales":1,"pistas_laterales":1,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-10 11:24:32] ✅ Respuesta backend (200): {"message": "Contacto y oferta creados exitosamente", "quoteNumber": "WO-000643", "descuentoTotal": 18.0, "cantidadTotal": 10332.0}
+[2025-09-17 19:00:01] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-17 19:00:01] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Español","pais":"España","pistas_perimetrales":2,"pistas_laterales":0,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-17 19:00:17] ✅ Respuesta backend (200): {"message": "Contacto y oferta creados exitosamente", "quoteNumber": "WO-000652", "descuentoTotal": 18.0, "cantidadTotal": 12291.8}
+[2025-09-19 06:02:22] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-19 06:02:22] 📤 JSON enviado a backend: {"name":"Lepage","email":"jnove@icloud.com","idioma":"Frances","pais":"France","pistas_perimetrales":0,"pistas_laterales":4,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-19 06:02:47] ❌ WP_Error enviando a backend: cURL error 28: Operation timed out after 25001 milliseconds with 0 bytes received
+[2025-09-25 03:48:37] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-25 03:48:37] 📤 JSON enviado a backend: {"name":"Yuan WP","email":"yuanwahidputra@gmail.com","idioma":"Ingles","pais":"Indonesia","pistas_perimetrales":11,"pistas_laterales":11,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-25 03:49:00] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-25 03:49:00] 📤 JSON enviado a backend: {"name":"Yuan WP","email":"yuanwahidputra@gmail.com","idioma":"Ingles","pais":"Indonesia","pistas_perimetrales":11,"pistas_laterales":11,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-25 03:49:02] ❌ WP_Error enviando a backend: cURL error 28: Operation timed out after 25001 milliseconds with 0 bytes received
+[2025-09-25 03:49:13] ✅ Respuesta backend (200): {"message": "Contacto y oferta creados exitosamente", "quoteNumber": "WO-000658", "descuentoTotal": 32.0, "cantidadTotal": 93228.0}
+[2025-09-25 19:20:55] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-25 19:20:55] 📤 JSON enviado a backend: {"name":"Fany Demion","email":"fany.demion@gmail.com","idioma":"Frances","pais":"France","pistas_perimetrales":1,"pistas_laterales":6,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-25 19:21:09] ✅ Respuesta backend (200): {"message": "Contacto y oferta creados exitosamente", "quoteNumber": "WO-000660", "descuentoTotal": 19.0, "cantidadTotal": 30577.5}
+[2025-09-26 12:23:54] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-26 12:23:54] 📤 JSON enviado a backend: {"name":"","email":"info@johnsonaydinlatma.com","idioma":"Ingles","pais":"","pistas_perimetrales":0,"pistas_laterales":0,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-26 12:23:56] ✅ Respuesta backend (502): {"message": "Internal server error"}
+[2025-09-29 08:12:27] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-29 08:12:27] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Español","pais":"España","pistas_perimetrales":1,"pistas_laterales":0,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-29 08:12:38] ✅ Respuesta backend (200): {"message": "Contacto y oferta creados exitosamente", "quoteNumber": "WO-000675", "descuentoTotal": 15.0, "cantidadTotal": 6434.5}
+[2025-09-29 08:14:11] 📍 Hook CF7 activo: wpcf7_before_send_mail
+[2025-09-29 08:14:11] 📤 JSON enviado a backend: {"name":"Angel Regalado Sánchez","email":"angel.regalado.sanchez@gmail.com","idioma":"Frances","pais":"France","pistas_perimetrales":2,"pistas_laterales":0,"mailorigen":"web@planetpower.es","origen":"web_wp_formulario_contacto"}
+[2025-09-29 08:14:21] ✅ Respuesta backend (200): {"message": "Contacto y oferta creados exitosamente", "quoteNumber": "WO-000676", "descuentoTotal": 13.0, "cantidadTotal": 13041.3}

@@ -1,0 +1,648 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+  /* 1) Asegura que el caret sea visible y el texto también */
+  #inputInfoTecnica {
+    color: #111 !important;
+    caret-color: auto !important;  /* o 'black' si prefieres forzarlo */
+    pointer-events: auto !important;
+    background-color: #fff; /* por si el fondo transparente lo “camufla” */
+  }
+
+  /* 2) Si algún ancestro usa transform/animation, Safari/Chromium a veces
+        “pierden” el caret. Este hack suele arreglarlo. */
+  #inputInfoTecnica {
+    transform: translateZ(0);         /* crea su propia capa de render */
+    -webkit-transform: translateZ(0);
+  }
+
+  /* 3) Si por CSS global alguien puso el caret invisible, lo contrarresta */
+  textarea { caret-color: auto; }
+</style>
+
+
+<div class="min-h-screen bg-white-100 flex items-center justify-center p-4">
+  <div class="bg-blue-100 rounded-2xl shadow-xl w-full max-w-8xl p-8">
+    <h2 class="text-3xl font-bold text-center text-blue-700 mb-6 flex items-baseline gap-3">Gestionar un Lead</h2>
+    <form id="lead" class="space-y-6">
+      <!-- Fila de fechas -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <!-- Fecha actual (no editable) -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha actual</label>
+          <!-- campo visible deshabilitado -->
+          <input
+          type="date"
+          id="fechaActualDisplay"
+          class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                  bg-gray-100 text-gray-700 cursor-not-allowed
+                  focus:outline-none"
+          readonly
+          aria-disabled="true"
+          />
+          <!-- campo oculto para que se envíe en el form -->
+          <input type="hidden" name="fecha_actual" id="fechaActual" />
+        </div>
+
+        <!-- Fecha del proyecto -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha del proyecto</label>
+          <input
+          type="date"
+          id="fechaProyecto"
+          name="fecha_proyecto"
+          required
+          class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                  focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500"
+          />
+        </div>
+
+        <!-- Fecha de la próxima acción -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Próxima acción</label>
+          <input
+          type="date"
+          id="fechaProximaAccion"
+          name="fecha_proxima_accion"
+          required
+          class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                  focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500"
+          />
+        </div>
+        <div>
+      
+
+      <!-- Dropdown estado -->
+        <label class="block text-sm font-medium text-gray-700 mt-3 mb-1">Estado</label>
+          <select
+            id="estado"
+            name="estado"
+            class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                  focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500"
+            required
+          >
+            <option value="En curso">En curso</option>
+            <option value="Perdida">Perdida</option>
+            <option value="Ganada">Ganada</option>
+            <option value="Sin calificar">Sin calificar</option>
+          </select>
+        </div>
+
+
+
+      </div>
+        
+
+      <div class="grid grid-cols-[2fr_2fr_1fr] gap-4 items-end">
+          <!-- Nombre -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+            <input
+            type="text" name="name" 
+            class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                    bg-gray-100 text-gray-700 cursor-not-allowed
+                    focus:outline-none"
+            readonly
+            aria-disabled="true"/>
+        </div>
+
+        <!-- Correo -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+            <input
+            type="email" id="inputEmail" name="email" 
+            readonly
+            class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                    bg-gray-100 text-gray-700 cursor-not-allowed
+                    focus:outline-none"
+            readonly
+            aria-disabled="true"/>
+        </div>
+
+        <!-- Número de Oferta (texto centrado) -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Número de Oferta</label>
+            <input
+            type="text" id="inputQuoteNumber" name="quoteNumber" 
+            readonly
+            class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                    bg-gray-100 text-gray-700 cursor-not-allowed
+                    focus:outline-none"
+            
+            aria-disabled="true"/>
+        </div>
+      </div>
+
+
+        <!-- Idioma y Pais -->
+        
+      <div class="flex flex-col md:flex-row gap-4">
+        <!-- Idioma -->
+        <div class="w-full md:w-1/2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Idioma</label>
+            <input 
+                type="idioma"
+                id="inputIdioma"
+                name="idioma"
+                class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                    bg-gray-100 text-gray-700 cursor-not-allowed
+                    focus:outline-none"
+            readonly
+            aria-disabled="true"/>
+            
+        </div>
+
+        <!-- País -->
+        <div class="w-full md:w-1/2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">País</label>
+            <input 
+                type="pais"
+                id="inputPais"
+                name="pais"
+                class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                    bg-gray-100 text-gray-700 cursor-not-allowed
+                    focus:outline-none"
+                readonly
+                aria-disabled="true"/>
+            
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-end gap-6">
+        <!-- Descuento adicional -->
+        <div class="flex flex-col">
+          <label for="inputDescuento_adicional" class="block text-sm font-medium text-gray-700 mb-1">
+            Descuento adicional %
+          </label>
+          <div class="flex items-center gap-2">
+            <input
+              type="number"
+              id="inputDescuento_adicional"
+              name="descuento_adicional"
+              class="w-20 h-12 px-2 text-lg border border-blue-200 rounded-lg shadow-sm
+                      bg-gray-100 text-gray-700 cursor-not-allowed
+                      focus:outline-none text-center"
+              readonly
+              aria-disabled="true"/>
+            <span class="text-gray-600 text-sm">%</span>
+          </div>
+        </div>
+
+        <!-- Descuento total -->
+        <div class="flex flex-col">
+          <label for="inputDescuento_total" class="block text-sm font-medium text-gray-700 mb-1">
+            Descuento total %
+          </label>
+          <div class="flex items-center gap-2">
+            <input
+              type="number"
+              id="inputDescuento_total"
+              name="descuento_total"
+              readonly
+              class="w-24 h-12 px-2 text-lg border border-blue-200 rounded-lg shadow-sm
+                      bg-gray-100 text-gray-700 cursor-not-allowed
+                      focus:outline-none text-center "
+              readonly
+              aria-disabled="true"/>
+            <span class="text-gray-600 text-sm">%</span>
+          </div>
+        </div>
+
+        <!-- Importe total -->
+        <div class="flex flex-col">
+          <label for="inputCantidad_total" class="block text-sm font-medium text-gray-700 mb-1">
+            Importe total (Sin Imp.) €
+          </label>
+          <div class="flex items-center gap-2">
+            <!-- Input oculto para enviar el valor real -->
+            <input type="hidden" id="inputCantidad_total" name="cantidad_total">
+
+            <!-- Campo solo de vista, readonly, pero tipo "text" -->
+            <input
+              type="text"
+              id="viewCantidad_total"
+              readonly
+              class="w-30 h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                    bg-gray-100 text-gray-700 cursor-not-allowed
+                    focus:outline-none text-right"
+              
+              aria-disabled="true"/>
+            <span class="text-gray-600 text-sm">€</span>
+          </div>
+        </div>
+
+            <!-- Probabilidad de Exito -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+                Prob. Éxito (10%-99%)
+            </label>
+            <div class="flex items-center gap-1 w-24">
+                <input
+                    id="probabilidad_exito"
+                    type="number"
+                    name="probabilidad_exito"
+                    min="10"
+                    max="99 "
+                    value="50"
+                    required
+                    class="w-20 h-12 px-3 text-center border border-blue-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500"
+                >
+                <span class="text-gray-600 text-sm">%</span>
+            </div>
+
+        </div>
+
+           <!-- Pistas Perimetrales -->
+
+        <div class="flex flex-col">
+          <label for="Pistas_perimetrales" class="block text-sm font-medium text-gray-700 mb-1">
+            Pistas Perimetrales
+          </label>
+          <div class="flex items-center gap-2">
+            <input
+              type="number"
+                id="inputPerimetrales"
+                name="pistas_perimetrales"
+                class="w-20 h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                    bg-gray-100 text-gray-700 cursor-not-allowed
+                    focus:outline-none text-right"
+                readonly
+                aria-disabled="true"/>            
+          </div>
+        </div>
+       
+
+       
+
+        <!-- Pistas laterales -->
+
+        <div class="flex flex-col">
+          <label for="Pistas_laterales" class="block text-sm font-medium text-gray-700 mb-1">
+            Pistas Laterales
+          </label>
+          <div class="flex items-center gap-2">
+            <input
+              type="number"
+                  id="inputLaterales"
+                  name="pistas_laterales"
+                  class="w-20 h-12 px-4  text-lg border border-blue-200 rounded-lg shadow-sm
+                      bg-gray-100 text-gray-700 cursor-not-allowed
+                      focus:outline-none text-right"
+                  
+                  aria-disabled="true"/>         
+          </div>
+        </div>
+        
+      </div>
+
+
+        
+
+       
+      
+      <!-- Campos de texto largos -->
+      <div class="mt-6 space-y-5">
+        <!-- Información técnica (1000) -->
+        <div id="infoTecnicaWrapper">
+          <label for="inputInfoTecnica" class="block text-sm font-medium text-gray-700 mb-1">
+            Información técnica (máx. 1000)
+          </label>
+          <textarea
+            id="inputInfoTecnica"
+            name="info_tecnica"
+            rows="5"
+            maxlength="1000"
+            data-count="#countInfoTecnica"
+            class="w-full px-4 py-3 border border-blue-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+            placeholder="Describe los detalles técnicos relevantes…"
+          ></textarea>
+          <div class="mt-1 flex justify-between text-xs text-gray-500">
+            <span>Máx. 1000 caracteres</span>
+            <span id="countInfoTecnica">0/1000</span>
+          </div>
+        </div>
+
+        <!-- Información general (1000) -->
+        <div>
+          <label for="inputInfoGeneral" class="block text-sm font-medium text-gray-700 mb-1">
+            Información general (máx. 1000)
+          </label>
+          <textarea
+            id="inputInfoGeneral"
+            name="info_general"
+            rows="5"
+            maxlength="1000"
+            data-count="#countInfoGeneral"
+            class="w-full px-4 py-3 border border-blue-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+            placeholder="Notas y contexto general…"
+          ></textarea>
+          <div class="mt-1 flex justify-between text-xs text-gray-500">
+            <span>Máx. 1000 caracteres</span>
+            <span id="countInfoGeneral">0/1000</span>
+          </div>
+        </div>
+
+        <!-- Observaciones (200) -->
+        <div>
+          <label for="inputObservaciones" class="block text-sm font-medium text-gray-700 mb-1">
+            Observaciones (máx. 200)
+          </label>
+          <textarea
+            id="inputObservaciones"
+            name="observaciones"
+            rows="3"
+            maxlength="200"
+            data-count="#countObservaciones"
+            class="w-full px-4 py-3 border border-blue-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+            placeholder="Observaciones finales…"
+          ></textarea>
+          <div class="mt-1 flex justify-between text-xs text-gray-500">
+            <span>Máx. 200 caracteres</span>
+            <span id="countObservaciones">0/200</span>
+          </div>
+        </div>
+      </div>
+
+
+
+    
+    <!-- Botón -->
+    <div class="text-center pt-2">
+      <button type="submit"
+          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-md transition duration-200">
+          Actualizar
+      </button>
+      <button id="btn-exit"
+        type="button"               
+        class="bg-red-500 text-white px-6 py-2 rounded hover:bg-red-600">
+        {{ _('Salir') }}
+      </button>
+
+    </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const leadData = ({{ lead|tojson }} || {});
+
+document.addEventListener("DOMContentLoaded", () => {
+   
+  // Datos del servidor
+
+  
+  // Helpers
+  const $ = (id) => document.getElementById(id);
+  const setValue = (selectorOrId, val) => {
+    if (val == null) return;
+    let el = document.getElementById(selectorOrId);
+    if (!el) el = document.querySelector(`[name="${selectorOrId}"]`);
+    if (el) el.value = val;
+  };
+  const setPercent = (id, val, dec = 1) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+    const n = Number(val);
+    el.value = Number.isFinite(n) ? n.toFixed(dec) : '';
+  };
+  const nOrNull = (v) => {
+    if (v == null) return null;
+    const s = String(v).trim();
+    if (!s) return null;
+    let t = s.replace(/[^\d.,-]/g, "");
+    const c = t.lastIndexOf(","), d = t.lastIndexOf(".");
+    if (c > d) t = t.replace(/\./g, "").replace(",", ".");
+    else if (d > c) t = t.replace(/,/g, "");
+    const num = Number(t);
+    return Number.isFinite(num) ? num : null;
+  };
+  const toYMD = (v) => {
+      if (!v) return "";
+      const s = String(v);
+      // si ya viene "YYYY-MM-DD..." nos quedamos con los 10 primeros
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+      // intenta parsear
+      const d = new Date(s);
+      if (Number.isNaN(d.getTime())) return "";
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    };
+
+  // ======= Relleno de campos desde 'lead' =======
+  
+  setValue("fechaProyecto",       toYMD(leadData.fecha_proyecto));
+  setValue("fechaProximaAccion",  toYMD(leadData.fecha_proxima_accion));
+  setValue("fechaActualDisplay",  toYMD(leadData.fecha_actual));
+  setValue("probabilidad_exito", leadData.probabilidad_exito);
+  setValue("name", leadData.name);
+  setValue("inputEmail", leadData.email);
+  setValue("estado", leadData.estado);
+  setValue("inputIdioma", leadData.idioma);
+  setValue("inputPais", leadData.pais);
+  setPercent('inputDescuento_adicional', leadData.descuento_adicional,1);
+  setPercent('inputDescuento_total',     leadData.descuento_total, 1);
+  setValue("inputPerimetrales", leadData.pistas_perimetrales);
+  setValue("inputLaterales", leadData.pistas_laterales);
+  setValue("inputQuoteNumber", leadData.quote_number);
+  setValue("inputInfoTecnica", leadData.info_tecnica);
+  setValue("inputInfoGeneral", leadData.info_general);
+  setValue("inputObservaciones", leadData.observaciones);
+  ///setValue("inputCantidad_total", leadData.cantidad_total);
+
+  // Importe: hidden (real) + vista formateada
+  const hiddenInput = $("inputCantidad_total");     // <input type="hidden">
+  const viewInput   = $("viewCantidad_total");      // <input readonly type="text">
+  const cantidadTotal = nOrNull(leadData.cantidad_total);
+  if (hiddenInput && viewInput) {
+    if (cantidadTotal != null) {
+      hiddenInput.value = cantidadTotal;
+      viewInput.value = new Intl.NumberFormat("es-ES", {
+        useGrouping: true, minimumFractionDigits: 2, maximumFractionDigits: 2
+      }).format(cantidadTotal);
+    } else {
+      hiddenInput.value = "";
+      viewInput.value = "—";
+    }
+  }
+
+  // Descuento total de solo lectura (span)
+  const viewDesc = $("view_desc_total");
+  if (viewDesc && leadData.descuento_total != null) {
+    viewDesc.textContent = Number(leadData.descuento_total).toFixed(1);
+  }
+
+  const viewDescAd = $("view_desc_adicional");
+  if (viewDescAd) {
+    const n = Number(leadData.descuento_adicional);
+    viewDescAd.textContent = Number.isFinite(n)
+      ? new Intl.NumberFormat("es-ES", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(n)
+      : "—";
+  }
+
+ 
+
+  // Selecciona el dropdown y aplica el valor
+  document.getElementById("estado").value = leadData.estado || "en_curso";
+
+  // ======= Contador de textareas =======
+  // (Comentario JS normal, no HTML)
+  // Contador genérico
+  document.querySelectorAll('textarea[data-count]').forEach((tx) => {
+    const counter = document.querySelector(tx.dataset.count);
+    const max = tx.maxLength || 0;
+    const update = () => { if (counter) counter.textContent = `${tx.value.length}/${max}`; };
+    tx.addEventListener('input', update);
+    update();
+  });
+
+  // ======= Fechas y validaciones =======
+  const format = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const today = new Date(); const todayStr = format(today);
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1); const tomorrowStr = format(tomorrow);
+
+  const fechaActualDisplay = $('fechaActualDisplay');
+  const fechaActual        = $('fechaActual');
+  const fechaProyecto      = $('fechaProyecto');
+  const fechaProxima       = $('fechaProximaAccion');
+  const form               = $('lead');
+
+  if (fechaActualDisplay) ('value' in fechaActualDisplay ? fechaActualDisplay.value = todayStr : fechaActualDisplay.textContent = todayStr);
+  if (fechaActual) fechaActual.value = todayStr;
+  if (fechaProyecto) fechaProyecto.min = todayStr;
+  if (fechaProxima)  { fechaProxima.min = tomorrowStr; fechaProxima.removeAttribute('max'); }
+
+  const applyConstraints = () => {
+    if (fechaProyecto?.value) fechaProxima?.setAttribute('max', fechaProyecto.value); else fechaProxima?.removeAttribute('max');
+    if (fechaProyecto?.value && fechaProyecto.value <= todayStr) fechaProyecto.setCustomValidity('La fecha del proyecto debe ser posterior a hoy.');
+    else fechaProyecto?.setCustomValidity('');
+    let err = '';
+    if (fechaProxima?.value) {
+      if (fechaProxima.value <= todayStr) err = 'La próxima acción debe ser posterior a hoy.';
+      else if (fechaProyecto?.value && fechaProxima.value > fechaProyecto.value) err = 'La próxima acción no puede ser posterior a la fecha del proyecto.';
+    }
+    if (fechaProxima) { fechaProxima.setCustomValidity(err); if (err) fechaProxima.reportValidity(); }
+  };
+  fechaProyecto?.addEventListener('change', () => {
+    applyConstraints();
+    if (fechaProxima?.value) {
+      if (fechaProxima.value <= todayStr) fechaProxima.value = tomorrowStr;
+      if (fechaProyecto?.value && fechaProxima.value > fechaProyecto.value) fechaProxima.value = fechaProyecto.value;
+    }
+  });
+  fechaProxima?.addEventListener('input', applyConstraints);
+  applyConstraints();
+
+  // ======= Submit con fetch =======
+  document.getElementById("lead").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    // Botón de envío (mejor UX)
+    const btn = e.submitter || document.querySelector('#lead button[type="submit"]');
+    const originalText = btn?.textContent;
+    if (btn) { btn.disabled = true; btn.textContent = "Enviando…"; }
+
+    try {
+      // Construye el payload leyendo valores (aunque estén disabled, .value funciona)
+      const payload = {
+        id: leadData.id || null,  // ID del lead a actualizar (si existe)
+        // Campos de solo lectura
+        // Fechas
+        fecha_actual: $("fechaActual")?.value || $("fechaActualDisplay")?.value || null,
+        fecha_proyecto: $("fechaProyecto")?.value || null,
+        fecha_proxima_accion: $("fechaProximaAccion")?.value || null,
+        estado:$("estado")?.value || null,
+        probabilidad_exito:$("probabilidad_exito")?.value ,
+        
+
+        
+        // Textareas (con límite por seguridad)
+        info_tecnica: $("inputInfoTecnica")?.value?.slice(0, 1000) || null,
+        info_general: $("inputInfoGeneral")?.value?.slice(0, 1000) || null,
+        observaciones: $("inputObservaciones")?.value?.slice(0, 200) || null,
+      };
+
+      // Validación mínima en cliente (opcional, refuerza UX)
+      if (!payload.fecha_proyecto) throw new Error("Falta 'Fecha del proyecto'.");
+      if (!payload.fecha_proxima_accion) throw new Error("Falta 'Próxima acción'.");
+      if (payload.probabilidad_exito !== null &&
+          (payload.probabilidad_exito < 10 || payload.probabilidad_exito > 99)) {
+        throw new Error("La probabilidad de éxito debe estar entre 10 y 99.");
+      }
+
+    
+      // POST a /leads como JSON
+      try {
+        const res = await fetch("/lead_manage", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`);
+        const data = await res.json().catch(() => ({}));
+
+        // ✅ Éxito
+        if (window.Swal && Swal.fire) {
+          await Swal.fire({
+            icon: "success",
+            title: "¡Actualizado correctamente!",
+            text: "Tu registro  (Lead) se ha actualizado.",
+            timer: 3000,
+            showConfirmButton: false,
+          });
+        } else if (window.swal) {
+          await swal("¡Actualizado correctamente!","Tu registro (Lead) se ha actualizado.", "success");
+        } else {
+          alert("Actualizado correctamente.");
+        }
+
+        // Opcional: reset o redirección después del modal
+        // e.target.reset();
+       window.location.href = "/consultar_leads?estado=En%20curso";
+
+
+      } catch (err) {
+        console.error(err);
+        const msg = (err && err.message) ? err.message : "Error desconocido";
+
+        // ❌ Error
+        if (window.Swal && Swal.fire) {
+          await Swal.fire({
+            icon: "error",
+            title: "No se pudo enviar el formulario",
+            text: msg,
+            confirmButtonText: "Entendido",
+          });
+        } else if (window.swal) {
+          await swal("No se pudo enviar el formulario", msg, "error");
+        } else {
+          alert("No se pudo enviar el formulario: " + msg);
+        }
+      }
+
+    } catch (err) {
+      console.error(err);
+      alert("No se pudo enviar el formulario: " + (err.message || err));
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = originalText; }
+    }
+  
+  });
+
+
+  document.getElementById('btn-exit').addEventListener('click', function (e) {
+    
+    e.preventDefault();
+    window.location.href = "/consultar_leads?estado=En%20curso";
+  });
+
+
+
+
+});
+</script>
+{% endblock %}

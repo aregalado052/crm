@@ -1,0 +1,56 @@
+{
+  "id": "f4289755-28d4-49bd-ac16-afd378505d44",
+  "name": "SALESQUOTE_BD",
+  "publisher": "AREGALADO",
+  "version": "1.0.0.8",
+  "runtime": "12.0",
+  "target": "Cloud",
+  "application": "26.0.0.0",
+  "platform": "26.0.39765.0",
+  "resourceExposurePolicy": {
+    "allowDebugging": true,
+    "allowDownloadingSource": true,
+    "includeSourceInSymbolFile": true,
+    "applyToDevExtension": false
+  },
+  "features": [
+    "NOIMPLICITWITH"
+  ],
+  "dependencies": [
+    {
+      "id": "16d404c0-c1b7-447c-b405-277f5a8818e5",
+      "name": "iDynamics IRPF",
+      "version": "6.9.0.3",
+      "publisher": "iDynamics Business Solutions"
+    },
+    {
+      "id": "826ba737-0d4c-40d7-a1bb-7cfa37690bde",
+      "name": "iDynamics License Management Library",
+      "version": "2.6.0.1",
+      "publisher": "iDynamics Business Solutions"
+    },
+    {
+      "id": "f4289755-28d4-49bd-ab16-9fd37850dd42",
+      "name": "ENABLE QUOTATION WEB",
+      "version": "1.0.0.10",
+      "publisher": "AREGALADO"
+    },
+    {
+      "id": "f4289755-28d4-49bd-ab16-fff378505d36",
+      "name": "APLICACION CONTACTOS",
+      "version": "1.0.0.24",
+      "publisher": "AREGALADO"
+    }
+  ],
+  "idRanges": [
+    {
+      "from": 50100,
+      "to": 50450
+    }
+  ],
+  "build": {
+    "by": "AL Language Extension,15.2.1630495",
+    "timestamp": "2025-09-15T06:18:26.9503340+00:00",
+    "compilerVersion": "15.2.24.57679"
+  }
+}

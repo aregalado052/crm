@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Formulario de Registro</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script>
+    class RegisterForm {
+      constructor(passwordInputId, buttonId) {
+        this.passwordInput = document.getElementById(passwordInputId);
+        this.toggleButton = document.getElementById(buttonId);
+        this.isPasswordVisible = false;
+
+        this.toggleButton.addEventListener('click', () => this.togglePasswordVisibility());
+      }
+
+      togglePasswordVisibility() {
+        this.isPasswordVisible = !this.isPasswordVisible;
+        this.passwordInput.type = this.isPasswordVisible ? 'text' : 'password';
+
+        this.toggleButton.innerHTML = this.isPasswordVisible
+          ? 'Ocultar'
+          : 'Mostrar';
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      new RegisterForm('password', 'togglePasswordButton');
+    });
+  </script>
+</head>
+<body class="bg-gray-100 flex justify-center items-center min-h-screen">
+  <div class="bg-white p-6 rounded-lg shadow-md w-80">
+    <!-- Logos -->
+    <div class="flex justify-between mb-4">
+      <img src="../static/Logo Planet Power.png" alt="Logo 1" class="h-12 w-auto">
+      <img src="../static/Icono LED PADEL.png" alt="Logo 2" class="h-12 w-auto">
+    </div>
+
+    <h2 class="text-2xl font-bold mb-4 text-center">Registrarse</h2>
+
+    <div id="error-message" class="mb-4 hidden">
+      <p class="text-sm text-red-700 bg-red-100 border-l-4 border-red-500 p-2 rounded-md text-center"></p>
+    </div>
+
+    <!-- Mensaje Flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div id="flash-message" class="mb-4">
+          <ul>
+            {% for category, message in messages %}
+              <li class="text-sm text-blue-700 bg-blue-100 border-l-4 border-blue-500 p-4 rounded-md mb-2 w-70 text-center">
+                {{ message | safe }}
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form id="registerForm" action="/register" method="POST">
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700" for="username">Nombre de Usuario</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          class="mt-1 block w-full border border-gray-300 p-2 rounded-md focus:ring focus:ring-blue-500"
+          required
+        />
+      </div>
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700" for="email">Correo Electrónico</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          class="mt-1 block w-full border border-gray-300 p-2 rounded-md focus:ring focus:ring-blue-500"
+          required
+        />
+      </div>
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700" for="password">Contraseña</label>
+        <div class="relative">
+          <input
+            type="password"
+            id="password"
+            name="password"
+            class="mt-1 block w-full border border-gray-300 p-2 rounded-md focus:ring focus:ring-blue-500"
+            required
+          />
+          <button
+            type="button"
+            id="togglePasswordButton"
+            class="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-500"
+          >
+            Mostrar
+          </button>
+        </div>
+      </div>
+
+      <!-- Botón Registrar -->
+      <button
+        type="submit"
+        class="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition duration-200"
+      >
+        Registrarse
+      </button>
+
+      <!-- Botón Limpiar -->
+      
+    
+
+      <div id="sesion-limpiar" class="mt-4 flex justify-center items-center text-sm text-gray-600 gap-4">
+            <a href="/login" id="loginLink" class="text-blue-500 hover:underline">¿Iniciar Sesión?</a>
+            <button
+                id="limpiarBtn"
+                type="button"
+                onclick="limpiarCampos()"
+                class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition hidden"
+            >
+            Limpiar
+            </button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    async function handleRegister(event) {
+      event.preventDefault();
+
+      const username = document.getElementById("username").value;
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const data = { username, email, password };
+
+      try {
+        const response = await fetch('/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+          const respuesta = await response.json();
+          throw new Error(respuesta.msg);
+        } else {
+          window.location.href = '/login';
+        }
+      } catch (error) {
+        handleRegisterError(error);
+      }
+    }
+
+    function handleRegisterError(error) {
+        const errorMessageDiv = document.getElementById('error-message');
+        const errorMessageParagraph = errorMessageDiv.querySelector('p');
+
+        errorMessageParagraph.innerHTML = 'Ocurrió un error al registrarse<br>' + error.message;
+        errorMessageDiv.classList.remove('hidden');
+
+        // Mostrar el botón limpiar y justificar a los lados
+        const limpiarBtn = document.getElementById("limpiarBtn");
+        const sesionLimpiar = document.getElementById("sesion-limpiar");
+        limpiarBtn.classList.remove("hidden");
+        sesionLimpiar.classList.remove("justify-center");
+        sesionLimpiar.classList.add("justify-between");
+        }
+
+        function limpiarCampos() {
+        const usernameInput = document.getElementById("username");
+        const emailInput = document.getElementById("email");
+        const passwordInput = document.getElementById("password");
+
+        usernameInput.value = "";
+        emailInput.value = "";
+        passwordInput.value = "";
+
+        const errorMessageDiv = document.getElementById('error-message');
+        if (!errorMessageDiv.classList.contains('hidden')) {
+            errorMessageDiv.classList.add('hidden');
+        }
+
+        const flashDiv = document.getElementById('flash-message');
+        if (flashDiv) {
+            flashDiv.style.display = 'none';
+        }
+
+        const limpiarBtn = document.getElementById("limpiarBtn");
+        const sesionLimpiar = document.getElementById("sesion-limpiar");
+        limpiarBtn.classList.add("hidden");
+
+        // Volver a centrar si el botón está oculto
+        sesionLimpiar.classList.remove("justify-between");
+        sesionLimpiar.classList.add("justify-center");
+
+        usernameInput.focus();
+        }
+
+    document.getElementById('registerForm').addEventListener('submit', handleRegister);
+  </script>
+</body>
+</html>

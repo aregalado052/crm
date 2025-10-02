@@ -1,0 +1,536 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .s3-selected { background-color:#e0f2fe; border-color:#38bdf8; }
+</style>
+
+<div class="max-w-5xl mx-auto p-4 space-y-4">
+  <h1 class="text-2xl font-bold">Explorar archivos (S3 & Dropbox)</h1>
+
+  <!-- Controles -->
+  <div class="grid md:grid-cols-2 gap-4">
+    <!-- S3 -->
+    <div class="border rounded-xl p-4">
+      <h2 class="font-semibold mb-2">S3</h2>
+      <label class="text-sm">Prefijo (carpeta)</label>
+      <input id="s3Prefix" class="w-full border rounded p-2 mb-2" placeholder="ej: emails/assets/">
+      <button id="btnListS3" class="px-3 py-2 bg-green-600 text-white rounded">Listar S3</button>
+      <button id="btnMoreS3" class="px-3 py-2 bg-gray-200 rounded ml-2 hidden">Más...</button>
+      <div id="s3List" class="mt-3 space-y-2"></div>
+    </div>
+
+    <!-- Dropbox -->
+    <div class="border rounded-xl p-4">
+      <h2 class="font-semibold mb-2">Dropbox</h2>
+      <label class="text-sm">Ruta</label>
+      <input id="dbxPath" class="w-full border rounded p-2 mb-2" placeholder="/email-assets">
+      <button id="btnListDbx" class="px-3 py-2 bg-blue-600 text-white rounded">Listar Dropbox</button>
+      <div id="dbxList" class="mt-3 space-y-2"></div>
+    </div>
+  </div>
+
+  <!-- Modal de preview -->
+  <div id="previewModal" class="hidden fixed inset-0 bg-black/60 z-50 items-center justify-center p-4">
+    <div class="bg-white rounded-xl w-full max-w-3xl p-4">
+      <div class="flex justify-between items-center mb-2">
+        <h3 class="font-semibold">Preview</h3>
+        <button id="btnClosePreview" class="px-3 py-1 bg-gray-200 rounded">Cerrar</button>
+      </div>
+      <div id="previewContent" class="max-h-[70vh] overflow-auto"></div>
+    </div>
+  </div>
+</div>
+
+<div id="s3Target" class="text-sm text-gray-600 my-2 hidden"></div>
+
+
+
+
+
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+let s3NextToken = null;
+let currentPrefix = ""; // el backend fijará la raíz a emails/templates/ si lo dejas vacío
+let selectedS3 = null; // { fullKey, label }
+
+async function listS3(prefix = "", token = null) {
+  const url = new URL("/list_s3", location.origin);
+  if (prefix) url.searchParams.set("prefix", prefix);
+  if (token)  url.searchParams.set("token", token);
+  const r = await fetch(url);
+  if (!r.ok) {
+    const msg = await r.text().catch(() => "");
+    throw new Error(`Error listando S3 ${msg ? `• ${msg}` : ""}`);
+  }
+  return r.json();
+}
+
+function folderRowS3(folder) {
+  return `
+    <button class="w-full flex items-center justify-between border rounded p-2 hover:bg-gray-50"
+            data-action="enter-folder-s3" data-prefix="${folder.prefix}">
+      <div class="font-medium">📁 ${folder.name}</div>
+      <div class="text-sm text-gray-500">Abrir</div>
+    </button>`;
+}
+
+
+
+// Reemplaza fileRowS3:
+function fileRowS3(item, prefix) {
+  const size = ((item.size || 0) / 1024).toFixed(1) + " KB";
+  const date = (item.last_modified || "").replace("T", " ").slice(0, 19);
+  const fullKey = `${prefix}${item.key}`;
+  return `
+   <div class="flex items-center justify-between border rounded p-2">
+    ...
+    <div class="flex gap-2">
+      <button type="button" class="px-2 py-1 bg-blue-100 rounded"
+              data-action="select-s3" data-fullkey="${fullKey}" data-label="${item.key}">
+        Seleccionar destino
+      </button>
+      <button type="button" class="px-2 py-1 bg-gray-100 rounded viewBtn"
+              data-url="${item.url}" data-name="${item.key}"
+              data-image="${/\.(png|jpe?g|gif|webp|svg)$/i.test(item.key)}">
+        Ver
+      </button>
+    </div>
+  </div>`;
+}
+
+// Defínela en global para evitar problemas de scope/orden
+window.folderRowS3 = function folderRowS3(folder) {
+  return `
+    <button class="w-full flex items-center justify-between border rounded p-2 hover:bg-gray-50"
+            data-action="enter-folder-s3" data-prefix="${folder.prefix}">
+      <div class="font-medium">📁 ${folder.name}</div>
+      <div class="text-sm text-gray-500">Abrir</div>
+    </button>`;
+};
+function withVersion(url, v) {
+  try {
+    const u = new URL(url, location.origin);
+    if (v) u.searchParams.set("v", String(v).replace(/\W/g, "")); // seguro
+    return u.toString();
+  } catch {
+    return url + (url.includes("?") ? "&" : "?") + "v=" + (v || Date.now());
+  }
+}
+
+window.fileRowS3 = function fileRowS3(item, prefix = "") {
+  const size = ((item.size || 0) / 1024).toFixed(1) + " KB";
+  const date = (item.last_modified || "").replace("T", " ").slice(0, 19);
+  const fullKey = `${prefix || ""}${item.key}`;
+  const versionedUrl = withVersion(item.url, item.last_modified);  // 👈 clave
+
+  return `
+    <div class="flex items-center justify-between border rounded p-2">
+      <div class="truncate">
+        <div class="font-mono text-sm truncate">${item.key}</div>
+        <div class="text-xs text-gray-500">${date} • ${size}</div>
+      </div>
+      <div class="flex gap-2">
+        <button type="button" class="px-2 py-1 bg-blue-100 rounded"
+                data-action="select-s3" data-fullkey="${fullKey}" data-label="${item.key}">
+          Seleccionar destino
+        </button>
+        <button type="button" class="px-2 py-1 bg-gray-100 rounded viewBtn"
+                data-action="view-s3"
+                data-fullkey="${fullKey}"
+                data-url="${versionedUrl}"
+                data-name="${item.key}"
+                data-image="${/\.(png|jpe?g|gif|webp|svg)$/i.test(item.key)}">
+          Ver
+        </button>
+      </div>
+    </div>`;
+};
+
+
+
+function renderListingS3(data, { append = false } = {}) {
+  const box = document.getElementById("s3List");
+  const folders = data.folders || [];
+  const files   = data.files   || [];
+  const parent  = data.parent_prefix || null;
+
+  const html =
+    (parent
+      ? `<div class="mb-2"><button class="px-2 py-1 border rounded" data-action="go-up-s3" data-prefix="${parent}">⬆ Subir</button></div>`
+      : "") +
+    (folders.length
+      ? `<div class="mb-2 text-xs uppercase text-gray-500">Carpetas</div>` + folders.map(folderRowS3).join("")
+      : "") +
+    (files.length
+      ? `<div class="mt-3 mb-2 text-xs uppercase text-gray-500">Archivos</div>` + files.map(i => window.fileRowS3(i, data.prefix)).join("")
+      : (!folders.length ? `<div>No hay objetos.</div>` : ""));
+
+  if (append) box.insertAdjacentHTML("beforeend", html);
+  else box.innerHTML = html;
+
+  // paginación e input
+  s3NextToken = data.next_token || null;
+  document.getElementById("btnMoreS3").classList.toggle("hidden", !s3NextToken);
+  currentPrefix = data.prefix || currentPrefix;
+  const input = document.getElementById("s3Prefix");
+  if (input) input.value = currentPrefix || "";
+}
+
+async function loadPrefix(prefix = "") {
+  const box = document.getElementById("s3List");
+  box.innerHTML = "Cargando...";
+  try {
+    const data = await listS3(prefix);
+    renderListingS3(data, { append: false });
+  } catch (e) {
+    box.innerHTML = `<div class="text-red-600">Error: ${e.message}</div>`;
+  }
+}
+
+// click “Listar”
+document.getElementById("btnListS3").addEventListener("click", () => {
+  const prefix = (document.getElementById("s3Prefix").value || "").trim();
+  loadPrefix(prefix);
+});
+
+document.getElementById("btnMoreS3").addEventListener("click", async () => {
+  if (!s3NextToken) return;
+  const data = await listS3(currentPrefix, s3NextToken);
+  renderListingS3(data, { append: true });
+});
+
+// util: cache-buster
+function bustWith(url, version) {
+  try {
+    const u = new URL(url, location.origin);
+    u.searchParams.set("v", version || Date.now().toString());
+    return u.toString();
+  } catch { return url + (url.includes("?") ? "&" : "?") + "v=" + (version || Date.now()); }
+}
+
+// navegación S3 (entrar / subir / seleccionar / ver)
+document.addEventListener("click", (e) => {
+  // ¿entrar a carpeta?
+  const enterBtn = e.target.closest("[data-action='enter-folder-s3']");
+  if (enterBtn) {
+    e.preventDefault(); e.stopPropagation();
+    loadPrefix(enterBtn.dataset.prefix || "");
+    return;
+  }
+
+  // ¿subir nivel?
+  const upBtn = e.target.closest("[data-action='go-up-s3']");
+  if (upBtn) {
+    e.preventDefault(); e.stopPropagation();
+    loadPrefix(upBtn.dataset.prefix || "");
+    return;
+  }
+
+  // ¿seleccionar destino?
+  const selBtn = e.target.closest("[data-action='select-s3']");
+  if (selBtn) {
+    e.preventDefault(); e.stopPropagation();
+
+    selectedS3 = { fullKey: selBtn.dataset.fullkey, label: selBtn.dataset.label };
+
+    // quitar selección previa y marcar fila actual
+    document.querySelectorAll("#s3List .s3-selected").forEach(el => el.classList.remove("s3-selected"));
+    const row = selBtn.closest("div.flex.items-center") || selBtn.closest(".border.rounded");
+    if (row) row.classList.add("s3-selected");
+
+    const tgt = document.getElementById("s3Target");
+    if (tgt) {
+      tgt.textContent = `Destino S3 seleccionado: ${selectedS3.fullKey}`;
+      tgt.classList.remove("hidden");
+    }
+    return;
+  }
+
+  // ¿ver/preview?
+  const viewBtn = e.target.closest("[data-action='view-s3']");
+  
+  if (!viewBtn) return;
+  const url = withVersion(btn.dataset.url, Date.now()); // opcional
+  alert(url);
+  const isImage = viewBtn.dataset.image === "true";
+  const name = viewBtn.dataset.name || "";
+  preview.innerHTML = isImage
+    ? `<img src="${url}" alt="${name}" class="max-w-full h-auto mx-auto">`
+    : `<iframe src="${url}" class="w-full h-[70vh] border rounded"></iframe>`;
+  modal.classList.remove("hidden");
+    // si no era ninguno de los botones S3, no hacemos nada
+});
+
+
+// Preview modal (tu código original)
+const modal = document.getElementById("previewModal");
+const preview = document.getElementById("previewContent");
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".viewBtn");
+  if (!btn) return;
+  const url = btn.dataset.url;
+  const isImage = btn.dataset.image === "true";
+  const name = btn.dataset.name;
+
+  preview.innerHTML = isImage
+    ? `<img src="${url}" alt="${name}" class="max-w-full h-auto mx-auto">`
+    : `<iframe src="${url}" class="w-full h-[70vh] border rounded"></iframe>`;
+  modal.classList.remove("hidden");
+});
+document.getElementById("btnClosePreview").addEventListener("click", () => {
+  modal.classList.add("hidden");
+  preview.innerHTML = "";
+});
+
+
++ // Carga inicial de Dropbox → backend usará DROPBOX_ROOT ("/1")
+loadDropboxPath();
+
+// --- Estado ---
+let dbxCurrentPath = ""; // "" = raíz en Dropbox
+// (si tu backend acepta "/", puedes pasar "/"; el backend que te propuse ya lo convierte a "")
+
+// --- Fetch layer ---
+async function listDropbox(path = "") {
+  const url = new URL("/list_dropbox", location.origin);
+  if (path) url.searchParams.set("path", path);
+  const r = await fetch(url);
+  if (!r.ok) {
+    const msg = await r.text().catch(() => "");
+    throw new Error(`Error listando Dropbox${msg ? ` • ${msg}` : ""}`);
+  }
+  return r.json();
+}
+
+// --- Helpers ya tuyos, con pequeño ajuste ---
+function safeSizeKB(v) {
+  return (typeof v === "number" && !isNaN(v)) ? `${(v/1024).toFixed(1)} KB` : "-";
+}
+function safeDate(item) {
+  // En Dropbox usamos client_modified; mantenemos compat para S3 last_modified
+  const d = item.client_modified || item.last_modified || "";
+  return d ? d.replace("T", " ").slice(0, 19) : "-";
+}
+
+// --- Render de carpetas y archivos ---
+function folderRowDbx(folder) {
+  return `
+    <button class="w-full flex items-center justify-between border rounded p-2 hover:bg-gray-50"
+                data-action="enter-folder-dbx" data-path="${folder.path}">
+      <div class="font-medium">📁 ${folder.name}</div>
+      <div class="text-sm text-gray-500">Abrir</div>
+    </button>`;
+}
+
+function fileRowDbx(item) {
+  const name = item.key ?? item.name ?? "(sin nombre)";
+  const sizeLabel = safeSizeKB(item.size);
+  const dateLabel = safeDate(item);
+  const isImage = /\.(png|jpe?g|gif|webp|svg)$/i.test(name);
+  const url = item.url || "#";
+  return `
+    <div class="flex items-center justify-between border rounded p-2">
+      <div class="truncate">
+        <div class="font-mono text-sm truncate">${name}</div>
+        <div class="text-xs text-gray-500">${dateLabel} • ${sizeLabel}</div>
+      </div>
+      <div class="flex gap-2">
+        <button class="px-2 py-1 bg-gray-100 rounded viewBtn"
+                data-url="${url}" data-name="${name}" data-image="${isImage}">Ver</button>
+        <button class="px-2 py-1 bg-green-100 rounded"
+                data-action="update-to-s3" data-path="${item.path}" data-name="${name}">Actualizar en S3</button>
+      </div>
+    </div>`;
+}
+
+
+function renderDropboxListing(data) {
+  const box = document.getElementById("dbxList");
+
+  const folders = data.folders || [];
+  const files   = data.files   || [];
+  const parent  = data.parent_path || null;
+
+  const html =
+    (parent !== null && parent !== undefined
+      ? `<div class="mb-2">
+           <button class="px-2 py-1 border rounded" data-action="go-up-dbx" data-path="${parent}">⬆ Subir</button>
+         </div>`
+      : "") +
+    (folders.length
+      ? `<div class="mb-2 text-xs uppercase text-gray-500">Carpetas</div>` + folders.map(folderRowDbx).join("")
+      : "") +
+    (files.length
+      ? `<div class="mt-3 mb-2 text-xs uppercase text-gray-500">Archivos</div>` + files.map(fileRowDbx).join("")
+      : (!folders.length ? `<div>No hay objetos.</div>` : ""));
+
+  box.innerHTML = html;
+
+  // Reflejar el path actual en el input (opcional)
+  dbxCurrentPath = data.path ?? dbxCurrentPath;
+  document.getElementById("dbxPath").value = dbxCurrentPath || "/1";
+}
+
+// --- Carga de un path ---
+
+async function loadDropboxPath(path = "") {
+  const box = document.getElementById("dbxList");
+  box.innerHTML = "Cargando...";
+  try {
+    const data = await listDropbox(path);  // backend decide si usa root
+    renderDropboxListing(data);
+    // 👇 opcional: actualiza el input con el root recibido si estaba vacío
+    if (!path && data.root_path) {
+      document.getElementById("dbxPath").value = data.root_path;
+    }
+  } catch (e) {
+    box.innerHTML = `<div class="text-red-600">Error: ${e.message}</div>`;
+  }
+}
+
+// --- Eventos ---
+document.getElementById("btnListDbx").addEventListener("click", () => {
+  let path = (document.getElementById("dbxPath").value || "").trim();
+    // "" o "/" → sin path (el backend fija /1). El resto se pasa tal cual.
+  loadDropboxPath(path === "" || path === "/" ? "" : path);
+});
+
+// navegación Dropbox (entrar/subir) delegada
+document.addEventListener("click", (e) => {
+  const enterBtn = e.target.closest("[data-action='enter-folder-dbx']");
+  if (enterBtn) {
+    const nextPath = enterBtn.dataset.path || "";
+    loadDropboxPath(nextPath);
+    return;
+  }
+  const upBtn = e.target.closest("[data-action='go-up-dbx']");
+  if (upBtn) {
+    const parent = upBtn.dataset.path || "";
+    loadDropboxPath(parent);
+    return;
+  }
+});
+
+// --- Preview modal (tu mismo código, ahora sí con .viewBtn en fileRow) ---
+const modaldb = document.getElementById("previewModal");
+const previewdb = document.getElementById("previewContent");
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".viewBtn");
+  if (!btn) return;
+  const url = btn.dataset.url;
+  const isImage = btn.dataset.image === "true";
+  const name = btn.dataset.name;
+
+  previewdb.innerHTML = isImage
+    ? `<img src="${url}" alt="${name}" class="max-w-full h-auto mx-auto">`
+    : `<iframe src="${url}" class="w-full h-[70vh] border rounded"></iframe>`;
+  modaldb.classList.remove("hidden");
+});
+document.getElementById("btnClosePreview").addEventListener("click", () => {
+  modaldb.classList.add("hidden");
+  previewdb.innerHTML = "";
+});
+
+document.addEventListener("click", async (e) => {
+  const upd = e.target.closest("[data-action='update-to-s3']");
+  if (upd) {
+    if (!selectedS3?.fullKey) {
+      alert("Primero selecciona el archivo DESTINO en S3 (botón 'Seleccionar destino').");
+      return;
+    }
+    const dbxPath = upd.dataset.path;
+    const confirmMsg = `¿Actualizar S3:\n  ${selectedS3.fullKey}\ncon Dropbox:\n  ${dbxPath}?`;
+    if (!confirm(confirmMsg)) return;
+
+    const btnEl = upd; // el botón "Actualizar en S3" que pulsaste
+
+    try {
+      // estado: desactivar botón
+      btnEl.disabled = true;
+      btnEl.textContent = "Actualizando…";
+
+      const r = await fetch("/dbx_to_s3", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dbx_path: dbxPath, s3_key: selectedS3.fullKey })
+      });
+
+      // intenta leer JSON, si no hay, usa texto
+      let data = null, raw = null;
+      try { data = await r.json(); } catch { raw = await r.text().catch(() => ""); }
+
+      if (!r.ok || (data && data.ok === false)) {
+        const msg = data?.error?.message || raw || "Fallo en la actualización";
+        throw new Error(msg);
+      }
+
+      // Éxito: informa con detalles útiles
+      const etag = data?.etag || "(sin etag)";
+      const lm = data?.last_modified || "(sin fecha)";
+      alert(`Actualizado en S3 correctamente ✅\n\nKey: ${selectedS3.fullKey}\nETag: ${etag}\nLast-Modified: ${lm}`);
+
+      // 1) refresca listado S3 para ver tamaño/fecha nuevos
+      await loadPrefix(currentPrefix);
+
+     
+
+      // 2) resalta la fila actualizada
+      const row = [...document.querySelectorAll("#s3List [data-action='select-s3']")]
+        .find(b => b.dataset.fullkey === selectedS3.fullKey)?.closest("div.flex.items-center") 
+        || null;
+      if (row) {
+        // limpia resaltados previos y marca este
+        document.querySelectorAll("#s3List .s3-selected").forEach(el => el.classList.remove("s3-selected"));
+        row.classList.add("s3-selected");
+        row.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+
+      // 3) cache-buster para vistas "Ver" (si abres el modal luego)
+     const viewBtn = document.querySelector(
+        `#s3List .viewBtn[data-fullkey="${CSS.escape(selectedS3.fullKey)}"]`
+      );
+
+      if (viewBtn && data?.etag) {
+        // usa el etag como versión
+        viewBtn.dataset.url = withVersion(viewBtn .dataset.url, data.etag);
+      }
+      if (viewBtn && viewBtn.dataset.url) {
+        const u = new URL(viewBtn.dataset.url, location.origin);
+        if (data?.etag) u.searchParams.set("v", data.etag); // usa ETag como versión
+        else            u.searchParams.set("v", Date.now().toString());
+        viewBtn.dataset.url = u.toString();
+      }
+
+      if (viewBtn && viewBtn.dataset.url) {
+        const u = new URL(viewBtn.dataset.url, location.origin);
+        u.searchParams.set("v", Date.now().toString());
+        viewBtn.dataset.url = u.toString(); // la próxima vista usará la versión nueva
+      }
+
+    } catch (err) {
+      alert("Error actualizando en S3: " + err.message);
+    } finally {
+      // restaurar botón
+      btnEl.disabled = false;
+      btnEl.textContent = "Actualizar en S3";
+    }
+
+    return;
+  }
+});
+
+
+// Carga inicial (opcional) → raíz
+// loadDropboxPath("");
+
+</script>
+
+
+
+
+
+{% endblock %}

@@ -1,0 +1,24 @@
+{
+  "id": "b9b9a0a2-3e3d-4b9e-9c56-0c0e0c0f1aaa",
+  "name": "Outlook Interaction Logger",
+  "publisher": "TuEmpresa",
+  "version": "1.0.0.0",
+  "brief": "Botón para registrar interacciones desde Contact Card (y visible en el add-in).",
+  "description": "Añade acción en Contact Card para registrar una interacción tipo correo en el historial.",
+  "platform": "26.0.0.0",
+  "runtime": "13.0",
+  "target": "Cloud",
+  "idRanges": [
+    { "from": 50100, "to": 50249 }
+  ],
+  "dependencies": [
+    {
+      "id": "437dbf0e-84ff-417a-965d-ed2bb9650972",
+      "name": "Base Application",
+      "publisher": "Microsoft",
+      "version": "26.0.0.0"
+    }
+  ],
+  "screenshots": [],
+  "applicationInsightsConnectionString": ""
+}

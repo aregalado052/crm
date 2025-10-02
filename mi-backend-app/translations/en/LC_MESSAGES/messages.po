@@ -1,0 +1,1534 @@
+# English translations for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-07-22 09:10+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: en\n"
+"Language-Team: en <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: application.py:110 application.py:121
+msgid "Error Operacional."
+msgstr "Operational Error."
+
+#: application.py:111 application.py:122
+msgid "Error operacional"
+msgstr "Operational error"
+
+#: application.py:114 application.py:115
+msgid "El email facilitado no existe"
+msgstr "The provided email does not exist"
+
+#: application.py:151
+msgid "Login exitoso"
+msgstr "Login successful"
+
+#: application.py:169 application.py:170
+msgid "Contraseña incorrecta."
+msgstr "Incorrect password."
+
+#: application.py:1061 templates/club_timetable.html:270
+#: templates/club_timetable.html:374 templates/club_timetable.html:1156
+#: templates/display_calendar.html:124 templates/display_calendar.html:127
+msgid "Básico o por defecto"
+msgstr "Basic or default"
+
+#: application.py:2683 application.py:2721
+#: templates/courts_configuration.html:70
+#: templates/courts_configuration.html:71
+#: templates/courts_configuration.html:72
+#: templates/courts_configuration.html:140
+#: templates/courts_configuration.html:680
+msgid "Individual"
+msgstr "Individual"
+
+#: application.py:2686 templates/courts_configuration.html:47
+#: templates/courts_configuration.html:74
+#: templates/courts_configuration.html:75
+#: templates/courts_configuration.html:76
+#: templates/courts_configuration.html:139
+#: templates/courts_configuration.html:681
+msgid "Combinada"
+msgstr "Combined"
+
+#: python/click/_termui_impl.py:556
+#: venv/Lib/site-packages/click/_termui_impl.py:556
+#, python-brace-format
+msgid "{editor}: Editing failed"
+msgstr ""
+
+#: python/click/_termui_impl.py:560
+#: venv/Lib/site-packages/click/_termui_impl.py:560
+#, python-brace-format
+msgid "{editor}: Editing failed: {e}"
+msgstr ""
+
+#: python/click/core.py:1124 venv/Lib/site-packages/click/core.py:1124
+msgid "Aborted!"
+msgstr ""
+
+#: python/click/core.py:1349 python/click/core.py:1379
+#: venv/Lib/site-packages/click/core.py:1349
+#: venv/Lib/site-packages/click/core.py:1379
+#, python-brace-format
+msgid "(Deprecated) {text}"
+msgstr ""
+
+#: python/click/core.py:1396 venv/Lib/site-packages/click/core.py:1396
+#, fuzzy
+msgid "Options"
+msgstr "Options"
+
+#: python/click/core.py:1422 venv/Lib/site-packages/click/core.py:1422
+#, python-brace-format
+msgid "Got unexpected extra argument ({args})"
+msgid_plural "Got unexpected extra arguments ({args})"
+msgstr[0] ""
+msgstr[1] ""
+
+#: python/click/core.py:1438 venv/Lib/site-packages/click/core.py:1438
+#, python-brace-format
+msgid "DeprecationWarning: The command {name!r} is deprecated."
+msgstr ""
+
+#: python/click/core.py:1645 venv/Lib/site-packages/click/core.py:1645
+msgid "Commands"
+msgstr ""
+
+#: python/click/core.py:1677 venv/Lib/site-packages/click/core.py:1677
+msgid "Missing command."
+msgstr ""
+
+#: python/click/core.py:1755 venv/Lib/site-packages/click/core.py:1755
+#, python-brace-format
+msgid "No such command {name!r}."
+msgstr ""
+
+#: python/click/core.py:2313 venv/Lib/site-packages/click/core.py:2313
+msgid "Value must be an iterable."
+msgstr ""
+
+#: python/click/core.py:2334 venv/Lib/site-packages/click/core.py:2334
+#, python-brace-format
+msgid "Takes {nargs} values but 1 was given."
+msgid_plural "Takes {nargs} values but {len} were given."
+msgstr[0] ""
+msgstr[1] ""
+
+#: python/click/core.py:2783 venv/Lib/site-packages/click/core.py:2783
+#, python-brace-format
+msgid "env var: {var}"
+msgstr ""
+
+#: python/click/core.py:2813 venv/Lib/site-packages/click/core.py:2813
+msgid "(dynamic)"
+msgstr ""
+
+#: python/click/core.py:2828 venv/Lib/site-packages/click/core.py:2828
+#, python-brace-format
+msgid "default: {default}"
+msgstr ""
+
+#: python/click/core.py:2841 venv/Lib/site-packages/click/core.py:2841
+msgid "required"
+msgstr ""
+
+#: python/click/decorators.py:457
+#: venv/Lib/site-packages/click/decorators.py:457
+#, python-format
+msgid "%(prog)s, version %(version)s"
+msgstr ""
+
+#: python/click/decorators.py:520
+#: venv/Lib/site-packages/click/decorators.py:520
+msgid "Show the version and exit."
+msgstr ""
+
+#: python/click/decorators.py:541
+#: venv/Lib/site-packages/click/decorators.py:541
+msgid "Show this message and exit."
+msgstr ""
+
+#: python/click/exceptions.py:49 python/click/exceptions.py:88
+#: venv/Lib/site-packages/click/exceptions.py:49
+#: venv/Lib/site-packages/click/exceptions.py:88
+#, python-brace-format
+msgid "Error: {message}"
+msgstr ""
+
+#: python/click/exceptions.py:80 venv/Lib/site-packages/click/exceptions.py:80
+#, python-brace-format
+msgid "Try '{command} {option}' for help."
+msgstr ""
+
+#: python/click/exceptions.py:129
+#: venv/Lib/site-packages/click/exceptions.py:129
+#, python-brace-format
+msgid "Invalid value: {message}"
+msgstr ""
+
+#: python/click/exceptions.py:131
+#: venv/Lib/site-packages/click/exceptions.py:131
+#, python-brace-format
+msgid "Invalid value for {param_hint}: {message}"
+msgstr ""
+
+#: python/click/exceptions.py:187
+#: venv/Lib/site-packages/click/exceptions.py:187
+msgid "Missing argument"
+msgstr ""
+
+#: python/click/exceptions.py:189
+#: venv/Lib/site-packages/click/exceptions.py:189
+msgid "Missing option"
+msgstr ""
+
+#: python/click/exceptions.py:191
+#: venv/Lib/site-packages/click/exceptions.py:191
+msgid "Missing parameter"
+msgstr ""
+
+#: python/click/exceptions.py:193
+#: venv/Lib/site-packages/click/exceptions.py:193
+#, python-brace-format
+msgid "Missing {param_type}"
+msgstr ""
+
+#: python/click/exceptions.py:200
+#: venv/Lib/site-packages/click/exceptions.py:200
+#, python-brace-format
+msgid "Missing parameter: {param_name}"
+msgstr ""
+
+#: python/click/exceptions.py:220
+#: venv/Lib/site-packages/click/exceptions.py:220
+#, python-brace-format
+msgid "No such option: {name}"
+msgstr ""
+
+#: python/click/exceptions.py:232
+#: venv/Lib/site-packages/click/exceptions.py:232
+#, python-brace-format
+msgid "Did you mean {possibility}?"
+msgid_plural "(Possible options: {possibilities})"
+msgstr[0] ""
+msgstr[1] ""
+
+#: python/click/exceptions.py:270
+#: venv/Lib/site-packages/click/exceptions.py:270
+msgid "unknown error"
+msgstr ""
+
+#: python/click/exceptions.py:277
+#: venv/Lib/site-packages/click/exceptions.py:277
+#, python-brace-format
+msgid "Could not open file {filename!r}: {message}"
+msgstr ""
+
+#: python/click/formatting.py:156
+#: venv/Lib/site-packages/click/formatting.py:156
+msgid "Usage:"
+msgstr ""
+
+#: python/click/parser.py:233 venv/Lib/site-packages/click/parser.py:233
+#, python-brace-format
+msgid "Argument {name!r} takes {nargs} values."
+msgstr ""
+
+#: python/click/parser.py:415 venv/Lib/site-packages/click/parser.py:415
+#, python-brace-format
+msgid "Option {name!r} does not take a value."
+msgstr ""
+
+#: python/click/parser.py:476 venv/Lib/site-packages/click/parser.py:476
+#, python-brace-format
+msgid "Option {name!r} requires an argument."
+msgid_plural "Option {name!r} requires {nargs} arguments."
+msgstr[0] ""
+msgstr[1] ""
+
+#: python/click/shell_completion.py:326
+#: venv/Lib/site-packages/click/shell_completion.py:326
+msgid "Shell completion is not supported for Bash versions older than 4.4."
+msgstr ""
+
+#: python/click/shell_completion.py:333
+#: venv/Lib/site-packages/click/shell_completion.py:333
+msgid "Couldn't detect Bash version, shell completion is not supported."
+msgstr ""
+
+#: python/click/termui.py:158 venv/Lib/site-packages/click/termui.py:158
+msgid "Repeat for confirmation"
+msgstr ""
+
+#: python/click/termui.py:174 venv/Lib/site-packages/click/termui.py:174
+msgid "Error: The value you entered was invalid."
+msgstr ""
+
+#: python/click/termui.py:176 venv/Lib/site-packages/click/termui.py:176
+#, python-brace-format
+msgid "Error: {e.message}"
+msgstr ""
+
+#: python/click/termui.py:187 venv/Lib/site-packages/click/termui.py:187
+msgid "Error: The two entered values do not match."
+msgstr ""
+
+#: python/click/termui.py:243 venv/Lib/site-packages/click/termui.py:243
+msgid "Error: invalid input"
+msgstr ""
+
+#: python/click/termui.py:773 venv/Lib/site-packages/click/termui.py:773
+msgid "Press any key to continue..."
+msgstr ""
+
+#: python/click/types.py:267 venv/Lib/site-packages/click/types.py:267
+#, python-brace-format
+msgid ""
+"Choose from:\n"
+"\t{choices}"
+msgstr ""
+
+#: python/click/types.py:299 venv/Lib/site-packages/click/types.py:299
+#, python-brace-format
+msgid "{value!r} is not {choice}."
+msgid_plural "{value!r} is not one of {choices}."
+msgstr[0] ""
+msgstr[1] ""
+
+#: python/click/types.py:393 venv/Lib/site-packages/click/types.py:393
+#, python-brace-format
+msgid "{value!r} does not match the format {format}."
+msgid_plural "{value!r} does not match the formats {formats}."
+msgstr[0] ""
+msgstr[1] ""
+
+#: python/click/types.py:415 venv/Lib/site-packages/click/types.py:415
+#, python-brace-format
+msgid "{value!r} is not a valid {number_type}."
+msgstr ""
+
+#: python/click/types.py:471 venv/Lib/site-packages/click/types.py:471
+#, python-brace-format
+msgid "{value} is not in the range {range}."
+msgstr ""
+
+#: python/click/types.py:612 venv/Lib/site-packages/click/types.py:612
+#, python-brace-format
+msgid "{value!r} is not a valid boolean."
+msgstr ""
+
+#: python/click/types.py:636 venv/Lib/site-packages/click/types.py:636
+#, python-brace-format
+msgid "{value!r} is not a valid UUID."
+msgstr ""
+
+#: python/click/types.py:826 venv/Lib/site-packages/click/types.py:826
+msgid "file"
+msgstr ""
+
+#: python/click/types.py:828 venv/Lib/site-packages/click/types.py:828
+msgid "directory"
+msgstr ""
+
+#: python/click/types.py:830 venv/Lib/site-packages/click/types.py:830
+msgid "path"
+msgstr ""
+
+#: python/click/types.py:881 venv/Lib/site-packages/click/types.py:881
+#, python-brace-format
+msgid "{name} {filename!r} does not exist."
+msgstr ""
+
+#: python/click/types.py:890 venv/Lib/site-packages/click/types.py:890
+#, python-brace-format
+msgid "{name} {filename!r} is a file."
+msgstr ""
+
+#: python/click/types.py:898 venv/Lib/site-packages/click/types.py:898
+#, python-brace-format
+msgid "{name} {filename!r} is a directory."
+msgstr ""
+
+#: python/click/types.py:907 venv/Lib/site-packages/click/types.py:907
+#, python-brace-format
+msgid "{name} {filename!r} is not readable."
+msgstr ""
+
+#: python/click/types.py:916 venv/Lib/site-packages/click/types.py:916
+#, python-brace-format
+msgid "{name} {filename!r} is not writable."
+msgstr ""
+
+#: python/click/types.py:925 venv/Lib/site-packages/click/types.py:925
+#, python-brace-format
+msgid "{name} {filename!r} is not executable."
+msgstr ""
+
+#: python/click/types.py:992 venv/Lib/site-packages/click/types.py:992
+#, python-brace-format
+msgid "{len_type} values are required, but {len_value} was given."
+msgid_plural "{len_type} values are required, but {len_value} were given."
+msgstr[0] ""
+msgstr[1] ""
+
+#: python/isort/main.py:159 venv/Lib/site-packages/isort/main.py:159
+msgid "show this help message and exit"
+msgstr ""
+
+#: templates/base.html:24
+msgid "Mi Aplicación"
+msgstr "My Application"
+
+#: templates/base.html:44
+msgid "Opciones"
+msgstr "Options"
+
+#: templates/base.html:52 templates/base.html:101
+msgid "Sistema de Reservas"
+msgstr "Booking System"
+
+#: templates/base.html:56
+msgid "Nueva Reserva"
+msgstr "New Booking"
+
+#: templates/base.html:59
+msgid "Consultar Reservas"
+msgstr "View Bookings"
+
+#: templates/base.html:68
+msgid "Instalaciones"
+msgstr "Facilities"
+
+#: templates/base.html:72
+msgid "Puertas Pistas"
+msgstr "Court Doors"
+
+#: templates/base.html:75
+msgid "Climatización"
+msgstr "Air Conditioning"
+
+#: templates/base.html:78
+msgid "Agua Caliente"
+msgstr "Hot Water"
+
+#: templates/base.html:81
+msgid "Cafetería"
+msgstr "Cafeteria"
+
+#: templates/base.html:84
+msgid "Vestuarios"
+msgstr "Changing Rooms"
+
+#: templates/base.html:87 templates/base.html:166
+msgid "Otros"
+msgstr "Others"
+
+#: templates/base.html:95
+msgid "Configuración"
+msgstr "Settings"
+
+#: templates/base.html:130
+msgid "Horarios"
+msgstr "Schedules"
+
+#: templates/base.html:139
+msgid "Definición Horarios"
+msgstr "Schedule Definition"
+
+#: templates/base.html:146
+msgid "Asignación Horarios"
+msgstr "Schedule Assignment"
+
+#: templates/base.html:153
+msgid "Visualizar Calendario"
+msgstr "View Calendar"
+
+#: templates/base.html:160
+msgid "Pistas"
+msgstr "Courts"
+
+#: templates/base.html:240
+msgid "Ayuda"
+msgstr "Help"
+
+#: templates/base.html:252 templates/club_selection.html:40
+#: templates/club_timetable.html:160 templates/courts_configuration.html:31
+#: templates/display_calendar.html:110
+#: templates/playtomic_configuration.html:39
+#: templates/schedule_assignment.html:233
+msgid "Salir"
+msgstr "Log out"
+
+#: templates/club_selection.html:7 templates/login.html:9
+#: templates/login.html:79
+msgid "Inicio de Sesión"
+msgstr "Login"
+
+#: templates/club_selection.html:24
+msgid "Selecciona tu Club"
+msgstr "Select your Club"
+
+#: templates/club_selection.html:35
+msgid "Buscar más clubes"
+msgstr "Search more clubs"
+
+#: templates/club_selection.html:46
+msgid "Buscar club..."
+msgstr "Search club..."
+
+#: templates/club_timetable.html:19 templates/club_timetable.html:851
+#: templates/club_timetable.html:1172
+msgid "Horarios Club:"
+msgstr "Club Schedules:"
+
+#: templates/club_timetable.html:22
+msgid "Aquí puedes gestionar los horarios de tu club."
+msgstr "Here you can manage your club's schedules."
+
+#: templates/club_timetable.html:44
+msgid "Nombre del Horario"
+msgstr "Schedule Name"
+
+#: templates/club_timetable.html:48
+msgid "Por favor, completa este campo"
+msgstr "Please fill out this field"
+
+#: templates/club_timetable.html:55
+msgid "Hora Inicio Reservas"
+msgstr "Reservation Start Time"
+
+#: templates/club_timetable.html:58 templates/club_timetable.html:67
+#: templates/club_timetable.html:104 templates/club_timetable.html:116
+msgid ""
+"Debes introduccir un valor válido, el campo está incompleto o incluye una"
+" fecha no válida"
+msgstr ""
+"You must enter a valid value; the field is incomplete or contains an "
+"invalid date"
+
+#: templates/club_timetable.html:64
+msgid "Hora Fin Reservas"
+msgstr "Reservation End Time"
+
+#: templates/club_timetable.html:76
+msgid "Iluminación Servicio"
+msgstr "Service Lighting"
+
+#: templates/club_timetable.html:89
+msgid ""
+"Por favor, completa el nombre, la hora de inicio y la hora de fin antes "
+"de activar esta opción."
+msgstr ""
+"Please fill in the name, start time, and end time before enabling this "
+"option."
+
+#: templates/club_timetable.html:99
+msgid "Hora Inicio Iluminación Servicio"
+msgstr "Service Lighting Start Time"
+
+#: templates/club_timetable.html:111
+msgid "Hora Fin Iluminación Servicio"
+msgstr "Service Lighting End Time"
+
+#: templates/club_timetable.html:134
+msgid "Añadir Franja"
+msgstr "Add Slot"
+
+#: templates/club_timetable.html:142 templates/club_timetable.html:737
+#: templates/club_timetable.html:1167
+msgid "Actualizar Horario"
+msgstr "Update Schedule"
+
+#: templates/club_timetable.html:142 templates/club_timetable.html:802
+msgid "Guardar Horario"
+msgstr "Save Schedule"
+
+#: templates/club_timetable.html:152
+msgid "Nuevo Horario"
+msgstr "New Schedule"
+
+#: templates/club_timetable.html:177
+msgid "Franjas Horarias Iluminación Servicio"
+msgstr "Service Lighting Time Slots"
+
+#: templates/club_timetable.html:183 templates/club_timetable.html:261
+msgid "Hora Inicio"
+msgstr "Start Time"
+
+#: templates/club_timetable.html:184 templates/club_timetable.html:262
+msgid "Hora Fin"
+msgstr "End Time"
+
+#: templates/club_timetable.html:185 templates/club_timetable.html:263
+#: templates/schedule_assignment.html:313
+#: templates/schedule_assignment.html:381
+msgid "Acciones"
+msgstr "Actions"
+
+#: templates/club_timetable.html:205 templates/club_timetable.html:320
+msgid "Editar"
+msgstr "Edit"
+
+#: templates/club_timetable.html:213 templates/club_timetable.html:328
+#: templates/club_timetable.html:338 templates/schedule_assignment.html:328
+#: templates/schedule_assignment.html:395
+msgid "Eliminar"
+msgstr "Delete"
+
+#: templates/club_timetable.html:225
+msgid "Total Franjas:"
+msgstr "Total Slots:"
+
+#: templates/club_timetable.html:260 templates/courts_configuration.html:45
+#: templates/courts_configuration.html:47
+#: templates/playtomic_configuration.html:54
+msgid "Nombre"
+msgstr "Name"
+
+#: templates/club_timetable.html:285
+msgid "Añadir franja para"
+msgstr "Add slot for"
+
+#: templates/club_timetable.html:286 templates/club_timetable.html:294
+msgid "Añadir Iluminación Servicio"
+msgstr "Add Service Lighting"
+
+#: templates/club_timetable.html:293 templates/club_timetable.html:309
+msgid "Este horario no tiene iluminación de servicio"
+msgstr "This schedule has no service lighting"
+
+#: templates/club_timetable.html:302
+msgid "Mostrar u ocultar horarios de iluminación"
+msgstr "Show or hide lighting schedules"
+
+#: templates/club_timetable.html:303
+msgid "Mostrar Iluminación Servicio"
+msgstr "Show Service Lighting"
+
+#: templates/club_timetable.html:310
+msgid "Horarios Iluminación Servicio"
+msgstr "Service Lighting Schedules"
+
+#: templates/club_timetable.html:318
+msgid "Editar horario"
+msgstr "Edit schedule"
+
+#: templates/club_timetable.html:327
+msgid "Este horario no se puede eliminar"
+msgstr "This schedule cannot be deleted"
+
+#: templates/club_timetable.html:337
+msgid "Eliminar horario"
+msgstr "Delete schedule"
+
+#: templates/club_timetable.html:351
+msgid "Total Horarios:"
+msgstr "Total Schedules:"
+
+#: templates/club_timetable.html:357
+msgid "No hay horarios disponibles."
+msgstr "No schedules available."
+
+#: templates/club_timetable.html:480
+msgid "No se pudo encontrar la acción del formulario."
+msgstr "Form action could not be found."
+
+#: templates/club_timetable.html:542 templates/club_timetable.html:964
+#: templates/club_timetable.html:1157 templates/club_timetable.html:1175
+msgid "Campos incompletos"
+msgstr "Incomplete fields"
+
+#: templates/club_timetable.html:543 templates/club_timetable.html:1158
+msgid "Por favor completa ambas horas de iluminación servicio."
+msgstr "Please complete both service lighting times."
+
+#: templates/club_timetable.html:554 templates/club_timetable.html:1163
+msgid "Error al parsear franjas:"
+msgstr "Error parsing time slots:"
+
+#: templates/club_timetable.html:560 templates/club_timetable.html:950
+#: templates/club_timetable.html:1159 templates/club_timetable.html:1173
+msgid "Horas inválidas"
+msgstr "Invalid times"
+
+#: templates/club_timetable.html:561 templates/club_timetable.html:1160
+msgid ""
+"La hora fin debe estar después de la hora inicio de iluminación de "
+"servicio."
+msgstr "End time must be after the start time for service lighting."
+
+#: templates/club_timetable.html:580 templates/club_timetable.html:1161
+msgid "Solapamiento detectado"
+msgstr "Overlap detected"
+
+#: templates/club_timetable.html:581 templates/club_timetable.html:1162
+msgid ""
+"No puede haber solapamiento entre franjas horarias de iluminación de "
+"servicio."
+msgstr "There can be no overlap between service lighting time slots."
+
+#: templates/club_timetable.html:632 templates/club_timetable.html:882
+#: templates/club_timetable.html:1164 templates/club_timetable.html:1170
+msgid "Editar Franja Iluminación Servicio:"
+msgstr "Edit Service Lighting Slot:"
+
+#: templates/club_timetable.html:667 templates/club_timetable.html:901
+#: templates/club_timetable.html:1165 templates/club_timetable.html:1171
+msgid "Actualizar Franja"
+msgstr "Update Slot"
+
+#: templates/club_timetable.html:704 templates/club_timetable.html:1166
+msgid "Editar Horario Club:"
+msgstr "Edit Club Schedule:"
+
+#: templates/club_timetable.html:748 templates/club_timetable.html:1168
+msgid "Agregar Horario Club:"
+msgstr "Add Club Schedule:"
+
+#: templates/club_timetable.html:817 templates/club_timetable.html:1169
+msgid "Añadir Iluminación Servicio:"
+msgstr "Add Service Lighting:"
+
+#: templates/club_timetable.html:923 templates/club_timetable.html:1177
+msgid "Error al parsear franjas"
+msgstr "Error parsing slots"
+
+#: templates/club_timetable.html:941 templates/club_timetable.html:1178
+msgid "Error en redirigirConHoras:"
+msgstr "Error in redirigirConHoras:"
+
+#: templates/club_timetable.html:951 templates/club_timetable.html:1174
+msgid "La hora fin debe estar después de la hora inicio (según el ciclo horario)."
+msgstr "End time must be after start time (according to the schedule cycle)."
+
+#: templates/club_timetable.html:965 templates/club_timetable.html:1176
+msgid "Completa la hora de inicio y fin de la iluminación de servicio."
+msgstr "Complete both the start and end times for service lighting."
+
+#: templates/club_timetable.html:984 templates/club_timetable.html:1179
+msgid "form-horario no encontrado en el DOM"
+msgstr "form-horario not found in the DOM"
+
+#: templates/club_timetable.html:1002 templates/club_timetable.html:1180
+msgid "No permitido"
+msgstr "Not allowed"
+
+#: templates/club_timetable.html:1003 templates/club_timetable.html:1181
+msgid "No se puede eliminar el horario 'Básico o por defecto'."
+msgstr "The 'Basic or default' schedule cannot be deleted."
+
+#: templates/club_timetable.html:1010 templates/club_timetable.html:1182
+#: templates/courts_configuration.html:551
+#: templates/courts_configuration.html:592
+#: templates/playtomic_configuration.html:373
+#: templates/playtomic_configuration.html:414
+msgid "¿Estás seguro?"
+msgstr "Are you sure?"
+
+#: templates/club_timetable.html:1011 templates/club_timetable.html:1183
+msgid "Esta acción no se puede deshacer."
+msgstr "This action cannot be undone."
+
+#: templates/club_timetable.html:1016 templates/club_timetable.html:1037
+#: templates/club_timetable.html:1184 templates/courts_configuration.html:557
+#: templates/playtomic_configuration.html:379
+#: templates/schedule_assignment.html:957
+msgid "Sí, eliminar"
+msgstr "Yes, delete"
+
+#: templates/club_timetable.html:1017 templates/club_timetable.html:1038
+#: templates/club_timetable.html:1185 templates/courts_configuration.html:558
+#: templates/courts_configuration.html:599
+#: templates/playtomic_configuration.html:288
+#: templates/playtomic_configuration.html:380
+#: templates/playtomic_configuration.html:421
+#: templates/playtomic_configuration.html:448
+#: templates/schedule_assignment.html:758
+#: templates/schedule_assignment.html:958
+msgid "Cancelar"
+msgstr "Cancel"
+
+#: templates/club_timetable.html:1033 templates/club_timetable.html:1186
+msgid "¿Eliminar franja?"
+msgstr "Delete time slot?"
+
+#: templates/club_timetable.html:1034 templates/club_timetable.html:1187
+msgid "Esta franja de iluminación será eliminada permanentemente."
+msgstr "This lighting slot will be permanently deleted."
+
+#: templates/club_timetable.html:1101 templates/club_timetable.html:1189
+#: templates/playtomic_configuration.html:477
+msgid "Error en la respuesta del servidor."
+msgstr "Server response error."
+
+#: templates/club_timetable.html:1110 templates/club_timetable.html:1188
+msgid "Error al enviar datos:"
+msgstr "Error sending data:"
+
+#: templates/club_timetable.html:1113 templates/courts_configuration.html:584
+#: templates/courts_configuration.html:652 templates/display_calendar.html:379
+#: templates/main_page.html:524 templates/playtomic_configuration.html:406
+#: templates/playtomic_configuration.html:488
+#: templates/schedule_assignment.html:593
+#: templates/schedule_assignment.html:779
+#: templates/schedule_assignment.html:1022
+#: templates/schedule_assignment.html:1070
+#: templates/schedule_assignment.html:1111
+#: templates/schedule_assignment.html:1165
+msgid "Error"
+msgstr "Error"
+
+#: templates/club_timetable.html:1114 templates/club_timetable.html:1190
+#: templates/courts_configuration.html:653 templates/display_calendar.html:380
+#: templates/playtomic_configuration.html:489
+#: templates/schedule_assignment.html:1166
+msgid "No se pudo cargar la página. Inténtalo de nuevo más tarde."
+msgstr "The page could not be loaded. Please try again later."
+
+#: templates/courts_configuration.html:13
+msgid "Courts Icon"
+msgstr "Courts Icon"
+
+#: templates/courts_configuration.html:14
+msgid "Configuración Pistas Club : "
+msgstr "Club Court Configuration:"
+
+#: templates/courts_configuration.html:16
+msgid "Aquí puedes configurar las pistas del club."
+msgstr "Here you can configure the club's courts."
+
+#: templates/courts_configuration.html:22
+#: templates/playtomic_configuration.html:23
+msgid "Eliminar Configuración"
+msgstr "Delete Configuration"
+
+#: templates/courts_configuration.html:25
+#: templates/playtomic_configuration.html:27
+msgid "Cargar Configuración"
+msgstr "Load Configuration"
+
+#: templates/courts_configuration.html:28
+#: templates/playtomic_configuration.html:33
+msgid "Guardar Configuración"
+msgstr "Save Configuration"
+
+#: templates/courts_configuration.html:43
+#: templates/playtomic_configuration.html:51
+msgid "Nº"
+msgstr "No."
+
+#: templates/courts_configuration.html:44
+msgid "Activa"
+msgstr "Active"
+
+#: templates/courts_configuration.html:46
+msgid "Tipo"
+msgstr "Type"
+
+#: templates/courts_configuration.html:46
+#: templates/courts_configuration.html:48
+#: templates/courts_configuration.html:49
+#: templates/courts_configuration.html:50
+#: templates/courts_configuration.html:51
+msgid "Iluminación"
+msgstr "Lighting"
+
+#: templates/courts_configuration.html:48
+msgid "Servicio"
+msgstr "Service"
+
+#: templates/courts_configuration.html:49 templates/main_page.html:326
+msgid "ON"
+msgstr "ON"
+
+#: templates/courts_configuration.html:50
+msgid "ON Premium"
+msgstr "ON Premium"
+
+#: templates/courts_configuration.html:51
+msgid "ON Campeonato"
+msgstr "ON Tournament"
+
+#: templates/courts_configuration.html:141
+#: templates/courts_configuration.html:682
+msgid "— elegir —"
+msgstr "— choose —"
+
+#: templates/courts_configuration.html:429
+msgid "¿Sin opciones disponibles?"
+msgstr "No options available?"
+
+#: templates/courts_configuration.html:430
+msgid "No hay luminarias individuales disponibles para combinar."
+msgstr "No individual fixtures available for pairing."
+
+#: templates/courts_configuration.html:431 templates/main_page.html:221
+#: templates/main_page.html:257 templates/schedule_assignment.html:596
+#: templates/schedule_assignment.html:617
+msgid "Aceptar"
+msgstr "Accept"
+
+#: templates/courts_configuration.html:533
+#: templates/schedule_assignment.html:1015
+#: templates/schedule_assignment.html:1063
+#: templates/schedule_assignment.html:1104
+msgid "Guardado"
+msgstr "Saved"
+
+#: templates/courts_configuration.html:534
+#: templates/playtomic_configuration.html:347
+msgid "Configuración almacenada correctamente"
+msgstr "Configuration saved successfully"
+
+#: templates/courts_configuration.html:540
+msgid "Ups…"
+msgstr "Ups..."
+
+#: templates/courts_configuration.html:541
+#: templates/playtomic_configuration.html:356
+msgid "No se pudo guardar la configuración"
+msgstr "Failed to save configuration"
+
+#: templates/courts_configuration.html:552
+msgid "Esto eliminará toda la configuración actual."
+msgstr "This will delete the current configuration entirely."
+
+#: templates/courts_configuration.html:569
+#: templates/playtomic_configuration.html:391
+msgid "Error al eliminar"
+msgstr "Error deleting"
+
+#: templates/courts_configuration.html:575
+#: templates/playtomic_configuration.html:397
+msgid "Eliminado"
+msgstr "Deleted"
+
+#: templates/courts_configuration.html:576
+#: templates/playtomic_configuration.html:398
+msgid "Configuración eliminada correctamente"
+msgstr "Configuration deleted successfully"
+
+#: templates/courts_configuration.html:585
+#: templates/playtomic_configuration.html:407
+msgid "No se pudo eliminar la configuración"
+msgstr "Could not delete configuration"
+
+#: templates/courts_configuration.html:593
+msgid "Esto cargará la configuración almacenada o la de por defecto"
+msgstr "This will load the stored configuration"
+
+#: templates/courts_configuration.html:598
+#: templates/playtomic_configuration.html:420
+msgid "Sí, cargar"
+msgstr "Yes, load"
+
+#: templates/display_calendar.html:86
+msgid "Calendario Mensual de Horarios Club:"
+msgstr "Monthly Club Schedule Calendar:"
+
+#: templates/display_calendar.html:90 templates/display_calendar.html:286
+msgid "Mes:"
+msgstr "Month:"
+
+#: templates/display_calendar.html:92 templates/schedule_assignment.html:261
+#: templates/schedule_assignment.html:302
+msgid "Enero"
+msgstr "January"
+
+#: templates/display_calendar.html:93 templates/schedule_assignment.html:261
+#: templates/schedule_assignment.html:302
+msgid "Febrero"
+msgstr "February"
+
+#: templates/display_calendar.html:94 templates/schedule_assignment.html:261
+#: templates/schedule_assignment.html:302
+msgid "Marzo"
+msgstr "March"
+
+#: templates/display_calendar.html:95 templates/schedule_assignment.html:261
+#: templates/schedule_assignment.html:302
+msgid "Abril"
+msgstr "April"
+
+#: templates/display_calendar.html:96 templates/schedule_assignment.html:261
+#: templates/schedule_assignment.html:302
+msgid "Mayo"
+msgstr "May"
+
+#: templates/display_calendar.html:97 templates/schedule_assignment.html:261
+#: templates/schedule_assignment.html:302
+msgid "Junio"
+msgstr "June"
+
+#: templates/display_calendar.html:98 templates/schedule_assignment.html:262
+#: templates/schedule_assignment.html:303
+msgid "Julio"
+msgstr "July"
+
+#: templates/display_calendar.html:99 templates/schedule_assignment.html:262
+#: templates/schedule_assignment.html:303
+msgid "Agosto"
+msgstr "August"
+
+#: templates/display_calendar.html:100 templates/schedule_assignment.html:262
+#: templates/schedule_assignment.html:303
+msgid "Septiembre"
+msgstr "September"
+
+#: templates/display_calendar.html:101 templates/schedule_assignment.html:262
+#: templates/schedule_assignment.html:303
+msgid "Octubre"
+msgstr "October"
+
+#: templates/display_calendar.html:102 templates/schedule_assignment.html:262
+#: templates/schedule_assignment.html:303
+msgid "Noviembre"
+msgstr "November"
+
+#: templates/display_calendar.html:103 templates/schedule_assignment.html:262
+#: templates/schedule_assignment.html:303
+msgid "Diciembre"
+msgstr "December"
+
+#: templates/display_calendar.html:106
+msgid "Año:"
+msgstr "Year:"
+
+#: templates/display_calendar.html:109
+msgid "Ir"
+msgstr "Go"
+
+#: templates/display_calendar.html:223
+msgid "Fecha fuera de rango"
+msgstr "Date out of range"
+
+#: templates/display_calendar.html:224
+msgid "Solo puedes ver meses entre este mes y los próximos 12 meses."
+msgstr "You can only view months between this month and the next 12 months."
+
+#: templates/display_calendar.html:225
+#: templates/playtomic_configuration.html:166
+#: templates/playtomic_configuration.html:319
+msgid "Entendido"
+msgstr "Understood"
+
+#: templates/display_calendar.html:285
+msgid "Cargando horarios..."
+msgstr "Loading schedules..."
+
+#: templates/display_calendar.html:314
+msgid "No se pudieron cargar los datos."
+msgstr "Data could not be loaded."
+
+#: templates/load_data.html:17 templates/main_page.html:86
+msgid "Recopilando información de las Pistas..."
+msgstr "Collecting information from the Courts..."
+
+#: templates/load_data.html:19 templates/main_page.html:89
+msgid "Esto puede tardar unos segundos, por favor espera."
+msgstr "This may take a few seconds, please wait."
+
+#: templates/login.html:108
+msgid "Correo Electrónico"
+msgstr "Email Address"
+
+#: templates/login.html:111
+msgid "Por favor, introduce un correo válido"
+msgstr "Please enter a valid email"
+
+#: templates/login.html:117
+msgid "Contraseña"
+msgstr "Password"
+
+#: templates/login.html:121
+msgid "Por favor, introduce tu contraseña"
+msgstr "Please enter your password"
+
+#: templates/login.html:127
+msgid "Mostrar"
+msgstr "Show"
+
+#: templates/login.html:134
+msgid "Iniciar Sesión"
+msgstr "Log In"
+
+#: templates/login.html:139
+msgid "¿No tienes una cuenta?"
+msgstr "Don't have an account?"
+
+#: templates/login.html:139
+msgid "Registrarse"
+msgstr "Sign Up"
+
+#: templates/login.html:142
+msgid "¿Olvidaste tu contraseña?"
+msgstr "Forgot your password?"
+
+#: templates/login.html:340
+msgid "Ocurrió un error al iniciar sesión: <br>"
+msgstr "An error occurred during login: <br>"
+
+#: templates/main_page.html:53 templates/plug_booking_system.html:78
+msgid "EL SISTEMA DE RESERVAS ESTÁ CONECTADO"
+msgstr "THE BOOKING SYSTEM IS CONNECTED."
+
+#: templates/main_page.html:54
+msgid "EL SISTEMA ESTÁ EN MODO MANUAL"
+msgstr "THE SYSTEM IS IN MANUAL MODE"
+
+#: templates/main_page.html:55
+msgid "Habilitar Modo Manual"
+msgstr "Enable Manual Mode"
+
+#: templates/main_page.html:56
+msgid "Conectar Sistema de Reservas"
+msgstr "Connect Reservation System"
+
+#: templates/main_page.html:68
+msgid "Panel de Control de las Pistas"
+msgstr "Court Control Panel"
+
+#: templates/main_page.html:72 templates/main_page.html:100
+msgid "Error de Conexión."
+msgstr "Connection Error."
+
+#: templates/main_page.html:73 templates/main_page.html:102
+msgid "No es posible conectar con las pistas, inténtelo en unos minutos..."
+msgstr "Unable to connect to the tracks, please try again in a few minutes."
+
+#: templates/main_page.html:75 templates/main_page.html:105
+msgid "Intentar Conectar"
+msgstr "Try Connecting"
+
+#: templates/main_page.html:219
+msgid "Conexión fallida"
+msgstr "Connection failed"
+
+#: templates/main_page.html:220 templates/main_page.html:256
+msgid "No fue posible establecer conexión con las pistas."
+msgstr "Unable to establish connection with the tracks."
+
+#: templates/main_page.html:255
+#, fuzzy
+msgid "❌ Conexión fallida"
+msgstr "Connection failed"
+
+#: templates/main_page.html:325
+msgid "Control bloqueado por sistema de reservas activo"
+msgstr "Control blocked by active reservation system"
+
+#: templates/main_page.html:326
+msgid "OFF"
+msgstr "OFF"
+
+#: templates/main_page.html:329
+msgid "Regulación"
+msgstr "Regulation"
+
+#: templates/main_page.html:389 templates/main_page.html:432
+msgid "Error al apagar la luz"
+msgstr "Error turning off the light"
+
+#: templates/main_page.html:390 templates/main_page.html:433
+msgid "Error desconocido"
+msgstr "Unknown error"
+
+#: templates/main_page.html:399 templates/main_page.html:442
+msgid "Error de red"
+msgstr "Network error"
+
+#: templates/main_page.html:400
+msgid "Error de red al encender la luz"
+msgstr "Network error while turning on the light"
+
+#: templates/main_page.html:443
+msgid "No se pudo contactar con el servidor."
+msgstr "Could not contact the server."
+
+#: templates/main_page.html:501 templates/playtomic_configuration.html:123
+msgid "Sin pistas configuradas"
+msgstr "No courts configured"
+
+#: templates/main_page.html:502
+msgid "Para comenzar, primero debes configurar las pistas."
+msgstr "To get started, you must first configure the courts."
+
+#: templates/main_page.html:503
+msgid "Ir a configuración de pistas"
+msgstr "Go to court configuration"
+
+#: templates/main_page.html:517
+msgid "Error al cargar la configuración inicial"
+msgstr "Error loading initial configuration"
+
+#: templates/playtomic_configuration.html:9
+msgid "Icono de pistas"
+msgstr "Court Icon"
+
+#: templates/playtomic_configuration.html:11
+msgid "Configuración para las pistas del Club : "
+msgstr "Club Court Configuration:"
+
+#: templates/playtomic_configuration.html:16
+msgid ""
+"Aquí puedes asociar los números de pista de Playtomic a las pistas del "
+"club."
+msgstr "Here you can associate Playtomic court numbers with the club's courts."
+
+#: templates/playtomic_configuration.html:57
+msgid "Identificador"
+msgstr "Identifier"
+
+#: templates/playtomic_configuration.html:57
+msgid "Playtomic"
+msgstr "Playtomic"
+
+#: templates/playtomic_configuration.html:60
+#: templates/playtomic_configuration.html:86
+msgid "Probar"
+msgstr "Test"
+
+#: templates/playtomic_configuration.html:63
+msgid "Estado"
+msgstr "Status"
+
+#: templates/playtomic_configuration.html:80
+msgid "Debe contener exactamente 7 dígitos numéricos (0-9)"
+msgstr "Must contain exactly 7 numeric digits (0-9)"
+
+#: templates/playtomic_configuration.html:92
+#: templates/playtomic_configuration.html:237
+msgid "Sin conexión"
+msgstr "No connection"
+
+#: templates/playtomic_configuration.html:124
+msgid "No hay pistas configuradas, primero debes configurar las pistas antes de configurar Playtomic."
+msgstr "No courts are configured. You must configure the courts before setting up Playtomic."
+
+#: templates/playtomic_configuration.html:126
+msgid "Ir a configuración"
+msgstr "Go to configuration"
+
+#: templates/playtomic_configuration.html:164
+msgid "Valor duplicado"
+msgstr "Duplicate value"
+
+#: templates/playtomic_configuration.html:165
+msgid "Se ha borrado automáticamente el valor duplicado."
+msgstr "Duplicate value was automatically removed."
+
+#: templates/playtomic_configuration.html:227
+msgid "Reservada"
+msgstr "Reserved"
+
+#: templates/playtomic_configuration.html:232
+msgid "No reservada"
+msgstr "Not reserved"
+
+#: templates/playtomic_configuration.html:284
+#: templates/playtomic_configuration.html:444
+msgid "⚠ Pistas sin configurar"
+msgstr "⚠ Unconfigured courts"
+
+#: templates/playtomic_configuration.html:285
+#: templates/playtomic_configuration.html:445
+msgid "Hay"
+msgstr "There are"
+
+#: templates/playtomic_configuration.html:285
+#: templates/playtomic_configuration.html:445
+msgid "pista(s) sin código"
+msgstr "court(s) without a code"
+
+#: templates/playtomic_configuration.html:285
+#: templates/playtomic_configuration.html:445
+msgid "asignado."
+msgstr "assigned."
+
+#: templates/playtomic_configuration.html:287
+msgid "Guardar de todos modos"
+msgstr "Save anyway"
+
+#: templates/playtomic_configuration.html:317
+msgid "❌ Valores duplicados"
+msgstr "❌ Duplicate values"
+
+#: templates/playtomic_configuration.html:318
+msgid "Hay códigos"
+msgstr "There are codes"
+
+#: templates/playtomic_configuration.html:318
+msgid "duplicados:"
+msgstr "duplicated:"
+
+#: templates/playtomic_configuration.html:318
+msgid "Corrige antes de guardar."
+msgstr "Fix before saving."
+
+#: templates/playtomic_configuration.html:346
+msgid "✅ Guardado"
+msgstr "✅ Saved"
+
+#: templates/playtomic_configuration.html:355
+msgid "❌ Error"
+msgstr "❌ Error"
+
+#: templates/playtomic_configuration.html:374
+msgid "Esto eliminará toda la configuración de las pistas Playtomic"
+msgstr "This will delete all Playtomic court configuration"
+
+#: templates/playtomic_configuration.html:415
+msgid "Esto cargará la configuración almacenada"
+msgstr "This will load the stored configuration"
+
+#: templates/playtomic_configuration.html:447
+msgid "Salir de todos modos"
+msgstr "Exit anyway"
+
+#: templates/plug_booking_system.html:6
+msgid "Gestión del Sistema de Reservas"
+msgstr "Booking System Management"
+
+#: templates/plug_booking_system.html:34
+msgid "Conectar / Desconectar Sistema de Reservas"
+msgstr "Booking System Connect/Disconnect"
+
+#: templates/plug_booking_system.html:47
+msgid "Activar"
+msgstr "Enable"
+
+#: templates/plug_booking_system.html:59
+msgid "Volver"
+msgstr "Back    "
+
+#: templates/plug_booking_system.html:79
+msgid "EL SISTEMA DE RESERVAS ESTÁ DESCONECTADO"
+msgstr "THE BOOKING SYSTEM IS DISCONNECTED."
+
+#: templates/plug_booking_system.html:136
+msgid "HABILITAR"
+msgstr "ENABLE"
+
+#: templates/plug_booking_system.html:137
+msgid "DESHABILITAR"
+msgstr "DISABLE"
+
+#: templates/plug_booking_system.html:147
+msgid "Desconectando el sistema de reservas..."
+msgstr "Booking System Disconnecting..."
+
+#: templates/plug_booking_system.html:148
+msgid "Conectando el sistema de reservas..."
+msgstr "Booking System Connecting..."
+
+#: templates/schedule_assignment.html:172
+msgid "Asignación de Horarios Club:"
+msgstr "Club Schedule Assignment:"
+
+#: templates/schedule_assignment.html:175
+msgid "Aquí puedes asignar los horarios de tu club."
+msgstr "Here you can assign your club’s schedule."
+
+#: templates/schedule_assignment.html:183
+msgid "Asignar Horario"
+msgstr "Assign Schedule"
+
+#: templates/schedule_assignment.html:188
+msgid "Selecciona un horario disponible:"
+msgstr "Select an available schedule:"
+
+#: templates/schedule_assignment.html:202
+msgid "Asignar a:"
+msgstr "Assign to:"
+
+#: templates/schedule_assignment.html:207
+msgid "Meses"
+msgstr "Months"
+
+#: templates/schedule_assignment.html:213
+msgid "Días de la semana"
+msgstr "Days of the week"
+
+#: templates/schedule_assignment.html:219
+msgid "Días del año"
+msgstr "Days of the year"
+
+#: templates/schedule_assignment.html:227
+msgid "Guardar Asignación"
+msgstr "Save Assignment"
+
+#: templates/schedule_assignment.html:256
+msgid "Asignación por Mes"
+msgstr "Assignment by Month"
+
+#: templates/schedule_assignment.html:282
+msgid "Aplicar esta asignación para:"
+msgstr "Apply this assignment to:"
+
+#: templates/schedule_assignment.html:287
+msgid "Solo para el año en curso"
+msgstr "Only for the current year"
+
+#: templates/schedule_assignment.html:292
+msgid "Para todos los años"
+msgstr "For all years"
+
+#: templates/schedule_assignment.html:299
+msgid "Meses ya asignados"
+msgstr "Already Assigned Months"
+
+#: templates/schedule_assignment.html:310
+msgid "Mes"
+msgstr "Month:"
+
+#: templates/schedule_assignment.html:311
+msgid "Año"
+msgstr "Year:"
+
+#: templates/schedule_assignment.html:312
+#: templates/schedule_assignment.html:380
+msgid "Horario"
+msgstr "Schedule"
+
+#: templates/schedule_assignment.html:320
+msgid "Todos los años"
+msgstr "All years"
+
+#: templates/schedule_assignment.html:321
+msgid "Sin horario"
+msgstr "No schedule"
+
+#: templates/schedule_assignment.html:348
+#: templates/schedule_assignment.html:373
+msgid "Lunes"
+msgstr "Monday"
+
+#: templates/schedule_assignment.html:348
+#: templates/schedule_assignment.html:373
+msgid "Martes"
+msgstr "Tuesday"
+
+#: templates/schedule_assignment.html:348
+#: templates/schedule_assignment.html:373
+msgid "Miércoles"
+msgstr "Wednesday"
+
+#: templates/schedule_assignment.html:348
+#: templates/schedule_assignment.html:373
+msgid "Jueves"
+msgstr "Thursday"
+
+#: templates/schedule_assignment.html:348
+#: templates/schedule_assignment.html:373
+msgid "Viernes"
+msgstr "Friday"
+
+#: templates/schedule_assignment.html:348
+#: templates/schedule_assignment.html:373
+msgid "Sábado"
+msgstr "Saturday"
+
+#: templates/schedule_assignment.html:348
+#: templates/schedule_assignment.html:373
+msgid "Domingo"
+msgstr "Sunday"
+
+#: templates/schedule_assignment.html:368
+msgid "Días ya asignados"
+msgstr "Already Assigned Days"
+
+#: templates/schedule_assignment.html:379
+msgid "Día"
+msgstr "Day"
+
+#: templates/schedule_assignment.html:404
+msgid "No hay días asignados aún."
+msgstr "No days have been assigned yet."
+
+#: templates/schedule_assignment.html:410
+msgid "Asignación por Día del Año"
+msgstr "Assignment by Day of the Year"
+
+#: templates/schedule_assignment.html:412
+msgid "Horario Anual"
+msgstr "Annual Schedule"
+
+#: templates/schedule_assignment.html:594
+msgid "Mes ya asignado"
+msgstr "Month already assigned"
+
+#: templates/schedule_assignment.html:595
+msgid "Este mes ya tiene una asignación. Si quieres cambiarlo, primero elimina la asignación existente."
+msgstr "This month already has an assignment. If you want to change it, please remove the existing assignment first."
+
+#: templates/schedule_assignment.html:615
+msgid "Día ya asignado"
+msgstr "Day already assigned"
+
+#: templates/schedule_assignment.html:616
+msgid "Este día de la semaana ya tiene una asignación"
+msgstr "This day of the week already has an assignment"
+
+#: templates/schedule_assignment.html:754
+msgid "Este día ya está asignado"
+msgstr "This day is already assigned"
+
+#: templates/schedule_assignment.html:755
+msgid "¿Quieres desasignarlo?"
+msgstr "Do you want to unassign it?"
+
+#: templates/schedule_assignment.html:757
+msgid "Sí, desasignar"
+msgstr "Yes, unassign"
+
+#: templates/schedule_assignment.html:772
+msgid "Desasignado"
+msgstr "Unassigned"
+
+#: templates/schedule_assignment.html:772
+msgid "La fecha ha sido desasignada."
+msgstr "The date has been unassigned."
+
+#: templates/schedule_assignment.html:779
+msgid "No se pudo desasignar."
+msgstr "Could not unassign."
+
+#: templates/schedule_assignment.html:951
+msgid "Estás seguro?"
+msgstr "Are you sure?"
+
+#: templates/schedule_assignment.html:952
+msgid "Vas a eliminar la asignación del horario al mes. Esta acción no se puede deshacer."
+msgstr "You are about to remove the schedule assignment from the month. This action cannot be undone."
+
+#: templates/schedule_assignment.html:1016
+msgid "Asignación mensual registrada correctamente."
+msgstr "Monthly assignment successfully recorded."
+
+#: templates/schedule_assignment.html:1039
+#: templates/schedule_assignment.html:1080
+msgid "Faltan datos"
+msgstr "Missing data"
+
+#: templates/schedule_assignment.html:1040
+#: templates/schedule_assignment.html:1081
+msgid "Debes seleccionar el horario y al menos un día de la semana."
+msgstr "You must select a schedule and at least one day of the week."
+
+#: templates/schedule_assignment.html:1064
+#: templates/schedule_assignment.html:1105
+msgid "Asignación semanal registrada correctamente."
+msgstr "Weekly assignment successfully recorded."
+

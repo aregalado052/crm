@@ -1,0 +1,400 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+  input, textarea, select {
+    color: #111 !important;        /* asegura texto visible */
+    caret-color: #111 !important;  /* asegura cursor visible */
+    background-color: #fff;        /* evita fondos raros que “camuflan” el caret */
+}
+</style>
+
+
+<div class="min-h-screen bg-white-100 flex items-center justify-center p-4">
+  <div class="bg-blue-100 rounded-2xl shadow-xl w-full max-w-2xl p-8">
+    <h2 class="text-3xl font-bold text-center text-blue-700 mb-6 flex items-baseline gap-3">Datos de la oferta</h2>
+    <form id="formulario-oferta" class="space-y-6">
+
+      <!-- Nombre -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+            <input type="text" name="name" required
+            class="w-full px-4 py-2 border border-blue-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500">
+
+        </div>
+
+        <!-- Correo electrónico -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+            <input
+                type="email"
+                id="inputEmail"
+                name="email"
+                required
+                class="w-full px-4 py-2 border border-blue-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500"
+            />
+
+        </div>
+
+        <!-- Idioma y Pais -->
+        
+        <div class="flex flex-col md:flex-row gap-4">
+            <!-- Idioma -->
+            <div class="w-full md:w-1/2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Idioma</label>
+                <select name="idioma" required
+                class="w-full px-4 py-2 border border-blue-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500">
+                <option value="Español">Español</option>
+                <option value="Inglés">Inglés</option>
+                </select>
+            </div>
+
+            <!-- País -->
+            <div class="w-full md:w-1/2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">País</label>
+                <select name="pais" required
+                class="w-full px-4 py-2 border border-blue-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500">
+                {% for pais in [
+                    "Alemania", "Arabia Saudita", "Argentina", "Australia", "Austria",
+                    "Bélgica", "Bolivia", "Brasil", "Brunei", "Bulgaria", "Canadá", "Chile",
+                    "China", "Chipre", "Colombia", "Corea del Sur", "Costa Rica", "Croacia",
+                    "Cuba", "Dinamarca", "Ecuador", "Egipto", "Emiratos Árabes Unidos",
+                    "España", "Estados Unidos", "Estonia", "Filipinas", "Finlandia", "Francia",
+                    "Grecia", "Gran Bretaña", "Guatemala", "Honduras", "Hong Kong", "Hungría",
+                    "India", "Indonesia", "Irlanda", "Irlanda del Norte", "Islandia", "Israel",
+                    "Italia", "Japón", "Kenia", "Letonia", "Lituania", "Luxemburgo", "Malasia",
+                    "Malta", "Marruecos", "México", "Montenegro", "Mozambique", "Nigeria",
+                    "Noruega", "Nueva Zelanda", "Países Bajos", "Panamá", "Paraguay", "Perú",
+                    "Polonia", "Portugal", "Puerto Rico", "Qatar", "Reino Unido",
+                    "República Checa", "República Dominicana", "Rumanía", "Rusia", "Samoa",
+                    "Senegal", "Serbia", "Singapur", "Sudáfrica", "Suecia", "Suazilandia",
+                    "Suiza", "Tailandia", "Tanzania", "Túnez", "Turquía", "Uganda", "Ucrania",
+                    "Uruguay", "Vanuatu"
+                ] %}
+                    <option value="{{ pais }}">{{ pais }}</option>
+                {% endfor %}
+                </select>
+            </div>
+        </div>
+
+            <!-- Descuento adicional -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+                Descuento adicional (0% - 20%)
+            </label>
+            <div class="flex items-center gap-1 w-24">
+                <input
+                    type="number"
+                    name="descuento_adicional"
+                    min="0"
+                    max="20"
+                    value="0"
+                    required
+                    class="w-20 px-3 py-2 border border-blue-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500"
+                >
+                <span class="text-gray-600 text-sm">%</span>
+            </div>
+
+        </div>
+
+
+
+       
+        <!-- Pistas perimetrales y laterales en la misma línea -->
+    <div class="flex flex-col md:flex-row gap-4">
+        <!-- Pistas perimetrales -->
+        <div class="w-full md:w-1/2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Pistas perimetrales (0-20)</label>
+            <input
+                type="number"
+                id="inputPerimetrales"
+                name="pistas_perimetrales"
+                min="0"
+                max="20"
+                value="0"
+                required
+                class="w-full px-4 py-2 border border-blue-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500"
+            />
+        </div>
+
+       
+
+        <!-- Pistas laterales -->
+        <div class="w-full md:w-1/2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Pistas laterales (0-20)</label>
+            <input
+                type="number"
+                id="inputLaterales"
+                name="pistas_laterales"
+                min="0"
+                max="20"
+                value="0"
+                required
+                class="w-full px-4 py-2 border border-blue-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500"
+            />
+        </div>
+    </div>
+
+
+    
+    <!-- Botón -->
+    <div class="text-center pt-2">
+      <button type="submit"
+          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-md transition duration-200">
+          Crear Oferta
+      </button>
+
+      <button id="btn-exit"
+          type="button"               
+          class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+          {{ _('Salir') }}
+      </button>
+    </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function parseLocaleNumber(v) {
+  if (v == null) return NaN;
+  let s = String(v).trim().replace(/[€%]/g, '');
+  if (!s) return NaN;
+
+  const lastComma = s.lastIndexOf(',');
+  const lastDot   = s.lastIndexOf('.');
+  if (lastComma > -1 && lastDot > -1) {
+    const decSep = lastComma > lastDot ? ',' : '.';
+    const thouSep = decSep === ',' ? '.' : ',';
+    s = s.replace(new RegExp('\\' + thouSep, 'g'), '');
+    if (decSep === ',') s = s.replace(',', '.');
+  } else if (lastComma > -1) {
+    s = s.replace(',', '.'); // solo coma -> decimal
+  }
+  s = s.replace(/[^0-9.-]/g, '');
+
+  const n = Number.parseFloat(s);
+  return Number.isFinite(n) ? n : NaN;
+}
+document.addEventListener('DOMContentLoaded', function () {
+  // === Capturas de elementos ===
+  const inputDescuento      = document.querySelector('[name="descuento_adicional"]');
+  const inputPerimetrales   = document.getElementById('inputPerimetrales');
+  const inputLaterales      = document.getElementById('inputLaterales');
+  const inputEmail          = document.getElementById('inputEmail');
+  const emailRegex          = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  // === Listeners de validación ===
+  if (inputDescuento) {
+    inputDescuento.addEventListener('input', () => {
+      let valor = parseInt(inputDescuento.value, 10);
+      if (Number.isNaN(valor)) return;
+
+      if (valor < 0) {
+        inputDescuento.value = 0;
+        Swal.fire({ icon: 'warning', title: 'Valor mínimo', text: 'El descuento no puede ser menor que 0%' });
+      }
+      if (valor > 20) {
+        inputDescuento.value = 20;
+        Swal.fire({ icon: 'warning', title: 'Valor máximo', text: 'El descuento no puede ser mayor que 20%' });
+      }
+    });
+  }
+
+  // Valida límites individuales (máx 20)
+  function validarLimite(input, nombre) {
+    let valor = parseInt(input.value, 10);
+    if (Number.isNaN(valor)) return;
+    if (valor > 20) {
+      input.value = 20;
+      Swal.fire({
+        icon: 'warning',
+        title: 'Valor máximo superado',
+        text: `${nombre} no puede ser mayor que 20.`,
+        confirmButtonText: 'Aceptar'
+      });
+    }
+  }
+
+  // Valida que al menos 1 pista exista
+  function validarMinimo() {
+    const vPerim = parseInt(inputPerimetrales?.value || '0', 10);
+    const vLat   = parseInt(inputLaterales?.value || '0', 10);
+    const total  = (Number.isNaN(vPerim) ? 0 : vPerim) + (Number.isNaN(vLat) ? 0 : vLat);
+    if (total === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'Debe haber al menos 1 pista entre perimetrales y laterales.',
+        confirmButtonText: 'Aceptar'
+      });
+      return false;
+    }
+    return true;
+  }
+
+  // Eventos de inputs numéricos
+  if (inputPerimetrales) inputPerimetrales.addEventListener('input', () => validarLimite(inputPerimetrales, 'Pistas perimetrales'));
+  if (inputLaterales)    inputLaterales.addEventListener('input', () => validarLimite(inputLaterales, 'Pistas laterales'));
+
+  // Validación de email
+  function validarEmail() {
+    const email = (inputEmail?.value || '').trim();
+    if (!email) return;
+    inputEmail.classList.remove('border-red-500', 'ring-red-500');
+    if (!emailRegex.test(email)) {
+      inputEmail.classList.add('border-red-500', 'ring-red-500');
+      Swal.fire({ icon: 'error', title: 'Correo inválido', text: 'Introduce un correo electrónico válido.', confirmButtonText: 'Aceptar' });
+    }
+  }
+  function limpiarEstilosEmail() {
+    inputEmail?.classList.remove('border-red-500', 'ring-red-500');
+  }
+  if (inputEmail) {
+    inputEmail.addEventListener('blur', validarEmail);
+    inputEmail.addEventListener('input', limpiarEstilosEmail);
+  }
+
+  // === Envío del formulario ===
+  const form = document.getElementById('formulario-oferta');
+  if (!form) return;
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    if (!validarMinimo()) return;
+
+    const perimetrales = parseInt((document.querySelector('[name="pistas_perimetrales"]')?.value || '0').trim(), 10);
+    const laterales    = parseInt((document.querySelector('[name="pistas_laterales"]')?.value || '0').trim(), 10);
+
+    const data = {
+      name: (document.querySelector('[name="name"]')?.value || '').trim(),
+      email: (document.querySelector('[name="email"]')?.value || '').trim(),
+      idioma: (document.querySelector('[name="idioma"]')?.value || '').trim(),
+      descuento_adicional: parseInt((document.querySelector('[name="descuento_adicional"]')?.value || '0').trim(), 10),
+      pais: (document.querySelector('[name="pais"]')?.value || '').trim(),
+      pistas_perimetrales: Number.isNaN(perimetrales) ? 0 : perimetrales,
+      pistas_laterales: Number.isNaN(laterales) ? 0 : laterales
+    };
+
+    Swal.fire({
+      title: 'Generando oferta...',
+      text: 'Por favor espera unos segundos, la oferta se está generando.',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+    let quoteNumber = null
+    fetch('/ofertas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    .then(response => {
+      if (!response.ok) throw new Error('Error en la respuesta del servidor');
+      return response.json();
+    })
+    .then(json => {
+      // Si viene envuelto tipo { body: "..." }, des-encapsula
+      const payload =
+        (json && typeof json.body === 'string') ? JSON.parse(json.body) :
+        (json && typeof json.body === 'object' && json.body !== null) ? json.body :
+        json;
+
+      // helper para convertir string con coma/punto o number a Number
+      const toNum = v =>
+        (v === null || v === undefined) ? NaN
+        : (typeof v === 'number' ? v : Number(String(v).replace(',', '.')));
+
+      // ① Leer del payload real
+      let descuentoTotalNum = toNum(payload.descuentoTotal ?? payload.data?.descuentoTotal);
+      let cantidadTotalNum  = toNum(payload.cantidadTotal  ?? payload.data?.cantidadTotal);
+
+      // ② Fallback: query string
+      if (!Number.isFinite(descuentoTotalNum) || !Number.isFinite(cantidadTotalNum)) {
+        const params = new URLSearchParams(window.location.search);
+        if (!Number.isFinite(descuentoTotalNum)) {
+          descuentoTotalNum = toNum(params.get('descuento_total'));
+        }
+        if (!Number.isFinite(cantidadTotalNum)) {
+          cantidadTotalNum = toNum(params.get('cantidad_total'));
+        }
+      }
+
+      // ③ Quote number del payload
+      const quoteNumber = payload.quoteNumber ?? payload.data?.quoteNumber ?? null;
+
+      
+
+      return Swal.fire({
+        icon: 'success',
+        title: '✅ Oferta generada',
+        text: quoteNumber
+          ? `La oferta se ha enviado correctamente. Nº: ${quoteNumber}`
+          : 'La oferta se ha enviado correctamente.',
+        confirmButtonText: 'Aceptar'
+      }).then(() => {
+        // ⑤ Construir QS para /leads
+        const qs = new URLSearchParams({
+          name: data.name,
+          email: data.email,
+          idioma: data.idioma,
+          descuento_adicional: String(data.descuento_adicional),
+          pais: data.pais,
+          pistas_perimetrales: String(data.pistas_perimetrales),
+          pistas_laterales: String(data.pistas_laterales),
+          descuento_total: Number.isFinite(descuentoTotalNum) ? descuentoTotalNum.toFixed(1) : "",
+          cantidad_total:  Number.isFinite(cantidadTotalNum)  ? cantidadTotalNum.toFixed(2)  : "",
+          ...(quoteNumber ? { quoteNumber: String(quoteNumber) } : {})
+        }).toString();
+
+        window.location.assign(`/leads?${qs}`);
+      });
+    })
+
+    .catch(err => {
+      console.error(err);
+      Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+    });
+
+  });
+  document.getElementById('btn-exit').addEventListener('click', function (e) {
+  
+    e.preventDefault();
+    const ruta = '/base';
+    const data = {};
+
+    salir();
+    async function salir() {
+
+      try {
+        const response = await fetch(ruta, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify(data)
+        });
+
+        if (!response.ok) throw new Error("{{ _('Error en la respuesta del servidor.') }}");
+
+        const html = await response.text();
+        document.open();
+        document.write(html);
+        document.close();
+
+      } catch (error) {
+        console.error("Error al enviar datos:", error);
+        Swal.fire({
+          icon: 'error',
+          title: '{{ _("Error") | escapejs }}',
+          text: '{{ _("No se pudo cargar la página. Inténtalo de nuevo más tarde.") | escapejs }}',
+          confirmButtonColor: '#3085d6'
+        });
+      };
+    } 
+  });
+});
+</script>
+{% endblock %}

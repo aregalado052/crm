@@ -1,0 +1,92 @@
+# ---------- Python (en cualquier subcarpeta) ----------
+**/.venv/
+**/venv/
+**/__pycache__/
+**/*.py[cod]
+**/*.pyo
+**/*.pyd
+**/*.egg-info/
+**/build/
+**/dist/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+/mi-backend-app/.venv/
+/mi-backend-app/python/
+/bc-integration/.venv/
+/bc-integration/python/
+/SalesQuote_BD/.venv/
+/SalesQuote_BD/python/
+/.git_backup/
+
+
+# ---------- Node ----------
+**/node_modules/
+
+# ---------- Business Central / AL ----------
+**/.alpackages/
+
+# ---------- WordPress en wp-c7 ----------
+/wp-c7/wp-admin/
+/wp-c7/wp-includes/
+/wp-c7/wp-config.php
+/wp-c7/.htaccess
+/wp-c7/wp-content/uploads/
+/wp-c7/wp-content/cache/
+/wp-c7/wp-content/upgrade/
+/wp-c7/wp-content/plugins/
+/wp-c7/wp-content/bad/
+/wp-c7/wp-content/languages/
+/wp-c7/wp-content/plugins.off/
+/wp-c7/wp-content/mu-plugins/
+/wp-c7/wp-content/themes/twentytwentythree/
+/wp-c7/wp-content/themes/twentytwentyfour/
+/wp-c7/wp-content/themes/campo/
+/wp-c7/wp-content/ai1wm-backups/
+/wp-c7/wp-content/maintenance/
+/wp-c7/wp-content/pluginscc/
+/wp-c7/wp-content/updraft/
+
+# (Opcional: solo versionar tu tema/plugin; descomenta estas 4 y ajusta "tu-tema/tu-plugin")
+
+!/wp-c7/wp-content/themes/twentytwentyfive/
+
+# ---------- Backups / dumps / binarios grandes ----------
+/backups/
+*.sql
+*.sql.gz
+*.sqlite
+*.sqlite3
+*.wpress
+*.zip
+*.rar
+*.7z
+*.tar
+*.tar.gz
+
+# ---------- Secretos / credenciales ----------
+.env
+**/*.env
+*.key
+*.pem
+*.pfx
+secrets*.yml
+# tus ficheros de secretos (evitar flags de GitHub)
+bc-integration/config.py
+mi-backend-app/config.py
+SalesQuote_BD/config.py
+bc-integration/Tenant.txt
+bc-integration/global_session.py
+# (si usas .sys, ignóralos también)
+bc-integration/config.sys
+mi-backend-app/config.sys
+SalesQuote_BD/config.sys
+
+# ---------- SO / IDE ----------
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ---------- Específicos del proyecto ----------
+mi-backend-app/deploy.zip

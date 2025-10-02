@@ -1,0 +1,586 @@
+{% extends "base.html" %}
+
+
+
+
+{% block content %}
+<style>
+  /* mano en toda la fila y sus celdas */
+  #mi-tabla tbody tr.lead-row,
+  #mi-tabla tbody tr.lead-row > td { cursor: pointer !important; }
+
+  /* fila seleccionada */
+  #mi-tabla tbody tr.lead-row[aria-selected="true"] {
+    background-color: rgb(219 234 254); /* ~bg-blue-100 */
+    outline: 2px solid rgba(59,130,246,.6); /* ~ring-blue-500/60 */
+    outline-offset: -2px;
+  }
+</style>
+
+
+
+<div class="bg-blue-50 border border-blue-200 rounded-xl shadow-md p-6">
+
+  
+
+  <p class="text-3xl font-bold text-blue-700 mb-6 flex items-baseline gap-3">
+    {{ _('Aquí puedes consultar y gestionar tus leads.') }}
+
+    {% if estado == 'En curso' %}
+      <span class="inline-flex items-center text-3xl font-bold px-3 py-1 rounded-lg leading-tight
+                  bg-blue-200 text-blue-700 whitespace-nowrap">
+        — {{ estado }}
+      </span>
+    {% elif estado == 'Sin calificar' %}
+      <span class="inline-flex items-center text-3xl font-bold px-3 py-1 rounded-lg leading-tight
+                  bg-violet-200 text-violet-700 whitespace-nowrap">
+        — {{ "Sin Calificar" }}
+      </span>
+    {% elif estado == 'Ganada' %}
+      <span class="inline-flex items-center text-3xl font-bold px-3 py-1 rounded-lg leading-tight
+                  bg-green-200 text-green-700 whitespace-nowrap">
+        — {{ "Ganados" }}
+      </span>
+    {% elif estado == 'Perdida' %}
+      <span class="inline-flex items-center text-3xl font-bold px-3 py-1 rounded-lg leading-tight
+                  bg-red-200 text-red-700 whitespace-nowrap">
+        — {{ "Perdidos" }}
+      </span>
+    {% else %}
+      <span class="inline-flex items-center text-3xl font-bold px-3 py-1 rounded-lg leading-tight
+                  bg-gray-200 text-gray-700 whitespace-nowrap">
+        — {{ _('Todos') }}
+      </span>
+    {% endif %}
+  </p>
+
+
+  <div class="flex justify-between items-center mb-4">
+    <div class="space-x-4">
+
+      <button id="btn-perdidos" class="bg-red-300 text-white px-4 py-2 rounded hover:bg-red-400">
+        {{ _('Leads Perdidos') }}
+
+      </button>
+
+      <button id="btn-sin-calificar" class="bg-violet-300 text-white px-4 py-2 rounded hover:bg-violet-400">
+        {{ _('Leads Sin Calificar') }}
+        
+      </button>
+
+
+      <button id="btn-en-curso" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+        {{ _('Leads En Curso') }}
+      </button>
+
+      <button id="btn-ganados" 
+        type="button" 
+        class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+        {{ _('Leads Ganados') }}
+      </button>
+
+      <button id="btn-todos" 
+        type="button" 
+        class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+        {{ _('Todos los Leads') }}
+      </button>
+
+      <button id="btn-exit"
+        type="button"               
+        class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+        {{ _('Salir') }}
+      </button>
+
+    </div>
+  </div>
+
+
+  <div class="max-h-[400px] overflow-y-auto border border-gray-200 rounded-lg shadow">
+  <table id="mi-tabla" class="min-w-full divide-y divide-gray-300">
+    {% set hide_prob = (estado in ['Perdida', 'Ganada', 'Sin calificar']) %}
+    <thead class="bg-gray-300">
+      <tr>
+        <th data-type="number" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-left text-sm font-medium text-gray-800">
+          {{ _('Nº') }}
+        </th>
+        <th data-type="date" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+          {{ _('Fecha') }}<br>{{ _('Creación') }}
+        </th>
+        <th data-type="date" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+          {{ _('Fecha') }}<br>{{ _('Proyecto') }}
+        </th>
+        <th data-type="date" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+          {{ _('Fecha') }}<br>{{ _('Prox. Acción') }}
+        </th>
+        <th data-type="text" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+          {{ _('Nombre') }}
+        </th>
+        <th data-type="text" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+          {{ _('País') }}
+        </th>
+        <th data-type="text" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+          {{ _('Número') }}<br>{{ _('Oferta') }}
+        </th>
+        <th data-type="number" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+          {{ _('Nº Total') }}<br>{{ _('Pistas') }}
+        </th>
+        <th data-type="number" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+          {{ _('Descuento') }}<br>{{ _('Total (&percnt;)') }}
+        </th>
+        <th data-type="number" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+          {{ _('Importe') }}<br>{{ _('Total (€)') }}
+        </th>
+        {% if not hide_prob %}
+        <th data-type="number" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+          {{ _('Probabilidad') }}<br>{{ _('Éxito (&percnt;)') }}
+        </th>
+        {% endif %}
+        {% if estado == 'Todos' %}
+        <th data-type="text" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+          {{ _('Estado') }}
+        </th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody>
+       {% for lead in leads %}
+       <tr
+          class="lead-row group hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-200
+                cursor-pointer [&>td]:cursor-pointer"
+          tabindex="0"
+          role="link"
+          aria-selected="{{ 'true' if loop.first else 'false' }}"
+          aria-label="Abrir lead {{ lead.id }}"
+          data-id="{{ lead.id }}"
+          data-href="{{ url_for('lead_manage', lead_id=lead.id) }}"
+        >
+
+      
+        <td class="px-4 py-2 text-left">{{ loop.index }}</td>
+        {# ---- FECHA ACTUAL ---- #}
+        {% set fa = lead.fecha_actual %}
+        <td class="px-4 py-2 text-center"
+            data-ts="{% if fa %}{% if fa is string %}{{ '' if fa=='0000-00-00' else fa }}{% else %}{{ fa.isoformat() }}{% endif %}{% endif %}">
+          {% if fa %}
+            {% if fa is string %}
+              {{ '' if fa=='0000-00-00' else fa[8:10] ~ '-' ~ fa[5:7] ~ '-' ~ fa[0:4] }}
+            {% else %}
+              {{ fa.strftime('%d-%m-%Y') }}
+            {% endif %}
+          {% endif %}
+        </td>
+
+        {# ---- FECHA PROYECTO ---- #}
+        {% set fp = lead.fecha_proyecto %}
+        <td class="px-4 py-2 text-center"
+            data-ts="{% if fp %}{% if fp is string %}{{ '' if fp=='0000-00-00' else fp }}{% else %}{{ fp.isoformat() }}{% endif %}{% endif %}">
+          {% if fp %}
+            {% if fp is string %}
+              {{ '' if fp=='0000-00-00' else fp[8:10] ~ '-' ~ fp[5:7] ~ '-' ~ fp[0:4] }}
+            {% else %}
+              {{ fp.strftime('%d-%m-%Y') }}
+            {% endif %}
+          {% endif %}
+        </td>
+
+        {# ---- FECHA PRÓXIMA ACCIÓN ---- #}
+        {% set fpa = lead.fecha_proxima_accion %}
+        <td class="px-4 py-2 text-center"
+            data-ts="{% if fpa %}{% if fpa is string %}{{ '' if fpa=='0000-00-00' else fpa }}{% else %}{{ fpa.isoformat() }}{% endif %}{% endif %}">
+          {% if fpa %}
+            {% if fpa is string %}
+              {{ '' if fpa=='0000-00-00' else fpa[8:10] ~ '-' ~ fpa[5:7] ~ '-' ~ fpa[0:4] }}
+            {% else %}
+              {{ fpa.strftime('%d-%m-%Y') }}
+            {% endif %}
+          {% endif %}
+        </td>
+
+        <td class="px-4 py-2 text-center">{{ lead.name }}</td>
+        <td class="px-4 py-2 text-center">{{ lead.pais }}</td>
+        <td class="px-4 py-2 text-center">{{ lead.quote_number }}</td>
+        <td class="px-4 py-2 text-center">{{ lead.pistas_total }}</td>
+        <td class="px-4 py-2 text-right">{{ lead.descuento_total }}</td>
+        <td class="px-4 py-2 text-right">
+          {{ "{:,.2f}".format(lead.cantidad_total).replace(",", "X").replace(".", ",").replace("X", ".") }}
+        </td>
+        {% if not hide_prob %}
+
+        <td class="px-4 py-2 text-center">{{ lead.probabilidad_exito }}</td>
+        {% endif %}
+
+        
+
+        {% if estado == 'Todos' %}
+        <td class="px-4 py-2 text-center">{{ lead.estado }}</td>
+        {% endif %}
+
+      </tr>
+      {% endfor %}
+      
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const table = document.getElementById("mi-tabla");
+  if (!table) { console.error("No se encontró #mi-tabla"); return; }
+
+  const thead = table.querySelector("thead");
+  const tbody = table.querySelector("tbody");
+  const ths = Array.from(thead.querySelectorAll("th"));
+
+  // ------- Menú en cabeceras (Asc/Desc/Buscar) -------
+  document.addEventListener("click", (e) => {
+    if (!table.contains(e.target)) closeAllMenus();
+  });
+
+  ths.forEach((th, colIndex) => {
+    th.style.cursor = "pointer";
+    th.classList.add("relative"); // para posicionar el menú
+    th.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleMenu(th, colIndex);
+    });
+  });
+
+  function cellDateTs(tr, colIndex) {
+    const td = tr.children[colIndex];
+    if (!td) return NaN;
+    const iso = td.dataset.ts || "";
+    const t = iso ? Date.parse(iso) : NaN;
+    return Number.isNaN(t) ? NaN : t;
+  }
+
+  // Comparador numérico con NaN al final
+  function compareNumbers(a, b) {
+    const na = (a === null || Number.isNaN(a));
+    const nb = (b === null || Number.isNaN(b));
+    if (na && nb) return 0;
+    if (na) return 1;     // NaN/null al final
+    if (nb) return -1;
+    return a - b;
+  }
+
+  function closeAllMenus() {
+    table.querySelectorAll(".col-menu").forEach(m => m.remove());
+  }
+
+  function toggleMenu(th, colIndex) {
+    const existing = th.querySelector(".col-menu");
+    closeAllMenus();
+    if (existing) return;
+
+    const menu = document.createElement("div");
+    menu.className = "col-menu absolute right-2 top-full mt-1 w-40 rounded-xl border border-gray-200 bg-white shadow-lg p-2 z-50";
+    menu.innerHTML = `
+      <button data-action="asc" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">↑ Asc.</button>
+      <button data-action="desc" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">↓ Desc.</button>
+      <div class="mt-2 border-t border-gray-200 pt-2">
+        <div class="flex items-center gap-2 px-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" placeholder="Buscar..." class="flex-1 text-sm px-2 py-1 border border-gray-200 rounded-md focus:outline-none focus:ring focus:ring-indigo-100" />
+        </div>
+        <div class="flex gap-2 px-2 mt-2">
+          <button data-action="apply" class="px-2 py-1 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700">Aplicar</button>
+          <button data-action="clear" class="px-2 py-1 text-sm rounded-md bg-gray-100 hover:bg-gray-200">Limpiar</button>
+        </div>
+      </div>
+    `;
+    th.appendChild(menu);
+
+    const input = menu.querySelector("input");
+
+    menu.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      const action = ev.target.dataset.action;
+      if (!action) return;
+
+      if (action === "asc" || action === "desc") {
+        sortByColumn(colIndex, action === "asc");
+        closeAllMenus();
+      }
+      if (action === "apply") {
+        applyFilter(colIndex, input.value);
+      }
+      if (action === "clear") {
+        input.value = "";
+        applyFilter(colIndex, "");
+        closeAllMenus();
+      }
+    });
+
+    input.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") {
+        applyFilter(colIndex, input.value);
+      }
+    });
+
+    setTimeout(() => input.focus(), 0);
+  }
+
+
+
+  // ------- Ordenación -------
+  function sortByColumn(colIndex, asc = true) {
+    const filas = Array.from(tbody.querySelectorAll("tr"));
+    const tipo = getColumnType(colIndex);
+
+    filas.sort((a, b) => {
+      if (tipo === "date") {
+        const aTs = cellDateTs(a, colIndex);
+        const bTs = cellDateTs(b, colIndex);
+        const res = compareNumbers(aTs, bTs);
+        return asc ? res : -res;
+      }
+
+      // lo que ya tenías para number/text
+      const aText = cellText(a, colIndex);
+      const bText = cellText(b, colIndex);
+      const res = compareByType(aText, bText, tipo);
+      return asc ? res : -res;
+    });
+
+    filas.forEach(f => tbody.appendChild(f));
+  }
+
+  function getColumnType(colIndex) {
+    const th = ths[colIndex];
+    const tAttr = th.getAttribute("data-type");
+    if (tAttr) return tAttr;
+
+    const sample = firstNonEmptyCell(colIndex);
+    if (isNumberEs(sample)) return "number";
+    if (isDate(sample)) return "date";
+    return "text";
+  }
+
+  function firstNonEmptyCell(colIndex) {
+    for (const tr of tbody.querySelectorAll("tr")) {
+      const txt = cellText(tr, colIndex);
+      if (txt) return txt;
+    }
+    return "";
+  }
+
+  function cellText(tr, colIndex) {
+    const td = tr.children[colIndex];
+    return (td ? td.innerText : "").trim();
+  }
+
+  function compareByType(a, b, tipo) {
+    if (tipo === "number") {
+      const na = toNumberEs(a);
+      const nb = toNumberEs(b);
+      if (isNaN(na) && isNaN(nb)) return 0;
+      if (isNaN(na)) return -1;
+      if (isNaN(nb)) return 1;
+      return na - nb;
+    }
+    if (tipo === "date") {
+      const da = toDate(a);
+      const db = toDate(b);
+      if (!da && !db) return 0;
+      if (!da) return -1;
+      if (!db) return 1;
+      return da - db;
+    }
+    return a.localeCompare(b, "es", { sensitivity: "base" });
+  }
+
+  // ------- Filtro por columna -------
+  const activeFilters = new Map(); // colIndex -> string
+
+  function applyFilter(colIndex, query) {
+    if (query && query.trim()) {
+      activeFilters.set(colIndex, query.trim().toLowerCase());
+    } else {
+      activeFilters.delete(colIndex);
+    }
+    filterRows();
+  }
+
+  function filterRows() {
+    const filtros = Array.from(activeFilters.entries());
+    const filas = Array.from(tbody.querySelectorAll("tr"));
+
+    filas.forEach(tr => {
+      const visible = filtros.every(([colIndex, q]) => {
+        const txt = cellText(tr, colIndex).toLowerCase();
+        return txt.includes(q);
+      });
+      tr.style.display = visible ? "" : "none";
+    });
+  }
+
+  // ------- Selección de filas (clic/teclado) -------
+  function selectRow(tr, {focus=true, scroll=false} = {}) {
+    const prev = tbody.querySelector('tr.lead-row[aria-selected="true"]');
+    if (prev) { prev.setAttribute('aria-selected', 'false'); prev.tabIndex = -1; }
+    tr.setAttribute('aria-selected', 'true');
+    tr.tabIndex = 0;
+    if (focus) tr.focus({ preventScroll: !scroll });
+    if (scroll) tr.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  tbody.addEventListener("click", (e) => {
+    const tr = e.target.closest("tr.lead-row");
+    if (!tr) return;
+    selectRow(tr, { focus:true });
+  });
+
+  tbody.addEventListener("dblclick", (e) => {
+    const tr = e.target.closest("tr.lead-row");
+    if (!tr) return;
+    const href = tr.dataset.href;
+    if (href) window.location.href = href;
+  });
+
+  tbody.addEventListener("keydown", (e) => {
+    const current = tbody.querySelector('tr.lead-row[aria-selected="true"]');
+    if (!current) return;
+    const rows = Array.from(tbody.querySelectorAll("tr.lead-row"));
+    const i = rows.indexOf(current);
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const next = rows[Math.min(i + 1, rows.length - 1)];
+      if (next) selectRow(next, { focus:true, scroll:true });
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const prev = rows[Math.max(i - 1, 0)];
+      if (prev) selectRow(prev, { focus:true, scroll:true });
+    } else if (e.key === "Home") {
+      e.preventDefault(); selectRow(rows[0], { focus:true, scroll:true });
+    } else if (e.key === "End") {
+      e.preventDefault(); selectRow(rows[rows.length - 1], { focus:true, scroll:true });
+    } else if (e.key === "Enter" || e.key === " ") {
+      const href = current.dataset.href;
+      if (href) { e.preventDefault(); window.location.href = href; }
+    }
+  });
+
+  // Asegura que haya una fila seleccionada al cargar
+  const first = tbody.querySelector("tr.lead-row");
+  if (first && !tbody.querySelector('tr.lead-row[aria-selected="true"]')) {
+    selectRow(first, { focus:false });
+  }
+
+  // ------- Helpers de formato -------
+  function isNumberEs(str) {
+    if (!str) return false;
+    const s = str.replace(/\s/g, '');
+    return /^-?\d{1,3}(\.\d{3})*(,\d+)?$/.test(s) || /^-?\d+([.,]\d+)?$/.test(s);
+  }
+
+  function toNumberEs(str) {
+    if (typeof str !== "string") return NaN;
+    return parseFloat(str.replace(/\./g, "").replace(",", "."));
+  }
+
+  function isDate(str) {
+    if (!str) return false;
+    const d = toDate(str);
+    return !!d;
+  }
+
+  function toDate(str) {
+    if (!str) return null;
+    const s = str.trim();
+    let d = new Date(s);
+    if (!isNaN(d)) return d;
+
+    const m1 = s.match(/^(\d{2})[\/\-](\d{2})[\/\-](\d{4})$/);
+    if (m1) {
+      const [_, dd, mm, yyyy] = m1;
+      d = new Date(`${yyyy}-${mm}-${dd}T00:00:00`);
+      if (!isNaN(d)) return d;
+    }
+    return null;
+  }
+});
+
+
+
+
+
+document.getElementById('btn-perdidos').addEventListener('click', async (e) => {
+  
+  window.location.href = "{{ url_for('consultar_leads', estado='Perdida') }}";
+});
+
+
+
+document.getElementById('btn-sin-calificar').addEventListener('click', async () => {
+  
+  window.location.href = "{{ url_for('consultar_leads', estado='Sin calificar') }}";
+});
+
+
+document.getElementById('btn-ganados').addEventListener('click', async () => {
+  
+  window.location.href = "{{ url_for('consultar_leads', estado='Ganada') }}";
+});
+
+document.getElementById('btn-en-curso').addEventListener('click', async () => {
+  
+  window.location.href = "{{ url_for('consultar_leads', estado='En curso') }}";
+});
+
+document.getElementById('btn-todos').addEventListener('click', async () => {
+  
+  window.location.href = "{{ url_for('consultar_leads', estado='Todos') }}";
+  
+});
+
+document.getElementById('btn-exit').addEventListener('click', function (e) {
+  
+  e.preventDefault();
+  const ruta = '/base';
+  const data = {};
+
+  salir();
+  async function salir() {
+
+    try {
+      const response = await fetch(ruta, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) throw new Error("{{ _('Error en la respuesta del servidor.') }}");
+
+      const html = await response.text();
+      document.open();
+      document.write(html);
+      document.close();
+
+    } catch (error) {
+      console.error("Error al enviar datos:", error);
+      Swal.fire({
+        icon: 'error',
+        title: '{{ _("Error") | escapejs }}',
+        text: '{{ _("No se pudo cargar la página. Inténtalo de nuevo más tarde.") | escapejs }}',
+        confirmButtonColor: '#3085d6'
+      });
+    };
+  } 
+});
+</script>
+
+
+
+{% endblock %}
+
+
