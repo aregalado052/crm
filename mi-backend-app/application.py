@@ -551,6 +551,7 @@ def ofertas():
             email = data.get('email')
             idioma = data.get('idioma')
             pais = data.get('pais')
+            tipo_lead = data.get('tipo_lead')
             pistas_perimetrales = data.get('pistas_perimetrales')
             pistas_laterales = data.get('pistas_laterales')
             mailorigen = 'soporte@planetpower.es'
@@ -563,9 +564,12 @@ def ofertas():
             print(f"Email: {email}")
             print(f"Idioma: {idioma}")
             print(f"País: {pais}")
+            print(f"Tipo: {tipo_lead}")
+            print(f"Descuento adicional: {descuento_adicional}")
             print(f"Pistas perimetrales: {pistas_perimetrales}")
             print(f"Pistas laterales: {pistas_laterales}")
             print(f"Descuento adicional: {descuento_adicional}")
+            print ("Send_EMAIL", SEND_EMAIL)
 
 
 
@@ -578,6 +582,7 @@ def ofertas():
                 "email": email,
                 "idioma": idioma,
                 "pais": pais,
+                "tipo_lead": tipo_lead,
                 "pistas_perimetrales": pistas_perimetrales,
                 "pistas_laterales": pistas_laterales,
                 "mailorigen": EMAIL_USER,
@@ -615,6 +620,7 @@ def ofertas():
                 "email": email,
                 "idioma": idioma,
                 "pais": pais,
+                "tipo_lead": tipo_lead,
                 "pistas_perimetrales": pistas_perimetrales,
                 "pistas_laterales": pistas_laterales,
                 #"mailorigen": mailorigen,
@@ -858,6 +864,7 @@ def consultar_leads():
                 fecha_proxima_accion,
                 name,
                 pais,
+                tipo_lead,
                 quote_number,
                 cantidad_total,
                 descuento_total,
@@ -918,6 +925,7 @@ def db_get_lead(lead_id):
                 email,
                 idioma,
                 pais,
+                tipo_lead,
                 quote_number,
                 cantidad_total,
                 descuento_adicional,
@@ -975,6 +983,7 @@ def db_update_lead(lead):
                   fecha_proyecto        = %s,
                   fecha_proxima_accion  = %s,
                   probabilidad_exito    = %s,
+                  tipo_lead             = %s,
                   info_tecnica          = %s,
                   info_general          = %s,
                   observaciones         = %s,
@@ -986,6 +995,7 @@ def db_update_lead(lead):
                 lead.fecha_proyecto,
                 lead.fecha_proxima_accion,
                 lead.probabilidad_exito,
+                lead.tipo_lead,
                 lead.info_tecnica,
                 lead.info_general,
                 lead.observaciones,
@@ -1026,6 +1036,7 @@ def lead_manage():
                 fecha_proyecto          = data.get('fecha_proyecto')
                 fecha_proxima_accion    = data.get('fecha_proxima_accion')
                 estado                  = data.get('estado')
+                tipo_lead               = data.get('tipo_lead')
                 prob_exito_raw          = data.get('probabilidad_exito')
                 info_tecnica            = _clip_len(data.get('info_tecnica'), 1000)
                 info_general            = _clip_len(data.get('info_general'), 1000)
@@ -1040,13 +1051,14 @@ def lead_manage():
                 if not id_:
                     return jsonify({"ok": False, "message": "Falta id"}), 400
 
-                # Crea 'lead' como un objeto con atributos (o usa tu propia clase)
+                # Crea 'lead' como un objeto con atributos 
                 lead = SimpleNamespace(
                     id=id_,
                     fecha_actual=fecha_actual,
                     fecha_proyecto=fecha_proyecto,
                     fecha_proxima_accion=fecha_proxima_accion,
                     estado=estado,
+                    tipo_lead=tipo_lead,
                     probabilidad_exito=probabilidad_exito,
                     info_tecnica=info_tecnica,
                     info_general=info_general,
@@ -1060,6 +1072,7 @@ def lead_manage():
                 print(f"Fecha proyecto: {lead.fecha_proyecto}")
                 print(f"Fecha próxima acción: {lead.fecha_proxima_accion}")
                 print(f"Estado: {lead.estado}")
+                print(f"Tipo de lead: {lead.tipo_lead}")
                 print(f"Probabilidad de éxito: {lead.probabilidad_exito}")
                 print(f"Información técnica: {lead.info_tecnica}")
                 print(f"Información general: {lead.info_general}")

@@ -70,6 +70,8 @@
 *.key
 *.pem
 *.pfx
+*.ppk
+
 secrets*.yml
 # tus ficheros de secretos (evitar flags de GitHub)
 bc-integration/config.py

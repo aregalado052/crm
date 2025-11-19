@@ -61,9 +61,10 @@ s3 = boto3.client("s3", region_name=AWS_REGION)
 # --- Configuración (puedes usar dotenv o variables de entorno en Lambda) ---
 
 
-ENVIRONMENT = 'Prodsand2025'
+ENVIRONMENT = 'Production'  # Cambia a 'Production' en producción
 #ENVIRONMENT = 'Production'  # Cambia a 'production' en producción
 COMPANY_ID = '6f7784f5-1aaa-ee11-be36-000d3a667eb7'
+#COMPANY_ID = '3872d67e-5377-ee11-817c-6045bdc8af59'
 SCOPE = "https://api.businesscentral.dynamics.com/.default"
 USERNAME = "AREGALADO@PLANETPOWERTOOLSIBERICA.onmicrosoft.com"
 
@@ -110,6 +111,13 @@ def get_token():
     
     
     url = f'https://login.microsoftonline.com/{TENANT_ID}/oauth2/v2.0/token'
+
+    print("🔑 Pidiendo token...")
+    print("  TENANT_ID :", TENANT_ID)
+    print("  CLIENT_ID :", CLIENT_ID)
+    print("  USERNAME  :", repr(USERNAME))
+    print("  SCOPE     :", SCOPE)
+    print("PASSWORD :", repr(PASSWORD) )
 
     data = {
         'grant_type': 'password',
@@ -211,8 +219,9 @@ def store_session(name, email, mailorigen, idioma, origen, bd, email_user, email
 
     print ("BD", BD)  
     
-    print(f"Credenciales obtenidas: {creds}")
+    print(f"Credenciales obtenidas send email : {creds}")
     print(f"Conectando a la base de datos con host: {creds['host']}, usuario: {creds['username']}, base de datos: {dbname}")
+    print ("send_email", send_email)
     
 
     connection = pymysql.connect(
@@ -940,6 +949,16 @@ def ensamblar_oferta (codigo_pais,zona,idioma, pistas_perimetrales, pistas_later
         
         })
     
+    if idioma == "Español":
+        descripcion = (
+            "Más info:https://f.crmplanetpower.es/4040es.pdf "
+            
+        )
+    else:
+        descripcion = (
+            "More info:https://f.crmplanetpower.es/4040en.pdf"
+           
+        )
     
     if idioma == "Español":
         descripcion = "EL TRANSPORTE NO ESTA INCLUIDO FUERA DE LA PENINSULA IBERICA"
@@ -967,6 +986,13 @@ def ensamblar_oferta (codigo_pais,zona,idioma, pistas_perimetrales, pistas_later
 
 
 def create_contact_salesheader(token, name, email, customer_template,  cod_idioma, cod_pais):
+
+    print("Creando contacto y oferta en BC...")
+    print (f"Datos: {name}, {email}, {customer_template}, {cod_idioma}, {cod_pais}")
+    print ("Entorno:", ENVIRONMENT )
+    print ("Tenant:", TENANT_ID )
+    print ("Company ID:", COMPANY_ID )
+   
    
     url = f"https://api.businesscentral.dynamics.com/v2.0/{TENANT_ID}/{ENVIRONMENT}/ODataV4/Company('{COMPANY_ID}')/createQuotes"
     headers = [
@@ -1048,24 +1074,24 @@ def insert_base_datos(lead):
         descuento_total         = lead.descuento_total
         cantidad_total          = lead.cantidad_total
         estado                  = lead.estado
-        
+        tipo_lead               = lead.tipo_lead
         pistas_perimetrales     = lead.pistas_perimetrales
         pistas_laterales        = lead.pistas_laterales
         
 
-        print (f"Datos para insertar en BD: {fecha_actual}, {origen}, {name}, {email}, {quote_number}, {idioma}, {pais}, {descuento_adicional}, {descuento_total}, {cantidad_total}, {estado}, {pistas_perimetrales}, {pistas_laterales} ")
+        print (f"Datos para insertar en BD: {fecha_actual}, {origen}, {name}, {email}, {quote_number}, {idioma}, {pais}, {descuento_adicional},{tipo_lead}, {descuento_total}, {cantidad_total}, {estado}, {pistas_perimetrales}, {pistas_laterales} ")
 
         # --- Inserción ---
         sql = """
         INSERT INTO lead_forms (
           fecha_actual, origen,
-          name, email, quote_number, idioma, pais,
+          name, email, quote_number, idioma, pais, tipo_lead,
           descuento_adicional, descuento_total, cantidad_total,
           estado,pistas_perimetrales, pistas_laterales
           
         ) VALUES (
           %(fecha_actual)s, %(origen)s, 
-          %(name)s, %(email)s, %(quote_number)s, %(idioma)s, %(pais)s,
+          %(name)s, %(email)s, %(quote_number)s, %(idioma)s, %(pais)s, %(tipo_lead)s,
           %(descuento_adicional)s, %(descuento_total)s, %(cantidad_total)s,
           %(estado)s, %(pistas_perimetrales)s, %(pistas_laterales)s
           
@@ -1080,6 +1106,7 @@ def insert_base_datos(lead):
             "quote_number": quote_number,
             "idioma": idioma,
             "pais": pais,
+            "tipo_lead": tipo_lead, 
             "descuento_adicional": descuento_adicional,
             "descuento_total": descuento_total,
             "cantidad_total": cantidad_total,
@@ -1129,6 +1156,7 @@ def insert_base_datos(lead):
 
 
 
+
 @app.route("/api/contacto", methods=["POST"])
 def contacto():
     """Endpoint para crear un contacto y una oferta en Business Central."""
@@ -1154,27 +1182,30 @@ def contacto():
     pais = data.get("pais")
     idioma = data.get("idioma")
     descuento_adicional = data.get("descuento_adicional", 0)    
-    mailorigen=data.get("mailorigen") or "web@planetpower.es"
+    mailorigen=data.get("mailorigen", "web@planetpower.es") 
     pistas_perimetrales = data.get("pistas_perimetrales")
     pistas_laterales = data.get("pistas_laterales")
+    tipo_lead = data.get("tipo_lead", "Sin calificar")
     BD = data.get("BD", "PRODUCCION")  # PRODUCCION o PRUEBAS
-    EMAIL_USER = data.get("EMAIL_USER") or "web@planetpower.es"
-    EMAIL_PASSWORD = data.get("EMAIL_PASSWORD") or 'Ppt946682011'
+    EMAIL_USER = data.get("EMAIL_USER", "web@planetpower.es") 
+    EMAIL_PASSWORD = data.get("EMAIL_PASSWORD", 'Ppt946682011') 
     URL_CONTACTO = data.get("URL_CONTACTO")
-    URL_OFERTAS = data.get("URL_OFERTAS") or "https://tx3fc457zf.execute-api.eu-north-1.amazonaws.com/prod/oferta"   
-    ENVIRONMENT = data.get("ENVIRONMENT") or "Production"  # Por defecto es 'Production' si no viene
-    SEND_EMAIL= data.get("SEND_EMAIL") or True  # Por defecto es True si no viene
+    URL_OFERTAS = data.get("URL_OFERTAS", "https://tx3fc457zf.execute-api.eu-north-1.amazonaws.com/prod/oferta") 
+    ENVIRONMENT = data.get("ENVIRONMENT", "Production") 
+    SEND_EMAIL= data.get("SEND_EMAIL", True) 
     #hdrs = { (k or "").lower(): v for k, v in (event.get("headers") or {}).items() }
     hdrs = { (k or "").lower(): v for k, v in (data.get("headers") or {}).items() }
     API_KEY = hdrs.get("x-api-key")
     if not API_KEY:
         API_KEY = "gdZgiMt2FD79LrR2opX9gxitgJQfB9X2OkP7dn3i"
 
-   
+    print (" entro en contactos SEND_EMAIL", SEND_EMAIL )
 
 
     print(f"""Datos recibidos: {name}, {email}, {pais}, {idioma}, {pistas_perimetrales}, {pistas_laterales}, {mailorigen}, {descuento_adicional}, {origen},
         {BD}, {EMAIL_USER}, {EMAIL_PASSWORD}, {URL_CONTACTO}, {URL_OFERTAS}, {API_KEY}, {ENVIRONMENT}, {SEND_EMAIL}""")
+
+
 
 
     bd=BD
@@ -1256,6 +1287,7 @@ def contacto():
                 name=name,
                 email=email,
                 pais=pais,
+                tipo_lead=tipo_lead,
                 idioma=idioma,
                 descuento_adicional=descuento_adicional,
                 origen=origen,
@@ -1911,6 +1943,8 @@ style="font-size:5.0pt;mso-ligatures:none;mso-fareast-language:ES"><a
     # Adjuntar el PDF
     
     msg.add_attachment(pdf_data, maintype="application", subtype="pdf", filename=filename)
+
+   
     
     if (SEND_EMAIL) :
 
@@ -2014,7 +2048,7 @@ def send_wellcome_email ( session_id: str):
     msg.add_alternative(body_html, subtype='html')
     
     
-    
+
     
     if (SEND_EMAIL) :
 

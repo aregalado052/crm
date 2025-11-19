@@ -113,6 +113,9 @@
           {{ _('Fecha') }}<br>{{ _('Prox. Acción') }}
         </th>
         <th data-type="text" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+          {{ _('Tipo Lead') }}
+        </th>
+        <th data-type="text" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
           {{ _('Nombre') }}
         </th>
         <th data-type="text" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
@@ -195,7 +198,7 @@
             {% endif %}
           {% endif %}
         </td>
-
+        <td class="px-4 py-2 text-center">{{ lead.tipo_lead }}</td>
         <td class="px-4 py-2 text-center">{{ lead.name }}</td>
         <td class="px-4 py-2 text-center">{{ lead.pais }}</td>
         <td class="px-4 py-2 text-center">{{ lead.quote_number }}</td>

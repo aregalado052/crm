@@ -1,0 +1,9 @@
+<mjml><mj-body background-color="#f6f9fc">
+<mj-section><mj-column>
+<mj-image src="{{ hero_url }}" alt="{{ hero_alt }}" />
+<mj-text font-size="20px" font-weight="700">{{ headline }}</mj-text>
+<mj-text>{{ html_content }}</mj-text>
+<mj-button href="{{ cta_url_wrapped }}">{{ cta_label }}</mj-button>
+<mj-text font-size="12px">¿No quieres recibir más emails? <a href="{{ unsubscribe_url }}">Darse de baja</a><br/>{{ company_address }}</mj-text>
+</mj-column></mj-section>
+</mj-body></mjml>

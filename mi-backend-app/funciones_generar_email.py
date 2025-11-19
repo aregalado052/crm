@@ -648,6 +648,10 @@ def build_framework(
     # 4) Split conservador
     msg_html, sig_html = _extract_signature_bottom_up(html_imgs_final)
 
+    print("msg_html sample:", msg_html[:200])
+    print("sig_html sample:", sig_html[:200])
+    print("[DEBUG] sig AFTER extract:", sorted(_collect_basenames_from_html(sig_html)))
+
     msg_html_full = html_imgs_final
 
 # Debug opcional
@@ -679,6 +683,9 @@ def build_framework(
 
     # 1) nombres presentes en firma y cuerpo
     sig_names = _collect_basenames_from_html(sig_html)
+
+    print ("[DEBUG] sig ALL imgs:", sorted(sig_names))  
+    print ("[DEBUG] sig BEFORE imgs:", sorted(sig_names))
     
 
     # 2) lee manifest (si existe) y toma los is_logo explícitos
@@ -3383,6 +3390,9 @@ def _extract_signature_bottom_up(html: str) -> tuple[str, str]:
     # serializa preservando exactamente los nodos
     sig_html = "".join(str(n) for n in sig_nodes).strip()
     msg_html = "".join(str(n) for n in msg_nodes).strip()
+
+    print(f"[INFO] Firma detectada en bloque {sig_start_idx} de {len(children)} (bottom-up)")
+    print(f"[DEBUG] Firma HTML: {sig_html[:120]}...")
 
     return msg_html, sig_html
 

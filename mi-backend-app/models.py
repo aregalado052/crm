@@ -86,4 +86,104 @@ class Project(db.Model):
     )
 
     
+from sqlalchemy import (
+    Column,
+    String,
+    Date,
+    Numeric,
+    DateTime,
+    CheckConstraint,
+    Index,
+    func,
+)
+from sqlalchemy.orm import declarative_base
+from sqlalchemy.dialects.mysql import (
+    BIGINT,
+    TINYINT,
+    ENUM as MySQLEnum,
+)
+
+Base = declarative_base()
+
+
+class LeadForm(Base):
+    __tablename__ = "lead_forms"
+
+    id = Column(
+        BIGINT(unsigned=True),
+        primary_key=True,
+        autoincrement=True,
+    )
+
+    session_id = Column(String(64), nullable=True)
+
+    fecha_actual = Column(Date, nullable=False)
+    fecha_proyecto = Column(Date, nullable=False)
+    fecha_proxima_accion = Column(Date, nullable=False)
+
+    name = Column(String(200), nullable=False)
+
+    tipo_lead = Column(
+        MySQLEnum("Distribuidor", "Club", "Sin calificar", name="tipo_lead_enum"),
+        nullable=False,
+        server_default="Sin calificar",
+    )
+
+    email = Column(String(254), nullable=False)
+    origen = Column(String(20), nullable=True)
+    vendedor = Column(String(20), nullable=True)
+    quote_number = Column(String(50), nullable=False)
+
+    idioma = Column(String(32), nullable=True)
+    pais = Column(String(100), nullable=True)
+
+    descuento_adicional = Column(Numeric(5, 2), nullable=True)
+    descuento_total = Column(Numeric(5, 2), nullable=False)
+    cantidad_total = Column(Numeric(15, 2), nullable=False)
+
+    probabilidad_exito = Column(TINYINT(unsigned=True), nullable=False)
+
+    pistas_perimetrales = Column(TINYINT(unsigned=True), nullable=True)
+    pistas_laterales = Column(TINYINT(unsigned=True), nullable=True)
+
+    estado = Column(
+        MySQLEnum("En curso", "Ganada", "Perdida", "Sin calificar", name="estado_enum"),
+        nullable=False,
+    )
+
+    info_tecnica = Column(String(1000), nullable=True)
+    info_general = Column(String(1000), nullable=True)
+    observaciones = Column(String(200), nullable=True)
+
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),  # CURRENT_TIMESTAMP
+    )
+
+    updated_at = Column(
+        DateTime,
+        nullable=True,
+        server_default=func.now(),  # CURRENT_TIMESTAMP
+        onupdate=func.now(),        # ON UPDATE CURRENT_TIMESTAMP
+    )
+
+    __table_args__ = (
+        # Índices
+        Index("idx_email", "email"),
+        Index("idx_quote_number", "quote_number"),
+
+        # CHECK constraints
+        CheckConstraint("descuento_adicional BETWEEN 0 AND 100", name="lead_forms_chk_1"),
+        CheckConstraint("descuento_total BETWEEN 0 AND 100", name="lead_forms_chk_2"),
+        CheckConstraint("cantidad_total >= 0", name="lead_forms_chk_3"),
+        CheckConstraint(
+            "pistas_perimetrales BETWEEN 0 AND 20",
+            name="lead_forms_chk_5",
+        ),
+        CheckConstraint(
+            "pistas_laterales BETWEEN 0 AND 20",
+            name="lead_forms_chk_6",
+        ),
+    )
 

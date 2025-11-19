@@ -13,9 +13,7 @@
     "includeSourceInSymbolFile": true,
     "applyToDevExtension": false
   },
-  "features": [
-    "NOIMPLICITWITH"
-  ],
+  
   "dependencies": [
     {
       "id": "437dbf0e-84ff-417a-965d-ed2bb9650972",
@@ -47,10 +45,6 @@
       "from": 50100,
       "to": 50450
     }
-  ],
-  "build": {
-    "by": "AL Language Extension,15.2.1630495",
-    "timestamp": "2025-09-14T19:06:52.5055473+00:00",
-    "compilerVersion": "15.2.24.57679"
-  }
+  ]
+  
 }

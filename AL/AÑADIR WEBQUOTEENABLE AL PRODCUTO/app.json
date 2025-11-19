@@ -21,10 +21,6 @@
       "from": 50100,
       "to": 50450
     }
-  ],
-  "build": {
-    "by": "AL Language Extension,15.2.1630495",
-    "timestamp": "2025-08-29T16:45:22.1024801+00:00",
-    "compilerVersion": "15.2.24.57679"
-  }
+  ]
+ 
 }
