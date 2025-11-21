@@ -1,0 +1,106 @@
+{
+  "slug": "prueba",
+  "display_name": "prueba",
+  "default_lang": "es",
+  "languages": {
+    "es": {
+      "name": "prueba",
+      "paths": {
+        "html": "emails/templates/prueba/es/template.html",
+        "mjml": "emails/templates/prueba/es/template.mjml",
+        "schema": "emails/templates/prueba/es/schema.json",
+        "original": "emails/templates/prueba/es/original.html"
+      },
+      "attachments": []
+    }
+  },
+  "shared": {
+    "images_dir": "emails/templates/prueba/images/",
+    "images": {},
+    "attachments": [],
+    "partials": {
+      "signature_html": "emails/templates/prueba/partials/signature.html"
+    }
+  },
+  "images_dir": "emails/templates/prueba/images/",
+  "updated_at": null,
+  "attachments": [
+    {
+      "filename": "5.mp4",
+      "content_type": "video/mp4",
+      "key": "emails/templates/prueba/es/attachments/5.mp4",
+      "url": "https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/prueba/es/attachments/5.mp4",
+      "lang": "es"
+    },
+    {
+      "filename": "6.mp4",
+      "content_type": "video/mp4",
+      "key": "emails/templates/prueba/es/attachments/6.mp4",
+      "url": "https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/prueba/es/attachments/6.mp4",
+      "lang": "es"
+    },
+    {
+      "filename": "Flyer ELLITE 14 ABR 25.pdf",
+      "content_type": "application/pdf",
+      "key": "emails/templates/prueba/es/attachments/Flyer ELLITE 14 ABR 25.pdf",
+      "url": "https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/prueba/es/attachments/Flyer%20ELLITE%2014%20ABR%2025.pdf",
+      "lang": "es"
+    },
+    {
+      "filename": "Presentacion Porque ELLITE PADEL - ES - 10 ENE 25.pdf",
+      "content_type": "application/pdf",
+      "key": "emails/templates/prueba/es/attachments/Presentacion Porque ELLITE PADEL - ES - 10 ENE 25.pdf",
+      "url": "https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/prueba/es/attachments/Presentacion%20Porque%20ELLITE%20PADEL%20-%20ES%20-%2010%20ENE%2025.pdf",
+      "lang": "es"
+    },
+    {
+      "filename": "PPT - Cataloge ELLITE PADEL - ES - 19 NOV 24.pdf",
+      "content_type": "application/pdf",
+      "key": "emails/templates/prueba/es/attachments/PPT - Cataloge ELLITE PADEL - ES - 19 NOV 24.pdf",
+      "url": "https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/prueba/es/attachments/PPT%20-%20Cataloge%20ELLITE%20PADEL%20-%20ES%20-%2019%20NOV%2024.pdf",
+      "lang": "es"
+    }
+  ],
+  "images_uploaded": [
+    {
+      "id": 3,
+      "url": "https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/prueba/images/3.jpg",
+      "key": "emails/templates/prueba/images/3.jpg",
+      "content_type": "image/jpeg",
+      "source": "attachment",
+      "size": 706427
+    },
+    {
+      "id": 4,
+      "url": "https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/prueba/images/4.jpg",
+      "key": "emails/templates/prueba/images/4.jpg",
+      "content_type": "image/jpeg",
+      "source": "attachment",
+      "size": 292322
+    },
+    {
+      "id": 5,
+      "url": "https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/prueba/images/5.jpg",
+      "key": "emails/templates/prueba/images/5.jpg",
+      "content_type": "image/jpeg",
+      "source": "attachment",
+      "size": 117098
+    },
+    {
+      "id": 6,
+      "url": "https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/prueba/images/6.jpg",
+      "key": "emails/templates/prueba/images/6.jpg",
+      "content_type": "image/jpeg",
+      "source": "attachment",
+      "size": 110672
+    },
+    {
+      "id": 7,
+      "url": "https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/prueba/images/7.jpg",
+      "key": "emails/templates/prueba/images/7.jpg",
+      "content_type": "image/jpeg",
+      "source": "attachment",
+      "size": 429306
+    }
+  ]
+}

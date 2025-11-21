@@ -147,6 +147,35 @@
             />
         </div>
     </div>
+    <div class="flex items-center gap-3">
+        <label class="inline-flex items-center">
+          <input
+            type="checkbox"
+            id="incluirTransporte"
+            name="incluir_transporte"
+            class="h-4 w-4 text-blue-600 border-blue-300 rounded focus:ring-blue-500"
+          >
+          <span class="ml-2 text-sm font-medium text-gray-700">
+            Incluir transporte
+          </span>
+        </label>
+
+        <!-- Importe transporte (se muestra solo si se marca el tick) -->
+        <div
+          id="importeTransporteWrapper"
+          class="hidden items-center gap-2"
+        >
+          <input
+            type="number"
+            min="0"
+            id="importeTransporte"
+            name="importe_transporte"
+            placeholder="0.00"
+            class="w-40 px-3 py-2 border border-blue-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500"
+          >
+          <span class="text-sm text-gray-600">€</span>
+        </div>
+      </div>
 
 
     
@@ -196,6 +225,9 @@ document.addEventListener('DOMContentLoaded', function () {
   const inputPerimetrales   = document.getElementById('inputPerimetrales');
   const inputLaterales      = document.getElementById('inputLaterales');
   const inputEmail          = document.getElementById('inputEmail');
+  const chkTransporte = document.getElementById("incluirTransporte");
+  const wrapperImporte = document.getElementById("importeTransporteWrapper");
+  const inputImporte = document.getElementById("importeTransporte");
   const emailRegex          = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   // === Listeners de validación ===
@@ -214,6 +246,8 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
   }
+
+ 
 
   const tipoLead = document.getElementById("tipo_lead");
   const descuentoInput = document.getElementById("descuento_adicional");
@@ -283,6 +317,18 @@ document.addEventListener('DOMContentLoaded', function () {
     inputEmail.addEventListener('blur', validarEmail);
     inputEmail.addEventListener('input', limpiarEstilosEmail);
   }
+  wrapperImporte.style.display = "none";
+
+  chkTransporte.addEventListener("change", function () {
+    if (chkTransporte.checked) {
+      wrapperImporte.style.display = "flex"; // aparece
+      inputImporte.required = true;          // opcional: obligatorio si se marca
+    } else {
+      wrapperImporte.style.display = "none"; // se oculta
+      inputImporte.required = false;
+      inputImporte.value = "";               // limpiar valor
+    }
+  });
 
   // === Envío del formulario ===
   const form = document.getElementById('formulario-oferta');
@@ -294,6 +340,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const perimetrales = parseInt((document.querySelector('[name="pistas_perimetrales"]')?.value || '0').trim(), 10);
     const laterales    = parseInt((document.querySelector('[name="pistas_laterales"]')?.value || '0').trim(), 10);
+    const incluirTransporteEl = document.querySelector('#incluirTransporte');
+    const importeTransporteEl = document.querySelector('[name="importe_transporte"]');
+
+    const incluirTransporte = !!incluirTransporteEl?.checked;
+
+    const importeTransporteValor = (importeTransporteEl?.value || '').trim();
+    
+    const importeTransporte = incluirTransporte
+      ? (Number.isNaN(parseFloat(importeTransporteValor))
+          ? 0
+          : parseFloat(importeTransporteValor))
+      : 0;
 
     const data = {
       name: (document.querySelector('[name="name"]')?.value || '').trim(),
@@ -303,7 +361,9 @@ document.addEventListener('DOMContentLoaded', function () {
       pais: (document.querySelector('[name="pais"]')?.value || '').trim(),
       tipo_lead: (document.querySelector('[name="tipo_lead"]')?.value || '').trim(),
       pistas_perimetrales: Number.isNaN(perimetrales) ? 0 : perimetrales,
-      pistas_laterales: Number.isNaN(laterales) ? 0 : laterales
+      pistas_laterales: Number.isNaN(laterales) ? 0 : laterales,
+      incluir_transporte: incluirTransporte,
+      importe_transporte: importeTransporte
     };
 
     Swal.fire({
@@ -371,6 +431,8 @@ document.addEventListener('DOMContentLoaded', function () {
           pais: data.pais,
           pistas_perimetrales: String(data.pistas_perimetrales),
           pistas_laterales: String(data.pistas_laterales),
+          incluir_transporte: String(data.incluir_transporte),
+          importe_transporte: String(data.importe_transporte),
           descuento_total: Number.isFinite(descuentoTotalNum) ? descuentoTotalNum.toFixed(1) : "",
           cantidad_total:  Number.isFinite(cantidadTotalNum)  ? cantidadTotalNum.toFixed(2)  : "",
           ...(quoteNumber ? { quoteNumber: String(quoteNumber) } : {})
@@ -423,6 +485,13 @@ document.addEventListener('DOMContentLoaded', function () {
       };
     } 
   });
+  if (!chkTransporte || !wrapperImporte) {
+      console.error("No se encontraron los elementos del transporte");
+      return;
+    }
+
+    // Por si quieres que empiece oculto también a nivel de style
+  
 });
 </script>
 {% endblock %}

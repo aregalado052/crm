@@ -1,0 +1,41 @@
+{
+  "slug": "pruebas",
+  "display_name": "pruebas",
+  "default_lang": "es",
+  "languages": {
+    "es": {
+      "name": "pruebas",
+      "paths": {
+        "html": "emails/templates/pruebas/es/template.html",
+        "mjml": "emails/templates/pruebas/es/template.mjml",
+        "schema": "emails/templates/pruebas/es/schema.json",
+        "original": "emails/templates/pruebas/es/original.html"
+      },
+      "attachments": []
+    }
+  },
+  "shared": {
+    "images_dir": "emails/templates/pruebas/images/",
+    "images": {},
+    "attachments": []
+  },
+  "images_dir": "emails/templates/pruebas/images/",
+  "updated_at": null,
+  "attachments": [],
+  "images_uploaded": [
+    {
+      "id": 1,
+      "url": "https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/pruebas/images/1.png",
+      "key": "emails/templates/pruebas/images/1.png",
+      "content_type": "image/png",
+      "source": "data-uri"
+    },
+    {
+      "id": 2,
+      "url": "https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/pruebas/images/2.png",
+      "key": "emails/templates/pruebas/images/2.png",
+      "content_type": "image/png",
+      "source": "data-uri"
+    }
+  ]
+}

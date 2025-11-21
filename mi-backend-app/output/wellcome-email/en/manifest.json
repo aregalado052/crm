@@ -1,15 +1,15 @@
 {
   "slug": "wellcome-email",
   "display_name": "wellcome-email",
-  "default_lang": "es",
+  "default_lang": "en",
   "languages": {
-    "es": {
+    "en": {
       "name": "wellcome-email",
       "paths": {
-        "html": "emails/templates/wellcome-email/es/template.html",
-        "mjml": "emails/templates/wellcome-email/es/template.mjml",
-        "schema": "emails/templates/wellcome-email/es/schema.json",
-        "original": "emails/templates/wellcome-email/es/original.html"
+        "html": "emails/templates/wellcome-email/en/template.html",
+        "mjml": "emails/templates/wellcome-email/en/template.mjml",
+        "schema": "emails/templates/wellcome-email/en/schema.json",
+        "original": "emails/templates/wellcome-email/en/original.html"
       },
       "attachments": []
     }
@@ -28,37 +28,37 @@
     {
       "filename": "5.mp4",
       "content_type": "video/mp4",
-      "key": "emails/templates/wellcome-email/es/attachments/5.mp4",
-      "url": "https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/wellcome-email/es/attachments/5.mp4",
-      "lang": "es"
+      "key": "emails/templates/wellcome-email/en/attachments/5.mp4",
+      "url": "https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/wellcome-email/en/attachments/5.mp4",
+      "lang": "en"
     },
     {
       "filename": "6.mp4",
       "content_type": "video/mp4",
-      "key": "emails/templates/wellcome-email/es/attachments/6.mp4",
-      "url": "https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/wellcome-email/es/attachments/6.mp4",
-      "lang": "es"
+      "key": "emails/templates/wellcome-email/en/attachments/6.mp4",
+      "url": "https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/wellcome-email/en/attachments/6.mp4",
+      "lang": "en"
     },
     {
       "filename": "Flyer ELLITE 14 ABR 25.pdf",
       "content_type": "application/pdf",
-      "key": "emails/templates/wellcome-email/es/attachments/Flyer ELLITE 14 ABR 25.pdf",
-      "url": "https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/wellcome-email/es/attachments/Flyer%20ELLITE%2014%20ABR%2025.pdf",
-      "lang": "es"
+      "key": "emails/templates/wellcome-email/en/attachments/Flyer ELLITE 14 ABR 25.pdf",
+      "url": "https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/wellcome-email/en/attachments/Flyer%20ELLITE%2014%20ABR%2025.pdf",
+      "lang": "en"
     },
     {
-      "filename": "Presentacion Porque ELLITE PADEL - ES - 10 ENE 25.pdf",
+      "filename": "Presentacion Porque ELLITE PADEL - SPONSORS - EN - 15 ENE 25.pdf",
       "content_type": "application/pdf",
-      "key": "emails/templates/wellcome-email/es/attachments/Presentacion Porque ELLITE PADEL - ES - 10 ENE 25.pdf",
-      "url": "https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/wellcome-email/es/attachments/Presentacion%20Porque%20ELLITE%20PADEL%20-%20ES%20-%2010%20ENE%2025.pdf",
-      "lang": "es"
+      "key": "emails/templates/wellcome-email/en/attachments/Presentacion Porque ELLITE PADEL - SPONSORS - EN - 15 ENE 25.pdf",
+      "url": "https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/wellcome-email/en/attachments/Presentacion%20Porque%20ELLITE%20PADEL%20-%20SPONSORS%20-%20EN%20-%2015%20ENE%2025.pdf",
+      "lang": "en"
     },
     {
-      "filename": "PPT - Cataloge ELLITE PADEL - ES - 19 NOV 24.pdf",
+      "filename": "PPT - Cataloge ELLITE PADEL - EN - 19 NOV 24.pdf",
       "content_type": "application/pdf",
-      "key": "emails/templates/wellcome-email/es/attachments/PPT - Cataloge ELLITE PADEL - ES - 19 NOV 24.pdf",
-      "url": "https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/wellcome-email/es/attachments/PPT%20-%20Cataloge%20ELLITE%20PADEL%20-%20ES%20-%2019%20NOV%2024.pdf",
-      "lang": "es"
+      "key": "emails/templates/wellcome-email/en/attachments/PPT - Cataloge ELLITE PADEL - EN - 19 NOV 24.pdf",
+      "url": "https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/wellcome-email/en/attachments/PPT%20-%20Cataloge%20ELLITE%20PADEL%20-%20EN%20-%2019%20NOV%2024.pdf",
+      "lang": "en"
     }
   ],
   "images_uploaded": [

@@ -655,7 +655,7 @@ def build_framework(
     msg_html_full = html_imgs_final
 
 # Debug opcional
-    print("[DEBUG] sig sample:", BeautifulSoup(sig_html or "", "lxml").get_text(" ", strip=True)[:200])
+    #print("[DEBUG] sig sample:", BeautifulSoup(sig_html or "", "lxml").get_text(" ", strip=True)[:200])
 
     # nombres que realmente están en el cuerpo (antes de quitarles imágenes)
     msg_names_before_clean = _collect_basenames_from_html(msg_html)
@@ -668,71 +668,95 @@ def build_framework(
         max_imgs=2,   # ⬅ solo dos logos
     )
     # debug temprano
+    from bs4 import BeautifulSoup
     print("[DEBUG] sig BEFORE imgs:", sorted(_collect_basenames_from_html(sig_html)))
     sig_txt_dbg = BeautifulSoup(sig_html or "", "lxml").get_text(" ", strip=True)
     print("[DEBUG] sig text sample:", sig_txt_dbg[:200])
 
+        # === FILTRO: eliminar de la firma cualquier imagen >= 30KB ===
    
 
-        # Cuerpo: SIEMPRE sin imágenes
+    SIGNATURE_MAX_BYTES = 30 * 1024  # 30 KB
+
+    # construimos mapa basename -> size
+    sizes_by_name: dict[str, int] = {}
+    for meta in images_meta or []:
+        src = (meta.get("url") or meta.get("key") or "").strip()
+        if not src:
+            continue
+        name = os.path.basename(src.split("?", 1)[0]).lower()
+
+        sz = meta.get("size") or meta.get("filesize") or meta.get("length") or 0
+        try:
+            sz = int(sz)
+        except (TypeError, ValueError):
+            sz = 0
+
+        if name:
+            sizes_by_name[name] = sz
+
+    # limpiamos la firma: fuera todas las imágenes grandes
+    soup_sig = BeautifulSoup(sig_html or "", "lxml")
+    changed = False
+    for im in list(soup_sig.find_all("img")):
+        src = (im.get("src") or "").strip()
+        if not src:
+            continue
+        base = os.path.basename(src.split("?", 1)[0]).lower()
+        sz = sizes_by_name.get(base, 0)
+        if sz >= SIGNATURE_MAX_BYTES:
+            # imagen demasiado grande para estar en la firma
+            im.decompose()
+            changed = True
+
+    if changed:
+        sig_html = str(soup_sig)
+        print("[DEBUG] signature cleaned by size; remaining imgs:",
+              sorted(_collect_basenames_from_html(sig_html)))
+    # === FIN FILTRO POR TAMAÑO EN FIRMA ===
+
+   
+    # Cuerpo: SIEMPRE sin imágenes
     msg_html = remove_all_images(msg_html)
 
-    # Firma: SI HAY allow-list explícita => filtramos; si no, NO tocamos (conservador)
-    
-    # === Firma: mantener solo logos (robusto) ===
-
-    # 1) nombres presentes en firma y cuerpo
+    # === Firma: mantener solo logos y NUNCA fotos grandes ===
     sig_names = _collect_basenames_from_html(sig_html)
+    print("[DEBUG] sig ALL imgs:", sorted(sig_names))
 
-    print ("[DEBUG] sig ALL imgs:", sorted(sig_names))  
-    print ("[DEBUG] sig BEFORE imgs:", sorted(sig_names))
-    
-
-    # 2) lee manifest (si existe) y toma los is_logo explícitos
+    # 1) lee manifest (si existe) y toma los is_logo explícitos
     man = _load_manifest_from_s3(slug) or {}
     shared_images = (man.get("shared") or {}).get("images") or {}
     explicit_logo = {n.lower() for n, meta in shared_images.items() if meta.get("is_logo")}
 
-    # 3) decide allow-list
+    # 2) decide allow-list
     if explicit_logo:
         # usa SOLO las imágenes que estén en firma y además marcadas como logo en manifest
         allowed = sig_names & explicit_logo
     else:
-        # fallback robusto: solo .png de la firma (en tu caso 6.png, 7.png)
+        # fallback: asumimos que los logos son PNG, las fotos (jpg) NO van en la firma
         allowed = {n for n in sig_names if n.lower().endswith(".png")}
 
-    print("[DEBUG] sig BEFORE imgs:", sorted(sig_names))
-    print("[DEBUG] sig allow-list:", sorted(allowed))
+    print("[DEBUG] sig allow-list (logos permitidos):", sorted(allowed))
 
-   
+    from bs4 import BeautifulSoup
 
     if allowed:
+        # dejamos SOLO las imágenes que estén en allowed
         sig_html = keep_only_logo_images(sig_html, allowed)
     else:
-        # si no hay nada permitido, deja la firma tal cual para no perder texto
-        pass
+        # si no tenemos ningún logo reconocido,
+        # ELIMINAMOS TODAS las imágenes de la firma (pero dejamos el texto)
+        sig_html = remove_all_images(sig_html)
 
-
-
-   
+    # (IMPORTANTE) eliminar TODO el bloque viejo:
+    # if sig_names:
+    #     if explicit_logo:
+    #         ...
+    #     else:
+    #         print("[DEBUG] sig allow-list (no explicit): (no filtramos)")
+    # ...
 
     
-    if sig_names:
-        if explicit_logo:
-            allow = sig_names & explicit_logo
-            print("[DEBUG] sig allow-list (explicit):", sorted(allow))
-            if allow:
-                sig_html = keep_only_logo_images(sig_html, allow)
-            # si explicit_logo no intersecta, deja la firma tal cual (para no comerte los logos reales)
-        else:
-            print("[DEBUG] sig allow-list (no explicit): (no filtramos)")
-            # no filtramos la firma si el manifest no sabe quién es logo
-    else:
-        # firma sin imágenes → no hacemos nada
-        pass
-
-
-   
 
 
        
@@ -1320,8 +1344,11 @@ def extract_html_inline_and_attachments_from_eml_bytes(
             data = cid_parts.get(raw2)
         if not data:
             continue
+        
+        content = data["content"]
+        content_size = len(content)
 
-        url, key, img_id = _put_bytes(data["content"], data["content_type"], data.get("filename") or "", id_for_name=next_id)
+        url, key, img_id = _put_bytes(content, data["content_type"], data.get("filename") or "", id_for_name=next_id)
         img["src"] = url
         img["data-img-id"] = str(img_id)
         if not img.get("alt"):
@@ -1335,6 +1362,7 @@ def extract_html_inline_and_attachments_from_eml_bytes(
             "cid_nb": data.get("cid_nb"),
             "content_type": data.get("content_type"),
             "source": "cid",
+            "size": content_size,
         })
         next_id = img_id + 1
 
@@ -1346,6 +1374,7 @@ def extract_html_inline_and_attachments_from_eml_bytes(
         header, payload = src.split(",", 1)
         ct2 = header.split(";")[0].split(":")[1] if ":" in header else "application/octet-stream"
         content = base64.b64decode(payload) if ";base64" in header else payload.encode("utf-8")
+        content_size = len(content)
 
         url, key, img_id = _put_bytes(content, ct2, id_for_name=next_id)
         img["src"] = url
@@ -1359,20 +1388,26 @@ def extract_html_inline_and_attachments_from_eml_bytes(
             "key": key,
             "content_type": ct2,
             "source": "data-uri",
+            "size": content_size,
         })
         next_id = img_id + 1
 
     # 3.3) Imágenes adjuntas sin cid → opcionalmente insertarlas al final
     inserted_urls = []
     for att in attachments_no_cid:
-        url, key, img_id = _put_bytes(att["content"], att["content_type"], att.get("filename") or "", id_for_name=next_id)
+        content = att["content"]
+        content_size = len(content)
+
+        url, key, img_id = _put_bytes(content, att["content_type"], att.get("filename") or "", id_for_name=next_id)
         uploaded_images.append({
             "id": img_id,
             "url": url,
             "key": key,
             "content_type": att["content_type"],
             "source": "attachment",
+            "size": content_size,
         })
+
         inserted_urls.append((img_id, url, att.get("filename") or ""))
         next_id = img_id + 1
 
@@ -3286,12 +3321,22 @@ def _collect_img_names_in_order(html: str):
     return out
 
 
-def _sig_rescue_tail_pngs(full_html: str, current_sig_html: str,
-                          body_names: set[str] | None = None,
-                          max_imgs: int = 2) -> str:
+
+def _sig_rescue_tail_pngs(
+    full_html: str,
+    current_sig_html: str,
+    body_names: set[str] | None = None,
+    max_imgs: int = 2,
+    images_map: dict | None = None,   # <- NUEVO, pero opcional
+) -> str:
     """
     Si la firma quedó sin <img>, añade PNGs del final del documento
     (típicos logos), excluyendo los que también están en el cuerpo.
+
+    - Si `images_map` viene con metadatos, usamos `_is_signature_image`
+      para filtrar (tamaño < 30KB, is_logo, etc.).
+    - Si `images_map` es None o vacío, se comporta como la versión vieja
+      (acepta todos los PNG del final que no estén en el cuerpo).
     """
     from bs4 import BeautifulSoup
 
@@ -3299,34 +3344,48 @@ def _sig_rescue_tail_pngs(full_html: str, current_sig_html: str,
     if BeautifulSoup(current_sig_html or "", "lxml").find("img"):
         return current_sig_html
 
-    
     body_names = body_names or set()
-
-    body_names = next(iter(body_names)) if isinstance(body_names, set) else set()  # robustez
-
     ordered = _collect_img_names_in_order(full_html)  # [(name, <img ...>)]
     if not ordered:
         return current_sig_html
 
-    # Recorre desde el final y coge PNGs contiguos, excluyendo los que estén en el cuerpo
-    tail = []
+    use_filter = bool(images_map)   # solo filtramos por tamaño/logo si tenemos meta
+    images_map = images_map or {}
+
+    tail_html = []
     started = False
+
     for name, tag_html in reversed(ordered):
         nlow = name.lower()
-        if nlow.endswith(".png") and nlow not in body_names:
-            tail.append(tag_html)
-            started = True
-            if len(tail) >= max_imgs:     # ⬅ límite duro (2 por defecto)
-                break
-        else:
+
+        # solo PNGs y que no estén en el cuerpo
+        if not nlow.endswith(".png") or nlow in body_names:
             if started:
                 break
+            else:
+                continue
 
-    if not tail:
+        # si tenemos metadatos, aplicamos el filtro “de firma”
+        if use_filter:
+            meta = images_map.get(name, {})
+            if not _is_signature_image(meta):
+                if started:
+                    break
+                else:
+                    continue
+
+        tail_html.append(tag_html)
+        started = True
+
+        if len(tail_html) >= max_imgs:
+            break
+
+    if not tail_html:
         return current_sig_html
 
-    tail.reverse()  # mantener orden visual
-    return (current_sig_html or "") + '<div class="sig-logos">' + "".join(tail) + "</div>"
+    tail_html.reverse()  # mantener orden visual
+
+    return (current_sig_html or "") + '<div class="sig-logos">' + "".join(tail_html) + "</div>"
 
 
 # --- PONER AL INICIO DEL MÓDULO ---
@@ -3825,3 +3884,71 @@ def text_to_html_preserving_lf(txt: str) -> str:
     s = txt.replace("\r\n", "\n").replace("\r", "\n")
     s = html.escape(s, quote=True)
     return s.replace("\n", "<br>")
+
+
+def split_body_and_signature(html: str):
+    """
+    Separación muy simple:
+    - Si encuentra class="moz-signature", corta el HTML ahí.
+    - Devuelve (body_html, signature_html).
+    - Si no encuentra nada, devuelve (html, "").
+    """
+    marker = 'class="moz-signature"'
+    idx = html.find(marker)
+    if idx == -1:
+        return html, ""
+
+    # buscamos el <div ...> que contiene esa clase
+    start_div = html.rfind("<div", 0, idx)
+    if start_div == -1:
+        start_div = idx
+
+    body = html[:start_div].strip()
+    signature = html[start_div:].strip()
+    return body, signature
+
+SIGNATURE_MAX_BYTES = 30 * 1024  # 30 KB
+
+def _is_signature_image(meta: dict) -> bool:
+    """
+    Devuelve True si la imagen es candidata a ir en la firma.
+    Criterios:
+      - Si tiene tamaño (< 30 KB) => se acepta.
+      - Si no hay tamaño, se permite solo si meta["is_logo"] == True.
+    """
+    if not isinstance(meta, dict):
+        return False
+
+    size = meta.get("size") or meta.get("filesize") or meta.get("length") or 0
+    try:
+        size = int(size)
+    except (TypeError, ValueError):
+        size = 0
+
+    if size and size < SIGNATURE_MAX_BYTES:
+        return True
+
+    # fallback: si no tenemos tamaño, acepta solo si está marcado como logo
+    return bool(meta.get("is_logo"))
+
+def clean_signature_images(signature_html: str) -> str:
+    """
+    Deja solo las imágenes “de firma” dentro del HTML de la firma.
+    Versión simple:
+      - Borra todas las <img> que NO sean .png
+      (en tu caso los logos son 1.png, 2.png, y las fotos son .jpg)
+    """
+    if not signature_html:
+        return signature_html
+
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(signature_html, "lxml")
+
+    for img in soup.find_all("img"):
+        src = (img.get("src") or "").lower()
+        # aquí puedes ser más estricto si quieres,
+        # de momento: sólo dejamos .png en la firma
+        if not src.endswith(".png"):
+            img.decompose()   # eliminar la imagen
+
+    return str(soup)

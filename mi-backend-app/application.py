@@ -50,7 +50,7 @@ from funciones_generar_email import (build_framework,slugify,
                                      extract_default_context_from_html,
                                      replace_cid_srcs_with_urls,
                                      fix_relative_imgs,
-                                     replace_cid_everywhere,
+                                     replace_cid_everywhere,clean_signature_images,
                                      inject_preview_css,put_public_s3,
                                      public_url, parent_of,normalize_incoming_content,
                                      update_manifest,update_manifest_for_key,
@@ -58,7 +58,7 @@ from funciones_generar_email import (build_framework,slugify,
                                      manifest_lookup,_attachments_html,
                                      enforce_dimensions_from_manifest,
                                     insert_extra_files_into_html,
-                                    s3_key_exists,_norm_src,_collect_image_keys,
+                                    s3_key_exists,_norm_src,_collect_image_keys,split_body_and_signature,
                                     _coerce_items,paths, TEMPLATES_ROOT, get_s3,
                                     USE_S3, S3_BUCKET,key_message, key_original,key_template, key_signature,
                                     s3_get_text, s3_put_text,BASE_DIR)
@@ -554,6 +554,8 @@ def ofertas():
             tipo_lead = data.get('tipo_lead')
             pistas_perimetrales = data.get('pistas_perimetrales')
             pistas_laterales = data.get('pistas_laterales')
+            incluir_transporte = data.get('incluir_transporte', False)
+            importe_transporte = data.get('importe_transporte', 0)   
             mailorigen = 'soporte@planetpower.es'
             descuento_adicional = Decimal(data.get("descuento_adicional", 0))
             origen = 'CRM'
@@ -569,6 +571,8 @@ def ofertas():
             print(f"Pistas perimetrales: {pistas_perimetrales}")
             print(f"Pistas laterales: {pistas_laterales}")
             print(f"Descuento adicional: {descuento_adicional}")
+            print(f"Incluir Transporte : {incluir_transporte}")
+            print(f"Importe Transporte : {importe_transporte}")
             print ("Send_EMAIL", SEND_EMAIL)
 
 
@@ -587,6 +591,8 @@ def ofertas():
                 "pistas_laterales": pistas_laterales,
                 "mailorigen": EMAIL_USER,
                 "descuento_adicional": int(descuento_adicional),
+                "incluir_transporte": incluir_transporte,
+                "importe_transporte": importe_transporte,
                 "origen": origen,
                 "BD": BD,
                 "EMAIL_USER": EMAIL_USER,
@@ -626,6 +632,8 @@ def ofertas():
                 #"mailorigen": mailorigen,
                 "mailorigen": EMAIL_USER,
                 "descuento_adicional": int (descuento_adicional),
+                "incluir_transporte": incluir_transporte,
+                "importe_transporte": importe_transporte,
                 "origen": origen,
                 "BD": BD,
                 "EMAIL_USER": EMAIL_USER,
@@ -711,6 +719,8 @@ def leads():
         quote_number            = data.get('quote_number')
         idioma                  = data.get('idioma')
         pais                    = data.get('pais')
+        incluir_transporte      = data.get('incluir_transporte')    
+        importe_transporte      = _num(data.get('importe_transporte'))
         descuento_adicional     = _num(data.get('descuento_adicional'))
         descuento_total         = _num(data.get('descuento_total'))
         cantidad_total          = _num(data.get('cantidad_total'))  
@@ -734,13 +744,13 @@ def leads():
         INSERT INTO lead_forms (
           fecha_actual, fecha_proyecto, fecha_proxima_accion,
           name, email, quote_number, idioma, pais,
-          descuento_adicional, descuento_total, cantidad_total,
+          descuento_adicional, descuento_total, cantidad_total,incluir_transporte, importe_transporte,
           probabilidad_exito, pistas_perimetrales, pistas_laterales,
           info_tecnica, info_general, observaciones
         ) VALUES (
           %(fecha_actual)s, %(fecha_proyecto)s, %(fecha_proxima_accion)s,
           %(name)s, %(email)s, %(quote_number)s, %(idioma)s, %(pais)s,
-          %(descuento_adicional)s, %(descuento_total)s, %(cantidad_total)s,
+          %(descuento_adicional)s, %(descuento_total)s, %(cantidad_total)s, %(incluir_transporte)s, %(importe_transporte)s,
           %(probabilidad_exito)s, %(pistas_perimetrales)s, %(pistas_laterales)s,
           %(info_tecnica)s, %(info_general)s, %(observaciones)s
         )
@@ -760,8 +770,10 @@ def leads():
             "descuento_total": descuento_total,
             "cantidad_total": cantidad_total,
             "probabilidad_exito": probabilidad_exito,
-            "pistas_perimetrales": pistas_perimetrales,
+            "incluir_transporte": incluir_transporte,
+            "importe_transporte": importe_transporte,   
             "pistas_laterales": pistas_laterales,
+            "pistas_perimetrales": pistas_perimetrales,
             "info_tecnica": info_tecnica,
             "info_general": info_general,
             "observaciones": observaciones,
@@ -818,7 +830,38 @@ def leads():
         
        
     # Si es GET, renderiza el formulario
-    return render_template('leads.html')
+
+    incluir_transporte = request.args.get('incluir_transporte')        # 'true' / 'false' / None
+    importe_transporte = request.args.get('importe_transporte')        # '400' / None
+    name                = request.args.get('name')
+    email               = request.args.get('email')
+    idioma              = request.args.get('idioma')
+    pais                = request.args.get('pais')
+    descuento_adicional = request.args.get('descuento_adicional')
+    descuento_total     = request.args.get('descuento_total')
+    cantidad_total      = request.args.get('cantidad_total')
+    quote_number        = request.args.get('quoteNumber')  # ojo: en la URL es quoteNumber
+    pistas_perimetrales = request.args.get('pistas_perimetrales')
+    pistas_laterales    = request.args.get('pistas_laterales')
+
+    # si quieres, convierte incluir_transporte a boolean:
+    if incluir_transporte is not None:
+        incluir_transporte = incluir_transporte.lower() == 'true'
+    return render_template(
+            'leads.html',
+            incluir_transporte=incluir_transporte,
+            importe_transporte=importe_transporte,
+            name=name,
+            email=email,
+            idioma=idioma,
+            pais=pais,
+            descuento_adicional=descuento_adicional,
+            descuento_total=descuento_total,
+            cantidad_total=cantidad_total,
+            quote_number=quote_number,
+            pistas_perimetrales=pistas_perimetrales,
+            pistas_laterales=pistas_laterales,
+        )
 
 
 @application.route('/consultar_leads', methods=['GET', 'POST'])
@@ -870,6 +913,8 @@ def consultar_leads():
                 descuento_total,
                 COALESCE(pistas_laterales,0) + COALESCE(pistas_perimetrales,0) AS pistas_total,
                 probabilidad_exito,
+                incluir_transporte,
+                importe_transporte,
                 estado
                 FROM lead_forms
                 {where_sql}
@@ -933,6 +978,8 @@ def db_get_lead(lead_id):
                 pistas_perimetrales,
                 pistas_laterales,
                 probabilidad_exito,
+                incluir_transporte,
+                importe_transporte,
                 info_tecnica,
                 info_general,
                 observaciones,
@@ -1038,6 +1085,8 @@ def lead_manage():
                 estado                  = data.get('estado')
                 tipo_lead               = data.get('tipo_lead')
                 prob_exito_raw          = data.get('probabilidad_exito')
+                incluir_transporte      = data.get('incluir_transporte')
+                importe_transporte      = _num(data.get('importe_transporte'))
                 info_tecnica            = _clip_len(data.get('info_tecnica'), 1000)
                 info_general            = _clip_len(data.get('info_general'), 1000)
                 observaciones           = _clip_len(data.get('observaciones'), 200)
@@ -1060,6 +1109,8 @@ def lead_manage():
                     estado=estado,
                     tipo_lead=tipo_lead,
                     probabilidad_exito=probabilidad_exito,
+                    incluir_transporte=incluir_transporte,
+                    importe_transporte=importe_transporte,
                     info_tecnica=info_tecnica,
                     info_general=info_general,
                     observaciones=observaciones
@@ -1115,6 +1166,9 @@ def redes():
 def campanas():
     session.clear()  # Elimina todos los datos de sesión
     return redirect(url_for('login'))  # Cambiá 'login' por tu vista de inicio o login
+
+
+
 
 
 
@@ -1217,6 +1271,35 @@ def upload_template_email():
                 # added_files -> [{"filename","content_type","url"}]
                 attachments = added_files
 
+           # ========= NUEVO BLOQUE: separar imágenes de firma (< 30 KB) =========
+        SIGNATURE_MAX_BYTES = 30 * 1024  # 30 KB
+
+        signature_images = []
+        content_images = []
+
+        for img in images or []:
+            # Intenta inferir el tamaño en bytes desde distintos posibles campos
+            size = img.get("size") or img.get("filesize") or img.get("length") or 0
+            try:
+                size = int(size)
+            except (TypeError, ValueError):
+                size = 0  # si no se puede parsear, lo consideramos “desconocido”
+
+            if size and size < SIGNATURE_MAX_BYTES:
+                signature_images.append(img)
+            else:
+                content_images.append(img)
+
+        images = content_images  # solo las de contenido real en `images`
+        # ====================================================================
+        body_html, signature_html = split_body_and_signature(html_final)
+
+        # 🔹 limpiar imágenes de la firma (quitar fotos grandes / .jpg, etc.)
+        signature_html = clean_signature_images(signature_html)
+
+        # si quieres guardar la firma en algún sitio (S3, parcial, etc.), aquí es el sitio.
+        # por ahora seguimos como estabas, usando solo el cuerpo para build_framework:
+        html_final = body_html
 
         # Generar y subir la plantilla (template.html/mjml/schema/manifest)
         result = build_framework(
@@ -1229,6 +1312,21 @@ def upload_template_email():
             lang_attachments=attachments
         )
 
+        if signature_html:
+        # ruta relativa que quieres usar para el manifest
+            signature_key = f"emails/templates/{slug}/partials/signature.html"
+
+            os.makedirs(os.path.join("output", slug, "partials"), exist_ok=True)
+            with open(os.path.join("output", slug, "partials", "signature.html"), "w", encoding="utf-8") as f:
+                f.write(signature_html)
+
+            put_public_s3(
+                signature_key,
+                signature_html.encode("utf-8"),
+                "text/html; charset=utf-8",
+                cache_seconds=0
+            )
+
         # añade metadatos
         manifest_path = result.get("manifest")
         if manifest_path and os.path.exists(manifest_path):
@@ -1239,6 +1337,10 @@ def upload_template_email():
 
         m["attachments"] = attachments
         m["images_uploaded"] = images
+        if signature_html:
+            shared = m.setdefault("shared", {})
+            partials = shared.setdefault("partials", {})
+            partials.setdefault("signature_html", f"emails/templates/{slug}/partials/signature.html")
 
         with open(os.path.join(out_dir, "manifest.json"), "w", encoding="utf-8") as f:
             json.dump(m, f, indent=2, ensure_ascii=False)
@@ -1248,10 +1350,10 @@ def upload_template_email():
             "name": name,
             "slug": slug,
             "paths": result,
-            "attachments": attachments,   # útil para el front
-            "images": images
+            "attachments": attachments,
+            "images": images,
+            "signature_html": signature_html
         }), 200
-
 
 
            
@@ -1522,55 +1624,35 @@ def preview_template_lang(slug, lang):
         n.extract()
 
     # Imágenes originales del template (PRÍSTINO)
-    tpl_imgs = tpl_soup.find_all(["img", "source"])
+    #tpl_imgs = tpl_soup.find_all(["img", "source"])
 
-    # --- 1) recopila claves de la firma NUEVA (la que realmente insertas) ---
-    sig_soup = BeautifulSoup(safe_signature or "", "lxml")  # ← usar safe_signature
-    sig_img_keys = _collect_image_keys(sig_soup)
+    
+    # --- construir bloque de imágenes NO-LOGO directamente desde manifest.shared.images ---
 
-    # --- TOPE y lista permitida según MANIFEST (sin lang) ---
     shared_images = (manifest.get("shared") or {}).get("images") or {}
-    allowed_keys = {
-        name.lower()
-        for name, meta in shared_images.items()
+
+    non_logo_imgs = [
+        meta for name, meta in shared_images.items()
         if isinstance(meta, dict) and not meta.get("is_logo", False)
-    }
-    allowed_count = len(allowed_keys)
-    print("[DEBUG] allowed (non-logo) from manifest:", allowed_keys, "count:", allowed_count)
+    ]
 
-    # --- 2) clona SOLO las imágenes del template que NO estén en la firma y NO sean data: ---
-    imgs_holder = BeautifulSoup("<div data-composed='images'></div>", "lxml")
-    seen = set()
-    cloned = 0  # ← nuevo
+    imgs_holder_soup = BeautifulSoup("<div data-composed='images'></div>", "lxml")
+    imgs_holder_div = imgs_holder_soup.div
 
-    for tag in tpl_imgs:
-        raw_src = (tag.get("src") or tag.get("srcset") or "").strip()
-        if raw_src.lower().startswith("data:"):
+    for meta in non_logo_imgs:
+        src = meta.get("url") or meta.get("key")
+        if not src:
             continue
 
-        key = _norm_src(raw_src)
+        img = imgs_holder_soup.new_tag("img")
+        img["src"] = src
 
-        # debe existir, estar en manifest (non-logo), no estar en la firma, no duplicar
-        if (not key or key not in allowed_keys or key in sig_img_keys or key in seen):
-            continue
+        if meta.get("target_w"):
+            img["width"] = meta["target_w"]
+        if meta.get("target_h"):
+            img["height"] = meta["target_h"]
 
-        seen.add(key)
-
-        clone = imgs_holder.new_tag("img")
-        if tag.name == "source":
-            first_url = tag.get("srcset","").split(",")[0].split()[0].strip()
-            clone.attrs["src"] = first_url
-        else:
-            for k, v in (tag.attrs or {}).items():
-                clone.attrs[k] = v
-        if "src" not in clone.attrs and tag.get("srcset"):
-            clone.attrs["src"] = tag.get("srcset","").split(",")[0].split()[0].strip()
-        imgs_holder.div.append(clone)
-
-        cloned += 1
-        if cloned >= allowed_count:     # ← tope EXACTO: el nº de imágenes non-logo del manifest
-            break
-
+        imgs_holder_div.append(img)
 
     # --- 3) RECONSTRUIR cuerpo NUEVO: message -> imágenes -> signature ---
     out = BeautifulSoup("<!doctype html><html><head></head><body></body></html>", "lxml")
@@ -1581,20 +1663,15 @@ def preview_template_lang(slug, lang):
 
     # message
     out.body.append(BeautifulSoup(f"<div data-composed='message'>{safe_message}</div>", "lxml"))
-    
 
-    # imágenes filtradas del template
-    out.body.append(imgs_holder)
+    # imágenes (las no-logo desde el manifest)
+    out.body.append(imgs_holder_div)
 
     # signature
     out.body.append(BeautifulSoup(f"<div data-composed='signature'>{safe_signature}</div>", "lxml"))
 
     rendered = str(out)
-    rendered_before_post = rendered 
-
-    # --- DEBUG útil ---
-    print("[DEBUG] sig_img_keys:", sig_img_keys)
-    print("[DEBUG] cloned template images:", [im.get("src","") for im in imgs_holder.find_all("img")])
+    rendered_before_post = rendered
 
     
     # -------- Post-procesado (tu pipeline) --------
@@ -1618,13 +1695,12 @@ def preview_template_lang(slug, lang):
     try:
         soup_final = BeautifulSoup(rendered, "lxml")
 
-        # 1) localiza el bloque de firma que tú mismo insertaste
         sig_block = soup_final.select_one("[data-composed='signature']")
         if sig_block:
-            # 2) claves normalizadas de imágenes DENTRO de la firma
             sig_keys_final = _collect_image_keys(BeautifulSoup(str(sig_block), "lxml"))
 
-            # 3) elimina <img> duplicados FUERA de la firma con misma clave
+            shared_images = (manifest.get("shared") or {}).get("images") or {}
+
             for im in list(soup_final.find_all("img")):
                 # ¿está dentro del bloque de firma?
                 parent = im
@@ -1639,11 +1715,12 @@ def preview_template_lang(slug, lang):
 
                 key = _norm_src(im.get("src","") or im.get("srcset",""))
                 if key and key in sig_keys_final:
-                    im.decompose()
+                    meta = shared_images.get(key.lower()) or {}
+                    if meta.get("is_logo"):
+                        im.decompose()
 
-            rendered = str(soup_final)
+        rendered = str(soup_final)
     except Exception as e:
-            # <<< ANTES LO TENÍAS VACÍO (error de sintaxis). Con esto ya no falla.
         print("[WARN] dedup firmas: salto por error:", e)
         pass
 

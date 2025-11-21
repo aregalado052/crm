@@ -312,6 +312,25 @@
                   aria-disabled="true"/>         
           </div>
         </div>
+        {% if lead.incluir_transporte %}
+        <div class="flex flex-col">
+          <label for="importe_transporte" class="block text-sm font-medium text-gray-700 mb-1">
+            Importe transporte €
+          </label>
+          <div class="flex items-center gap-2">
+            <input
+              type="text"
+              id="importe_transporte"
+              name="importe_transporte"
+              value="{{ lead.importe_transporte }}"
+              readonly
+              class="w-28 h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                    bg-gray-100 text-gray-700 cursor-not-allowed
+                    focus:outline-none text-right"/>
+            <span class="text-gray-600 text-sm">€</span>
+          </div>
+        </div>
+        {% endif %}
         
       </div>
 
@@ -472,6 +491,8 @@ document.addEventListener("DOMContentLoaded", () => {
   setValue("inputInfoTecnica", leadData.info_tecnica);
   setValue("inputInfoGeneral", leadData.info_general);
   setValue("inputObservaciones", leadData.observaciones);
+  setValue("inputIncluirTransportes", leadData.incluir_transporte);
+  setValue("inputImporteTransporte", leadData.importe_transporte);
   ///setValue("inputCantidad_total", leadData.cantidad_total);
 
   // Importe: hidden (real) + vista formateada

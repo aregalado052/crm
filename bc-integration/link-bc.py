@@ -707,7 +707,7 @@ def obtener_descuento_cantidad_total(session_id):
     finally:
         connection.close()
 
-def ensamblar_oferta (codigo_pais,zona,idioma, pistas_perimetrales, pistas_laterales, SalesHeaderNumber, session_id, descuento_adicional=0):
+def ensamblar_oferta (codigo_pais,zona,idioma, pistas_perimetrales, pistas_laterales, SalesHeaderNumber, session_id, descuento_adicional=0, incluir_transporte=False, importe_transporte=0  ):
     """
     Ensambla una oferta basada en los parámetros proporcionados.    
     Args:
@@ -936,8 +936,78 @@ def ensamblar_oferta (codigo_pais,zona,idioma, pistas_perimetrales, pistas_later
         
         })
     
+    
+    
+    
+
+   
+    numerolinea += 10000
+    if idioma == "Español":
+        if (incluir_transporte):
+
+            descripcion = "TRANSPORTE PUERTA A PUERTA"
+            
+            lineas.append  ({
+                "type": "Charge (Item)",
+                "itemNo": 'C-TR',
+                "documentNo": SalesHeaderNumber,
+                "lineNo": numerolinea,
+                "description": descripcion,
+                "quantity": 1,
+                "unitPrice": importe_transporte,        
+                })
+          
+        else:
+            descripcion = "EL TRANSPORTE NO ESTA INCLUIDO FUERA DE LA PENINSULA IBERICA"
+            
+            lineas.append  ({
+                #"type": "Item",
+                "documentNo": SalesHeaderNumber,
+                "lineNo": numerolinea,
+                "description": descripcion,
+                
+                
+                })
+
+
+    else:
+
+        if (incluir_transporte):
+
+            descripcion = "TRANSPORT DOOR TO DOOR"
+            
+            lineas.append  ({
+                "type": "Charge (Item)",
+                "itemNo": 'C-TR',
+                "documentNo": SalesHeaderNumber,
+                "lineNo": numerolinea,
+                "description": descripcion,
+                "quantity": 1,
+                "unitPrice": importe_transporte,        
+                })
+        
+        else:
+            descripcion =  "TRANSPORT NOT INCLUDED OUTSIDE THE IBERIAN PENINSULA"
+            
+            lineas.append  ({
+                #"type": "Item",
+                "documentNo": SalesHeaderNumber,
+                "lineNo": numerolinea,
+                "description": descripcion,
+                
+                
+                })
+
+
+
+
+
+
+       
+    
     if idioma == "Español":
          descripcion = "EL TUBO 4040 PARA LA INSTALACION DE LA PISTA NO ESTA INCLUIDO"
+         
     else:
         descripcion = "THE 4040 TUBE FOR INSTALLING THE COURT IS NOT INCLUDED"
     numerolinea += 10000
@@ -948,7 +1018,6 @@ def ensamblar_oferta (codigo_pais,zona,idioma, pistas_perimetrales, pistas_later
         "description": descripcion,
         
         })
-    
     if idioma == "Español":
         descripcion = (
             "Más info:https://f.crmplanetpower.es/4040es.pdf "
@@ -959,24 +1028,19 @@ def ensamblar_oferta (codigo_pais,zona,idioma, pistas_perimetrales, pistas_later
             "More info:https://f.crmplanetpower.es/4040en.pdf"
            
         )
-    
-    if idioma == "Español":
-        descripcion = "EL TRANSPORTE NO ESTA INCLUIDO FUERA DE LA PENINSULA IBERICA"
-    else:
-        descripcion = "TRANSPORT NOT INCLUDED OUTSIDE THE IBERIAN PENINSULA"
-   
     numerolinea += 10000
-    lineas.append  ({
+    lineas.append ({
         #"type": "Item",
         "documentNo": SalesHeaderNumber,
         "lineNo": numerolinea,
         "description": descripcion,
         "session_id": session_id,
+
         "isLastLine": True,
         "url": URL_OFERTAS,
         "bd" : BD
         
-        })
+        })    
 
     return lineas
 
@@ -1077,9 +1141,10 @@ def insert_base_datos(lead):
         tipo_lead               = lead.tipo_lead
         pistas_perimetrales     = lead.pistas_perimetrales
         pistas_laterales        = lead.pistas_laterales
-        
+        incluir_transporte      = lead.incluir_transporte
+        importe_transporte      = lead.importe_transporte   
 
-        print (f"Datos para insertar en BD: {fecha_actual}, {origen}, {name}, {email}, {quote_number}, {idioma}, {pais}, {descuento_adicional},{tipo_lead}, {descuento_total}, {cantidad_total}, {estado}, {pistas_perimetrales}, {pistas_laterales} ")
+        print (f"Datos para insertar en BD: {fecha_actual}, {origen}, {name}, {email}, {quote_number}, {idioma}, {pais}, {descuento_adicional},{tipo_lead}, {descuento_total}, {cantidad_total}, {estado}, {pistas_perimetrales}, {pistas_laterales} {incluir_transporte}, {importe_transporte} ")
 
         # --- Inserción ---
         sql = """
@@ -1087,13 +1152,13 @@ def insert_base_datos(lead):
           fecha_actual, origen,
           name, email, quote_number, idioma, pais, tipo_lead,
           descuento_adicional, descuento_total, cantidad_total,
-          estado,pistas_perimetrales, pistas_laterales
+          estado,pistas_perimetrales, pistas_laterales,incluir_transporte, importe_transporte
           
         ) VALUES (
           %(fecha_actual)s, %(origen)s, 
           %(name)s, %(email)s, %(quote_number)s, %(idioma)s, %(pais)s, %(tipo_lead)s,
           %(descuento_adicional)s, %(descuento_total)s, %(cantidad_total)s,
-          %(estado)s, %(pistas_perimetrales)s, %(pistas_laterales)s
+          %(estado)s, %(pistas_perimetrales)s, %(pistas_laterales)s, %(incluir_transporte)s, %(importe_transporte)s
           
         )
         """
@@ -1113,7 +1178,8 @@ def insert_base_datos(lead):
             "estado": estado,
             "pistas_perimetrales": pistas_perimetrales,
             "pistas_laterales": pistas_laterales,
-            
+            "incluir_transporte": incluir_transporte,
+            "importe_transporte": importe_transporte    
         }
 
         creds = get_db_credentials("secretoBC/Mysql")
@@ -1186,6 +1252,8 @@ def contacto():
     pistas_perimetrales = data.get("pistas_perimetrales")
     pistas_laterales = data.get("pistas_laterales")
     tipo_lead = data.get("tipo_lead", "Sin calificar")
+    incluir_transporte = data.get("incluir_transporte", False)
+    importe_transporte = data.get("importe_transporte", 0)
     BD = data.get("BD", "PRODUCCION")  # PRODUCCION o PRUEBAS
     EMAIL_USER = data.get("EMAIL_USER", "web@planetpower.es") 
     EMAIL_PASSWORD = data.get("EMAIL_PASSWORD", 'Ppt946682011') 
@@ -1199,7 +1267,7 @@ def contacto():
     if not API_KEY:
         API_KEY = "gdZgiMt2FD79LrR2opX9gxitgJQfB9X2OkP7dn3i"
 
-    print (" entro en contactos SEND_EMAIL", SEND_EMAIL )
+   
 
 
     print(f"""Datos recibidos: {name}, {email}, {pais}, {idioma}, {pistas_perimetrales}, {pistas_laterales}, {mailorigen}, {descuento_adicional}, {origen},
@@ -1252,7 +1320,7 @@ def contacto():
     
 
 
-    lineas =ensamblar_oferta (codigo_pais,zona,idioma, pistas_perimetrales, pistas_laterales, SalesHeaderNumber,session_id, descuento_adicional)
+    lineas =ensamblar_oferta (codigo_pais,zona,idioma, pistas_perimetrales, pistas_laterales, SalesHeaderNumber,session_id, descuento_adicional,incluir_transporte, importe_transporte  )
 
     print(f"Líneas de oferta ensambladas: {lineas}")
 
@@ -1296,6 +1364,8 @@ def contacto():
                 estado="Sin calificar",
                 cantidad_total=float(total_amount_quote),
                 descuento_total =  float(porcentaje_descuento),
+                incluir_transporte=incluir_transporte,
+                importe_transporte=importe_transporte,
                 quote_number =  str(SalesHeaderNumber)
 
             )
@@ -1351,18 +1421,21 @@ def lambda_handler(event, context):
     pais = data.get("pais")
     idioma = data.get("idioma")
     descuento_adicional = data.get("descuento_adicional", 0)    
-    mailorigen=data.get("mailorigen") or "web@planetpower.es"
+    mailorigen=data.get("mailorigen", "web@planetpower.es") 
     pistas_perimetrales = data.get("pistas_perimetrales")
     pistas_laterales = data.get("pistas_laterales")
+    tipo_lead = data.get("tipo_lead", "Sin calificar")
+    incluir_transporte = data.get("incluir_transporte", False)
+    importe_transporte = data.get("importe_transporte", 0)
     BD = data.get("BD", "PRODUCCION")  # PRODUCCION o PRUEBAS
-    EMAIL_USER = data.get("EMAIL_USER") or "web@planetpower.es"
-    EMAIL_PASSWORD = data.get("EMAIL_PASSWORD") or 'Ppt946682011'
+    EMAIL_USER = data.get("EMAIL_USER", "web@planetpower.es") 
+    EMAIL_PASSWORD = data.get("EMAIL_PASSWORD", 'Ppt946682011') 
     URL_CONTACTO = data.get("URL_CONTACTO")
-    URL_OFERTAS = data.get("URL_OFERTAS") or "https://tx3fc457zf.execute-api.eu-north-1.amazonaws.com/prod/oferta"   
-    ENVIRONMENT = data.get("ENVIRONMENT") or "Production"  # Por defecto es 'Production' si no viene
-    SEND_EMAIL= data.get("SEND_EMAIL") or True  # Por defecto es True si no viene
-    
-    hdrs = { (k or "").lower(): v for k, v in (event.get("headers") or {}).items() }
+    URL_OFERTAS = data.get("URL_OFERTAS", "https://tx3fc457zf.execute-api.eu-north-1.amazonaws.com/prod/oferta") 
+    ENVIRONMENT = data.get("ENVIRONMENT", "Production") 
+    SEND_EMAIL= data.get("SEND_EMAIL", True) 
+    #hdrs = { (k or "").lower(): v for k, v in (event.get("headers") or {}).items() }
+    hdrs = { (k or "").lower(): v for k, v in (data.get("headers") or {}).items() }
     API_KEY = hdrs.get("x-api-key")
     
 
@@ -1420,7 +1493,8 @@ def lambda_handler(event, context):
     
 
 
-    lineas =ensamblar_oferta (codigo_pais,zona,idioma, pistas_perimetrales, pistas_laterales, SalesHeaderNumber,session_id, descuento_adicional)
+    lineas =ensamblar_oferta (codigo_pais,zona,idioma, pistas_perimetrales, pistas_laterales, SalesHeaderNumber,session_id, descuento_adicional,incluir_transporte, importe_transporte  )
+
 
     print(f"Líneas de oferta ensambladas: {lineas}")
 
@@ -1455,6 +1529,7 @@ def lambda_handler(event, context):
                 name=name,
                 email=email,
                 pais=pais,
+                tipo_lead=tipo_lead,
                 idioma=idioma,
                 descuento_adicional=descuento_adicional,
                 origen=origen,
@@ -1463,9 +1538,13 @@ def lambda_handler(event, context):
                 estado="Sin calificar",
                 cantidad_total=float(total_amount_quote),
                 descuento_total =  float(porcentaje_descuento),
+                incluir_transporte=incluir_transporte,
+                importe_transporte=importe_transporte,
                 quote_number =  str(SalesHeaderNumber)
 
             )
+
+
 
 
     print (f"Lead para insertar en BD: {lead}")
@@ -1590,6 +1669,7 @@ def recibir_oferta():
 
         if SEND_WELLCOME_EMAIL:
             send_wellcome_email(session_id)
+            #send_prueba_email(session_id)
             print(f"✅ Correo de bienvenida enviado ")
 
         print("✅ PDF guardado")
@@ -1801,8 +1881,8 @@ def send_email_with_pdf(pdf_data: bytes, filename: str, session_id: str):
     msg["From"] = sender_email
     msg["To"] = session_data['email']
 
-    #cc_addresses = ["angel.r@planetpower.es"]
-    cc_addresses = ["alfonso@planetpower.es", "angel.r@planetpower.es"]
+    cc_addresses = ["angel.r@planetpower.es"]
+    #cc_addresses = ["alfonso@planetpower.es", "angel.r@planetpower.es"]
     msg["Cc"] = ", ".join(cc_addresses)
 
 
@@ -2016,8 +2096,8 @@ def send_wellcome_email ( session_id: str):
     msg["From"] = sender_email
     msg["To"] = session_data['email']
 
-    #cc_addresses = ["angel.r@planetpower.es"]
-    cc_addresses = ["alfonso@planetpower.es", "angel.r@planetpower.es"]
+    cc_addresses = ["angel.r@planetpower.es"]
+    #cc_addresses = ["alfonso@planetpower.es", "angel.r@planetpower.es"]
     msg["Cc"] = ", ".join(cc_addresses)
 
     slug = "wellcome-email"  # (si es 'welcome' o similar, usa el correcto)
@@ -2036,12 +2116,12 @@ def send_wellcome_email ( session_id: str):
 
     print ("lang", lang)
 
-    html_body = build_message_html_from_s3(slug, lang)
-    safe_message = normalize_incoming_content(html_body)
+    #html_body = build_message_html_from_s3(slug, lang)
+    #safe_message = normalize_incoming_content(html_body)
     body_html = render_email_body_images_folder(slug, lang)
 
 
-    msg.set_content(safe_message)
+    msg.set_content("")
     
   
   
@@ -2086,6 +2166,117 @@ def send_wellcome_email ( session_id: str):
             return {"status": "failed", "reason": f"disconnected: {e}"}
         except Exception as e:
             return {"status": "failed", "reason": f"unexpected: {e}"}
+
+
+
+def send_prueba_email ( session_id: str):
+    session_data = get_session_data(session_id, bd=BD)
+    # Configuración SMTP (ejemplo con Gmail; sustituye con tus valores)
+    smtp_server = "smtp.planetpower.es"
+    smtp_port = 587
+    global SEND_EMAIL, EMAIL_PASSWORD
+    sender_email = session_data['mailorigen']
+    SEND_EMAIL= session_data['send_email']
+    EMAIL_PASSWORD= session_data['email_password']
+    sender_password = EMAIL_PASSWORD
+    print("sender", sender_email)
+        
+    if isinstance(sender_password, (bytes, bytearray)):
+        sender_password = sender_password.decode("utf-8", errors="replace")  # ahora es str
+
+
+
+
+    print ("SEND_EMAIL", SEND_EMAIL)
+    print("EMAIL_PASSWORD", sender_password )
+    if not sender_email or not sender_password:
+        raise ValueError("Credenciales de correo no configuradas en variables de entorno")
+
+    # Crear el mensaje
+    msg = EmailMessage()
+    msg["From"] = sender_email
+    msg["To"] = session_data['email']
+
+    cc_addresses = ["angel.r@planetpower.es"]
+    #cc_addresses = ["alfonso@planetpower.es", "angel.r@planetpower.es"]
+    msg["Cc"] = ", ".join(cc_addresses)
+
+    #slug = "wellcome-email"  # (si es 'welcome' o similar, usa el correcto)
+    slug = "prueba"  # (si es 'welcome' o similar, usa el correcto)
+    
+    
+
+    
+    if( session_data['idioma'] == "Español"):
+        subject = f"Información Comercial"
+        lang = "es"
+    else:
+        subject = f"Commercial Information"
+        lang = "en"
+    msg["Subject"] = subject
+
+    print ("lang", lang)
+
+    #html_body = build_message_html_from_s3(slug, lang)
+    #safe_message = normalize_incoming_content(html_body)
+    body_html = render_email_body_images_folder(slug, lang)
+
+
+    msg.set_content("")
+
+    msg.add_alternative(body_html, subtype="html")
+    
+    import re
+
+    def debug_print_images(label, html):
+        imgs = re.findall(r'<img[^>]+src=["\']([^"\']+)["\']', html, flags=re.IGNORECASE)
+        print(f"[DEBUG IMG] {label}: {len(imgs)} imágenes")
+        for i, src in enumerate(imgs, start=1):
+            print(f"  {label} #{i}: {src}")
+
+    debug_print_images("SEND", body_html)
+  
+
+    
+    
+
+    
+    
+
+    print("🔄 Enviando correo electrónico...")
+    try:
+        if smtp_port == 465:
+            # TLS implícito
+            with smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=20) as server:
+                server.login(sender_email, sender_password)
+                server.send_message(msg)
+        else:
+            # STARTTLS (587 recomendado)
+            with smtplib.SMTP(smtp_server, smtp_port, timeout=20) as server:
+                server.ehlo()
+            
+                server.ehlo()
+                server.login(sender_email, sender_password)
+                server.send_message(msg)
+
+        print("Correo enviado correctamente.")
+        print("sender", sender_email)
+        print("recipient", sender_password) 
+        return {"status": "sent"}
+
+    except smtplib.SMTPConnectError as e:
+        # 530 "IP denied" u otros de conexión
+        return {"status": "failed", "reason": f"connect_error: {e}"}
+    except smtplib.SMTPAuthenticationError as e:
+        return {"status": "failed", "reason": f"auth_error: {e}"}
+    except smtplib.SMTPRecipientsRefused as e:
+        return {"status": "failed", "reason": f"rcpt_refused: {e.recipients}"}
+    except smtplib.SMTPSenderRefused as e:
+        return {"status": "failed", "reason": f"sender_refused: {e.sender}"}
+    except smtplib.SMTPServerDisconnected as e:
+        return {"status": "failed", "reason": f"disconnected: {e}"}
+    except Exception as e:
+        return {"status": "failed", "reason": f"unexpected: {e}"}
 
 
 
@@ -2247,7 +2438,7 @@ def normalize_incoming_content(raw: str) -> str:
         # tu helper ya existente
         return text_to_html_preserving_lf(raw)
 
-    soup = BeautifulSoup(raw, "lxml")
+    soup = BeautifulSoup(raw, "html.parser")
     node = soup.body or soup  # solo contenido, sin <html>/<body>
 
     # limpia restos de Outlook/Thunderbird
@@ -2456,6 +2647,9 @@ def render_email_body_images_folder(slug: str, lang: str = "en") -> str:
   <div data-composed="signature">{signature}</div>
   </body>
 </html>"""
+
+   
+
     return html
 
 
