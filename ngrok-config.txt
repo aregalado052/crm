@@ -1,0 +1,20 @@
+mkdir C:\ngrok-config
+
+notepad C:\ngrok-config\ngrok.yml
+
+version: "2"
+authtoken: 30jIzy0OwqoOiUUxoDNhgor2DQ9_4SzLHRvA4129wR1sp6oQE
+
+update_channel: "stable"
+
+tunnels:
+  app_5000:
+    proto: http
+    addr: 5000
+  app_5001:
+    proto: http
+    addr: 5001
+
+
+ngrok --config C:\ngrok-config\ngrok.yml start --all
+

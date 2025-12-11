@@ -13,9 +13,7 @@
     "includeSourceInSymbolFile": true,
     "applyToDevExtension": false
   },
-  "features": [
-    "NOIMPLICITWITH"
-  ],
+  
   "idRanges": [
     {
       "from": 50100,

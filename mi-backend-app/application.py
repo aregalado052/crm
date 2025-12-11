@@ -605,7 +605,7 @@ def ofertas():
             
 
 
-
+            print ("URL_CONTACTO", URL_CONTACTO)
 
 
     
