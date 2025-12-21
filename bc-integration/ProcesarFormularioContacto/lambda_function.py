@@ -345,6 +345,7 @@ def obtener_datos_pais(pais, idioma):
 
     LABEL_TO_SLUG = {
     'Español': 'es',
+    'Esp': 'es',
     'Ingles': 'en',
     'Frances': 'fr',
     'Italiano': 'it',
@@ -686,7 +687,7 @@ def ensamblar_oferta (codigo_pais,zona,idioma, pistas_perimetrales, pistas_later
     # Aquí puedes implementar la lógica para ensamblar la oferta
     # Basado en los parámetros recibidos, por ejemplo:
 
-   
+    print("Ensamblando oferta con los siguientes Idioma:", idioma)
    
 
     porcentaje_descuento = math.ceil(round(obtener_descuento(zona,pistas_perimetrales, pistas_laterales,descuento_adicional) , 1))
@@ -858,7 +859,7 @@ def ensamblar_oferta (codigo_pais,zona,idioma, pistas_perimetrales, pistas_later
         
     else :  
         
-        codigo= "S-REG-BL-DALI-USA"
+        codigo= "S-REG-BL-DALI-UL"
         numerolinea += 10000
         cantidad = (pistas_laterales*2)+pistas_perimetrales
         descripcion, precio = buscar_producto_por_codigo(codigo, lista_productos)
@@ -907,7 +908,7 @@ def ensamblar_oferta (codigo_pais,zona,idioma, pistas_perimetrales, pistas_later
 
    
     numerolinea += 10000
-    if idioma == "Español":
+    if (idioma == "Español") or (idioma == "Esp"):
         if (incluir_transporte):
 
             descripcion = "TRANSPORTE PUERTA A PUERTA"
@@ -970,7 +971,7 @@ def ensamblar_oferta (codigo_pais,zona,idioma, pistas_perimetrales, pistas_later
 
        
     
-    if idioma == "Español":
+    if (idioma == "Español") or (idioma == "Esp")   :
          descripcion = "EL TUBO 4040 PARA LA INSTALACION DE LA PISTA NO ESTA INCLUIDO"
          
     else:
@@ -983,7 +984,7 @@ def ensamblar_oferta (codigo_pais,zona,idioma, pistas_perimetrales, pistas_later
         "description": descripcion,
         
         })
-    if idioma == "Español":
+    if (idioma == "Español") or (idioma == "Esp")   :
         descripcion = (
             "Más info:https://f.crmplanetpower.es/4040es.pdf "
             
@@ -1272,13 +1273,13 @@ def lambda_handler(event, context):
 
     if mercado == 'NACIONAL':
         customer_template = "QUOTELEAD E E" 
-    elif mercado == 'INTERNACIONAL' and idioma == "Español":
+    elif mercado == 'INTERNACIONAL' and (idioma == "Español" or idioma == "Esp"):
         customer_template = "QUOTELEAD I E"   
-    elif mercado == 'INTERNACIONAL' and idioma != "Español":
+    elif mercado == 'INTERNACIONAL' and (idioma != "Español" and idioma != "Esp"):
         customer_template = "QUOTELEAD I I"
-    elif mercado == 'UE' and idioma != "Español":
+    elif mercado == 'UE' and (idioma != "Español" and idioma != "Esp"):
         customer_template = "QUOTELEAD U I"
-    elif mercado == 'UE' and idioma == "Español":
+    elif mercado == 'UE' and (idioma == "Español" or idioma == "Esp"):
         customer_template = "QUOTELEAD U E"
 
     print(f"Plantilla de cliente: {customer_template}")
@@ -1466,7 +1467,7 @@ if __name__ == "__main__":
 
         codigo_pais, mercado, zona = obtener_datos_pais (pais, idioma)
 
-        if idioma == "Español":
+        if (idioma == "Español") or (idioma == "Esp"):
             codigo_idioma = "ESP"
         else:
             codigo_idioma = "ENU"
@@ -1475,13 +1476,13 @@ if __name__ == "__main__":
 
         if mercado == 'NACIONAL':
             customer_template = "QUOTELEAD E E" 
-        elif mercado == 'INTERNACIONAL' and idioma == "Español":
+        elif mercado == 'INTERNACIONAL' and (idioma == "Español" or idioma == "Esp"):
             customer_template = "QUOTELEAD I E"   
-        elif mercado == 'INTERNACIONAL' and idioma != "Español":
+        elif mercado == 'INTERNACIONAL' and (idioma != "Español" and idioma != "Esp"):
             customer_template = "QUOTELEAD I I"
-        elif mercado == 'UE' and idioma != "Español":
+        elif mercado == 'UE' and (idioma != "Español" and idioma != "Esp"):
             customer_template = "QUOTELEAD U I"
-        elif mercado == 'UE' and idioma == "Español":
+        elif mercado == 'UE' and (idioma == "Español" or idioma == "Esp"):
             customer_template = "QUOTELEAD U E"
 
         print(f"Plantilla de cliente: {customer_template}")

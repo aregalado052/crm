@@ -100,7 +100,7 @@ def lambda_handler(event, context):
         print(f"Datos de sesión: {session_data}")
         
 
-        if session_data['idioma'] == "Español":
+        if ((session_data['idioma'] == "Español") or (session_data['idioma'] == "Esp")):
             document_no = f"OFERTA {first_word} {session_data['SalesHeaderNumber']}.pdf"
         else:
             document_no = f"SALES QUOTE {first_word} {session_data['SalesHeaderNumber']}.pdf"
@@ -238,8 +238,8 @@ def send_email_with_pdf(pdf_data: bytes, filename: str, session_id: str):
     msg["From"] = sender_email
     msg["To"] = session_data['email']
 
-    #cc_addresses = ["angel.r@planetpower.es"]
-    cc_addresses = ["alfonso@planetpower.es", "angel.r@planetpower.es"]
+    cc_addresses = ["angel.r@planetpower.es"]
+    #cc_addresses = ["alfonso@planetpower.es", "angel.r@planetpower.es"]
     msg["Cc"] = ", ".join(cc_addresses)
 
 
@@ -248,7 +248,7 @@ def send_email_with_pdf(pdf_data: bytes, filename: str, session_id: str):
     
 
     
-    if( session_data['idioma'] == "Español"):
+    if(( session_data['idioma'] == "Español")or (session_data['idioma'] == "Esp"))  :
         subject = f"Oferta {session_data['name']} {session_data['SalesHeaderNumber']}"
         body = (
             "Buenos días, me llamo Alfonso, me puede escribir, contactar por WhatsApp o llamarme en caso de dudas (ver detalles en mi firma)"
@@ -475,7 +475,7 @@ def send_wellcome_email ( session_id: str):
     
 
     
-    if( session_data['idioma'] == "Español"):
+    if( session_data['idioma'] == "Español")or ( session_data['idioma'] == "Esp"):
         subject = f"Información Comercial"
         lang = "es"
     else:
@@ -976,7 +976,7 @@ if __name__ == "__main__":
             print(f"Datos de sesión: {session_data}")
             
 
-            if session_data['idioma'] == "Español":
+            if (session_data['idioma'] == "Español") or (session_data['idioma'] == "Esp"):
                 document_no = f"OFERTA {first_word} {session_data['SalesHeaderNumber']}.pdf"
             else:
                 document_no = f"SALES QUOTE {first_word} {session_data['SalesHeaderNumber']}.pdf"
