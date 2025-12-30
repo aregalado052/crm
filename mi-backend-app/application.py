@@ -38,8 +38,8 @@ from funciones import (create_reset_token,
                        validate_reset_token, get_dropbox_access_token)
 from models import (  User)
 from config import (BD ,EMAIL_USER,EMAIL_PASSWORD,URL_CONTACTO ,URL_OFERTAS,
-                     API_KEY,ENVIRONMENT,SEND_EMAIL,AWS_ACCESS_KEY_ID,
-                     AWS_SECRET_ACCESS_KEY,AWS_REGION,S3_BUCKET,ROOT_PREFIX_S3,ROOT_PREFIX_DROPBOX)
+                     API_KEY,ENVIRONMENT,SEND_EMAIL,SEND_WELLCOME_EMAIL,
+                    AWS_REGION,S3_BUCKET,ROOT_PREFIX_S3,ROOT_PREFIX_DROPBOX)
 
 
 from funciones_generar_email import (build_framework,slugify,
@@ -574,7 +574,7 @@ def ofertas():
             print(f"Incluir Transporte : {incluir_transporte}")
             print(f"Importe Transporte : {importe_transporte}")
             print ("Send_EMAIL", SEND_EMAIL)
-
+            print ("Send_WellCome_EMAIL", SEND_WELLCOME_EMAIL)
 
 
 
@@ -601,6 +601,8 @@ def ofertas():
                 "URL_OFERTAS": URL_OFERTAS,
                 "ENVIRONMENT": ENVIRONMENT,
                 "SEND_EMAIL": SEND_EMAIL,
+                "SEND_WELLCOME_EMAIL": SEND_WELLCOME_EMAIL,
+
             }
             
 
@@ -785,7 +787,7 @@ def leads():
         
         dbname = "bc_pruebas" if (BD== "PRUEBAS") else creds["dbname"]
 
-        print(f"Credenciales obtenidas: {creds}")
+        #print(f"Credenciales obtenidas: {creds}")
         print(f"Conectando a la base de datos con host: {creds['host']}, usuario: {creds['username']}, base de datos: {dbname}")
 
         conn = pymysql.connect(
@@ -872,7 +874,7 @@ def consultar_leads():
 
     dbname = "bc_pruebas" if (BD== "PRUEBAS") else creds["dbname"]
 
-    print(f"Credenciales obtenidas: {creds}")
+    #print(f"Credenciales obtenidas: {creds}")
     print(f"Conectando a la base de datos con host: {creds['host']}, usuario: {creds['username']}, base de datos: {dbname}")
 
     conn = pymysql.connect(
@@ -938,7 +940,7 @@ def db_get_lead(lead_id):
     
 
     dbname = "bc_pruebas" if (BD== "PRUEBAS") else creds["dbname"]
-    print(f"Credenciales obtenidas: {creds}")
+    #print(f"Credenciales obtenidas: {creds}")
     print(f"Conectando a la base de datos con host: {creds['host']}, usuario: {creds['username']}, base de datos: {dbname}")
 
     conn = pymysql.connect(
@@ -1007,7 +1009,7 @@ def db_update_lead(lead):
 
     dbname = "bc_pruebas" if (BD== "PRUEBAS") else creds["dbname"]
 
-    print(f"Credenciales obtenidas: {creds}")
+    #print(f"Credenciales obtenidas: {creds}")
     print(f"Conectando a la base de datos con host: {creds['host']}, usuario: {creds['username']}, base de datos: {dbname}")
 
     conn = pymysql.connect(
@@ -2120,7 +2122,11 @@ crear_base_si_no_existe()
 
 
 
-if  __name__ == "__main__":     application.run(host='0.0.0.0', port=8000, debug=False, use_reloader=False)
+if  __name__ == "__main__":     
+    
+    
+    
+    application.run(host='0.0.0.0', port=8000, debug=False, use_reloader=False)
 
 
 

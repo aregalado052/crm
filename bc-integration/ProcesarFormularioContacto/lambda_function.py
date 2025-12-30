@@ -19,36 +19,14 @@ from datetime import date
 from types import SimpleNamespace
 
 
-BD = ""  # PRODUCCION o PRUEBAS
-EMAIL_USER = ""
-EMAIL_PASSWORD = ""   
-URL_CONTACTO =""
-URL_OFERTAS = ""
-API_KEY = ""
+MYSQL_DB_SECRET_NAME = os.getenv("MYSQL_DB_SECRET_NAME", "")
+MICROSOFT_BC_SECRET_NAME = os.getenv("MICROSOFT_BC_SECRET_NAME", "")
+SCOPE = os.getenv("SCOPE", "")
+AWS_REGION = os.getenv("AWS_REGION", "eu-north-1")
+TENANT_ID = os.getenv("TENANT_ID", "")
+COMPANY_ID = os.getenv("COMPANY_ID", "")
 
-ENVIRONMENT = ""
-SEND_EMAIL= False
-
-
-
-ENVIRONMENT = 'Prodsand2025'
-#ENVIRONMENT = 'Production'  # Cambia a 'production' en producción
-COMPANY_ID = '6f7784f5-1aaa-ee11-be36-000d3a667eb7'
-#COMPANY_ID = '3872d67e-5377-ee11-817c-6045bdc8af59'
-SCOPE = "https://api.businesscentral.dynamics.com/.default"
-USERNAME = "AREGALADO@PLANETPOWERTOOLSIBERICA.onmicrosoft.com"
-
-
-#AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
-
-
-
-RESPONSE_TYPE = "code"
-
-TENANT_ID = os.environ.get("TENANT_ID", "")
-CLIENT_ID = os.environ.get("CLIENT_ID", "")
-PASSWORD = os.environ.get("PASSWORD", "")
-CLIENT_SECRET = os.environ.get("CLIENT_SECRET", "")
+global BD, ENVIRONMENT, URL_OFERTAS
 
 
 
@@ -60,9 +38,13 @@ CLIENT_SECRET = os.environ.get("CLIENT_SECRET", "")
 
 
 
-def get_db_credentials(secret_name):
-    client = boto3.client("secretsmanager", region_name="eu-north-1")  # ✅ correcto
-    response = client.get_secret_value(SecretId=secret_name)
+
+
+
+
+def get_db_credentials():
+    client = boto3.client("secretsmanager", region_name=AWS_REGION)  # ✅ correcto
+    response = client.get_secret_value(SecretId=MYSQL_DB_SECRET_NAME)
     return json.loads(response["SecretString"])
 
 
@@ -73,26 +55,29 @@ def get_token():
     """Obtiene un token de acceso para autenticar solicitudes a Business Central.
     Utiliza el flujo de contraseña para obtener un token JWT.
     """
-    
+    sm = boto3.client("secretsmanager", region_name=AWS_REGION)
+    resp = sm.get_secret_value(SecretId=MICROSOFT_BC_SECRET_NAME)
+    secret = json.loads(resp["SecretString"])
+
+
+    # === CONFIGURA ESTOS DATOS ===
+    CLIENT_ID = secret["CLIENT_ID"]
+    CLIENT_SECRET = secret["CLIENT_SECRET"]
+   
+
     
     url = f'https://login.microsoftonline.com/{TENANT_ID}/oauth2/v2.0/token'
 
-    print("🔑 Pidiendo token...")
-    print("  TENANT_ID :", TENANT_ID)
-    print("  CLIENT_ID :", CLIENT_ID)
-    print("  USERNAME  :", repr(USERNAME))
-    print("  SCOPE     :", SCOPE)
-    print("PASSWORD :", repr(PASSWORD) )
+   
 
     data = {
-        'grant_type': 'password',
-        
-        'client_id': CLIENT_ID,
-        'username': USERNAME,
-        'password': PASSWORD,
+        "grant_type": "client_credentials",        
+        'client_id': CLIENT_ID,        
         'client_secret': CLIENT_SECRET,
         'scope': SCOPE,
     }
+
+  
 
     postfields = urllib.parse.urlencode(data)
 
@@ -100,7 +85,7 @@ def get_token():
     
     
 
-   
+    #print("POSTFIELDS:", postfields.replace(CLIENT_SECRET, "***"))
    
 
    
@@ -148,13 +133,13 @@ def get_token():
         return None
 
 def actualizar_sales_header(session_id, SalesHeaderNumber):
-    creds = get_db_credentials("secretoBC/Mysql")
+    creds = get_db_credentials()
 
     dbname = "bc_pruebas" if (BD == "PRUEBAS") else creds["dbname"]
 
     print ("BD", BD)  
     
-    print(f"Credenciales obtenidas: {creds}")
+    #print(f"Credenciales obtenidas: {creds}")
     print(f"Conectando a la base de datos con host: {creds['host']}, usuario: {creds['username']}, base de datos: {dbname}")
     
 
@@ -176,15 +161,15 @@ def actualizar_sales_header(session_id, SalesHeaderNumber):
     finally:
         connection.close()
 
-def store_session(name, email, mailorigen, idioma, origen, bd, email_user, email_password, url_contacto, url_ofertas, api_key, environment, send_email):
+def store_session(name, email, mailorigen, idioma, origen, bd, email_user, email_password, url_contacto, url_ofertas, api_key, environment, send_email, send_wellcome_email):
     session_id = str(uuid.uuid4())  # 🔑 clave de sesión única
-    creds = get_db_credentials("secretoBC/Mysql")
+    creds = get_db_credentials()
 
-    dbname = "bc_pruebas" if (BD== "PRUEBAS") else creds["dbname"]
+    dbname = "bc_pruebas" if (bd== "PRUEBAS") else creds["dbname"]
 
     print ("BD", BD)  
     
-    print(f"Credenciales obtenidas send email : {creds}")
+    #print(f"Credenciales obtenidas send email : {creds}")
     print(f"Conectando a la base de datos con host: {creds['host']}, usuario: {creds['username']}, base de datos: {dbname}")
     print ("send_email", send_email)
     
@@ -199,11 +184,11 @@ def store_session(name, email, mailorigen, idioma, origen, bd, email_user, email
     try:
         with connection.cursor() as cursor:
             cursor.execute("""
-                INSERT INTO sessions (session_id, name, email, mailorigen, idioma,origen, bd, email_user, email_password, url_contacto, url_ofertas, api_key, environment, send_email)
+        INSERT INTO sessions (session_id, name, email, mailorigen, idioma,origen, bd, email_user, email_password, url_contacto, url_ofertas, api_key, environment, send_email,send_wellcome_email)
                 VALUES   (%s, %s, %s, %s, %s, %s,
                    %s, %s, %s, %s, %s,
-                   %s, %s, %s)
-            """, (session_id, name, email, mailorigen, idioma,origen, bd, email_user, email_password, url_contacto, url_ofertas, api_key, environment, send_email))
+                   %s, %s, %s, %s)
+            """, (session_id, name, email, mailorigen, idioma,origen, bd, email_user, email_password, url_contacto, url_ofertas, api_key, environment, send_email, send_wellcome_email))
         connection.commit()
     finally:
         connection.close()
@@ -211,40 +196,6 @@ def store_session(name, email, mailorigen, idioma, origen, bd, email_user, email
     return session_id
 
 
-def get_session_data(session_id,bd):
-    creds = get_db_credentials("secretoBC/Mysql")
-
-   
-    dbname = "bc_pruebas" if (bd== "PRUEBAS") else creds["dbname"]
-
-    print ("BD", bd)  
-    
-    print(f"Credenciales obtenidas: {creds}")
-    print(f"Conectando a la base de datos con host: {creds['host']}, usuario: {creds['username']}, base de datos: {dbname}")
-    
-
-    connection = pymysql.connect(
-        host=creds['host'],
-        user=creds['username'],
-        password=creds['password'],
-        database= dbname,
-        port=int(creds.get('port', 3306))
-    )
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT name, email, mailorigen, idioma, SalesHeaderNumber, send_email, email_password FROM sessions WHERE session_id = %s", (session_id,))
-        row = cursor.fetchone()
-        if row:
-            return {
-                "name": row[0],
-                "email": row[1],
-                "mailorigen": row[2],
-                "idioma": row[3],
-                "SalesHeaderNumber": row[4],
-                "send_email": row[5],
-                "email_password": row[6]
-            }
-        else:
-            return None
 
 def _curl_patch(url, headers, payload_dict):
     buf = BytesIO()
@@ -277,6 +228,8 @@ def create_quote_lines(token, name, email, customer_template, customer_country_c
     
    
     url = f"https://api.businesscentral.dynamics.com/v2.0/{TENANT_ID}/{ENVIRONMENT}/api/planet/sales/v1.0/quoteLines?company=PLANET"
+
+    
 
     
     
@@ -324,14 +277,14 @@ def create_quote_lines(token, name, email, customer_template, customer_country_c
 
 def obtener_datos_pais(pais, idioma):
 
-    creds = get_db_credentials("secretoBC/Mysql")
+    creds = get_db_credentials()
 
     
     dbname = "bc_pruebas" if (BD== "PRUEBAS") else creds["dbname"]
 
     print ("BD", BD)  
     
-    print(f"Credenciales obtenidas: {creds}")
+    #print(f"Credenciales obtenidas: {creds}")
     print(f"Conectando a la base de datos con host: {creds['host']}, usuario: {creds['username']}, base de datos: {dbname}")
     
 
@@ -392,13 +345,13 @@ def obtener_descuento(zona, pistas_perimetrales, pistas_laterales, descuento_adi
     """
 
     
-    creds = get_db_credentials("secretoBC/Mysql")
+    creds = get_db_credentials()
 
     dbname = "bc_pruebas" if (BD== "PRUEBAS") else creds["dbname"]
 
     print ("BD", BD)  
     
-    print(f"Credenciales obtenidas: {creds}")
+    #print(f"Credenciales obtenidas: {creds}")
     print(f"Conectando a la base de datos con host: {creds['host']}, usuario: {creds['username']}, base de datos: {dbname}")
     
 
@@ -455,14 +408,14 @@ def obterner_productos():
     """
     Obtiene los precios de los productos desde la base de datos.
     """
-    creds = get_db_credentials("secretoBC/Mysql")
+    creds = get_db_credentials()
 
     
     dbname = "bc_pruebas" if (BD== "PRUEBAS") else creds["dbname"]
 
     print ("BD", BD)  
     
-    print(f"Credenciales obtenidas: {creds}")
+    #print(f"Credenciales obtenidas: {creds}")
     print(f"Conectando a la base de datos con host: {creds['host']}, usuario: {creds['username']}, base de datos: {dbname}")
     
 
@@ -509,14 +462,14 @@ def obterner_productos():
     """
     Obtiene los precios de los productos desde la base de datos.
     """
-    creds = get_db_credentials("secretoBC/Mysql")
+    creds = get_db_credentials()
 
     
     dbname = "bc_pruebas" if (BD== "PRUEBAS") else creds["dbname"]
 
     print ("BD", BD)  
     
-    print(f"Credenciales obtenidas: {creds}")
+    #print(f"Credenciales obtenidas: {creds}")
     print(f"Conectando a la base de datos con host: {creds['host']}, usuario: {creds['username']}, base de datos: {dbname}")
     
 
@@ -561,13 +514,13 @@ def buscar_producto_por_codigo(codigo_busqueda, lista_productos):
 
 
 def guardar_porcentaje_descuento_session (porcentaje_descuento,session_id):
-    creds = get_db_credentials("secretoBC/Mysql")
+    creds = get_db_credentials()
 
     
     dbname = "bc_pruebas" if (BD== "PRUEBAS") else creds["dbname"]
 
     print ("BD", BD)  
-    print(f"Credenciales obtenidas: {creds}")
+    #print(f"Credenciales obtenidas: {creds}")
     print(f"Conectando a la base de datos con host: {creds['host']}, usuario: {creds['username']}, base de datos: {dbname}")
     
 
@@ -596,13 +549,13 @@ def guardar_porcentaje_descuento_session (porcentaje_descuento,session_id):
         connection.close()
 
 def guardar_cantidad_total_session (total,session_id):
-    creds = get_db_credentials("secretoBC/Mysql")
+    creds = get_db_credentials()
 
     
     dbname = "bc_pruebas" if (BD== "PRUEBAS") else creds["dbname"]
     print ("BD", BD)  
     
-    print(f"Credenciales obtenidas: {creds}")
+    #print(f"Credenciales obtenidas: {creds}")
     print(f"Conectando a la base de datos con host: {creds['host']}, usuario: {creds['username']}, base de datos: {dbname}")
     
 
@@ -634,12 +587,12 @@ def guardar_cantidad_total_session (total,session_id):
 
 
 def obtener_descuento_cantidad_total(session_id):
-    creds = get_db_credentials("secretoBC/Mysql")
+    creds = get_db_credentials()
     
     dbname = "bc_pruebas" if (BD== "PRUEBAS") else creds["dbname"]
     print ("BD", BD)  
     
-    print(f"Credenciales obtenidas: {creds}")
+    #print(f"Credenciales obtenidas: {creds}")
     print(f"Conectando a la base de datos con host: {creds['host']}, usuario: {creds['username']}, base de datos: {dbname}")
     
 
@@ -1019,9 +972,7 @@ def create_contact_salesheader(token, name, email, customer_template,  cod_idiom
 
     print("Creando contacto y oferta en BC...")
     print (f"Datos: {name}, {email}, {customer_template}, {cod_idioma}, {cod_pais}")
-    print ("Entorno:", ENVIRONMENT )
-    print ("Tenant:", TENANT_ID )
-    print ("Company ID:", COMPANY_ID )
+
    
    
     url = f"https://api.businesscentral.dynamics.com/v2.0/{TENANT_ID}/{ENVIRONMENT}/ODataV4/Company('{COMPANY_ID}')/createQuotes"
@@ -1148,14 +1099,14 @@ def insert_base_datos(lead):
             "importe_transporte": importe_transporte    
         }
 
-        creds = get_db_credentials("secretoBC/Mysql")
+        creds = get_db_credentials()
 
         
         dbname = "bc_pruebas" if (BD== "PRUEBAS") else creds["dbname"]
 
         
         print ("BD", BD)  
-        print(f"Credenciales obtenidas: {creds}")
+        #print(f"Credenciales obtenidas: {creds}")
         print(f"Conectando a la base de datos con host: {creds['host']}, usuario: {creds['username']}, base de datos: {dbname}")
         
 
@@ -1190,7 +1141,7 @@ def insert_base_datos(lead):
 
 
 def lambda_handler(event, context):
-    print("Evento recibido:", event)
+    #print("Evento recibido:", event)
 
     """Endpoint para crear un contacto y una oferta en Business Central."""
 
@@ -1205,15 +1156,13 @@ def lambda_handler(event, context):
             "body": json.dumps({"error": "JSON inválido", "detalle": str(e)})
         }
 
-    global BD, EMAIL_USER, EMAIL_PASSWORD, URL_CONTACTO, URL_OFERTAS, API_KEY, ENVIRONMENT, SEND_EMAIL
+    global BD, EMAIL_USER, EMAIL_PASSWORD, URL_CONTACTO, URL_OFERTAS, API_KEY, ENVIRONMENT, SEND_EMAIL,SEND_WELLCOME_EMAIL
 
   
 
-    print("  TENANT_ID :", TENANT_ID)
-    print("  CLIENT_ID :", CLIENT_ID)
-    print("PASSWORD :", repr(PASSWORD) )
+    
 
-    #AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
+    
     
     
 
@@ -1235,8 +1184,8 @@ def lambda_handler(event, context):
     URL_CONTACTO = data.get("URL_CONTACTO")
     URL_OFERTAS = data.get("URL_OFERTAS", "https://tx3fc457zf.execute-api.eu-north-1.amazonaws.com/prod/oferta") 
     ENVIRONMENT = data.get("ENVIRONMENT", "Production") 
-    SEND_EMAIL= data.get("SEND_EMAIL", True) 
-    #hdrs = { (k or "").lower(): v for k, v in (event.get("headers") or {}).items() }
+    SEND_EMAIL= data.get("SEND_EMAIL", True)
+    SEND_WELLCOME_EMAIL = data.get("SEND_WELLCOME_EMAIL", True)
     hdrs = { (k or "").lower(): v for k, v in (data.get("headers") or {}).items() }
     API_KEY = hdrs.get("x-api-key")
     
@@ -1248,7 +1197,7 @@ def lambda_handler(event, context):
 
 
     print(f"""Datos recibidos: {name}, {email}, {pais}, {idioma}, {pistas_perimetrales}, {pistas_laterales}, {mailorigen}, {descuento_adicional}, {origen},
-        {BD}, {EMAIL_USER}, {EMAIL_PASSWORD}, {URL_CONTACTO}, {URL_OFERTAS}, {API_KEY}, {ENVIRONMENT}, {SEND_EMAIL}""")
+        {BD}, {EMAIL_USER},{URL_CONTACTO}, {URL_OFERTAS}, {ENVIRONMENT}, {SEND_EMAIL}, {SEND_WELLCOME_EMAIL}""")
 
 
     bd=BD
@@ -1259,8 +1208,9 @@ def lambda_handler(event, context):
     api_key=API_KEY
     environment=ENVIRONMENT
     send_email=SEND_EMAIL
+    send_wellcome_email= SEND_WELLCOME_EMAIL
 
-    session_id= store_session(name, email, mailorigen, idioma, origen, bd, email_user, email_password, url_contacto, url_ofertas, api_key, environment, send_email)
+    session_id= store_session(name, email, mailorigen, idioma, origen, bd, email_user, email_password, url_contacto, url_ofertas, api_key, environment, send_email,send_wellcome_email)
 
     codigo_pais, mercado, zona = obtener_datos_pais (pais, idioma)
 
@@ -1383,21 +1333,21 @@ if __name__ == "__main__":
     import sys
     from flask import Flask,request,  jsonify
 
+    from dotenv import load_dotenv
+
+
+
+    from pathlib import Path
+    app = Flask(__name__)   
+    load_dotenv(Path(__file__).resolve().parent / ".env")
+   
+
     BASE_DIR = os.path.dirname(os.path.dirname(__file__))
     # Añadimos esa ruta al sys.path
     sys.path.insert(0, BASE_DIR)
    
-    from config import (TENANT_ID as CFG_TENANT_ID,
-                        CLIENT_ID as CFG_CLIENT_ID,
-                        PASSWORD as CFG_PASSWORD,
-                        CLIENT_SECRET as CFG_CLIENT_SECRET)
-    app = Flask(__name__)   
+   
     
-    TENANT_ID = CFG_TENANT_ID
-    CLIENT_ID = CFG_CLIENT_ID
-    PASSWORD = CFG_PASSWORD
-    CLIENT_SECRET = CFG_CLIENT_SECRET
-    AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
 
     @app.route("/api/contacto", methods=["POST"])
     def contacto():
@@ -1414,7 +1364,9 @@ if __name__ == "__main__":
         #        "body": json.dumps({"error": "JSON inválido", "detalle": str(e)})
         #    }
 
-        global BD, EMAIL_USER, EMAIL_PASSWORD, URL_CONTACTO, URL_OFERTAS, API_KEY, ENVIRONMENT, SEND_EMAIL
+        #global BD, EMAIL_USER, EMAIL_PASSWORD, URL_CONTACTO, URL_OFERTAS, API_KEY, ENVIRONMENT, SEND_EMAIL
+
+        global BD, EMAIL_USER, EMAIL_PASSWORD, URL_CONTACTO, URL_OFERTAS, API_KEY, ENVIRONMENT, SEND_EMAIL,SEND_WELLCOME_EMAIL
         
         data = request.get_json()
 
@@ -1437,6 +1389,8 @@ if __name__ == "__main__":
         URL_OFERTAS = data.get("URL_OFERTAS", "https://tx3fc457zf.execute-api.eu-north-1.amazonaws.com/prod/oferta") 
         ENVIRONMENT = data.get("ENVIRONMENT", "Production") 
         SEND_EMAIL= data.get("SEND_EMAIL", True) 
+
+        SEND_WELLCOME_EMAIL = data.get("SEND_WELLCOME_EMAIL", True)
         #hdrs = { (k or "").lower(): v for k, v in (event.get("headers") or {}).items() }
         hdrs = { (k or "").lower(): v for k, v in (data.get("headers") or {}).items() }
         API_KEY = hdrs.get("x-api-key")
@@ -1447,11 +1401,11 @@ if __name__ == "__main__":
 
 
         print(f"""Datos recibidos: {name}, {email}, {pais}, {idioma}, {pistas_perimetrales}, {pistas_laterales}, {mailorigen}, {descuento_adicional}, {origen},
-            {BD}, {EMAIL_USER}, {EMAIL_PASSWORD}, {URL_CONTACTO}, {URL_OFERTAS}, {API_KEY}, {ENVIRONMENT}, {SEND_EMAIL}""")
+            {BD}, {EMAIL_USER},  {URL_CONTACTO}, {URL_OFERTAS}, {ENVIRONMENT}, {SEND_EMAIL}, {SEND_WELLCOME_EMAIL}""")
 
 
 
-        print ("URL_OFERTAS :", URL_OFERTAS )
+       
 
 
         bd=BD
@@ -1462,8 +1416,9 @@ if __name__ == "__main__":
         api_key=API_KEY
         environment=ENVIRONMENT
         send_email=SEND_EMAIL
+        send_wellcome_email=SEND_WELLCOME_EMAIL
 
-        session_id= store_session(name, email, mailorigen, idioma, origen, bd, email_user, email_password, url_contacto, url_ofertas, api_key, environment, send_email)
+        session_id= store_session(name, email, mailorigen, idioma, origen, bd, email_user, email_password, url_contacto, url_ofertas, api_key, environment, send_email,send_wellcome_email)
 
         codigo_pais, mercado, zona = obtener_datos_pais (pais, idioma)
 

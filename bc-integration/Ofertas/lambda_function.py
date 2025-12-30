@@ -1,12 +1,13 @@
 
 import json
+import socket
 from botocore.exceptions import ClientError, BotoCoreError
 import html
 
 import urllib.parse
 import pymysql
 import boto3
-import json
+
 import os
 import math
 import dropbox
@@ -28,20 +29,18 @@ import pycurl
 from io import BytesIO
 
 
-SEND_WELLCOME_EMAIL = True
 
 
 
 
 
+AWS_REGION = os.getenv("AWS_REGION", "eu-north-1")
+DROPBOX_SECRET_NAME = os.getenv("DROPBOX_SECRET_NAME", "")
+S3_BUCKET = os.getenv("S3_BUCKET", "")
+USE_S3 = os.getenv("USE_S3", "").lower() == "true"
+ROOT_PREFIX_S3 = os.getenv("ROOT_PREFIX_S3", "")
 
 
-AWS_REGION = "eu-north-1"
-S3_BUCKET  = "emailingledpadel"
-
-USE_S3 = os.getenv("USE_S3", "true").lower() == "true"
-
-ROOT_PREFIX_S3 = "emails/templates/"  # 👈 raíz fija
 
 s3 = boto3.client("s3", region_name=AWS_REGION)
 
@@ -138,7 +137,7 @@ def lambda_handler(event, context):
         print(f"✅ Correo enviado con el PDF adjunto: {document_no}")
 
 
-          
+        SEND_WELLCOME_EMAIL = True if session_data['send_wellcome_email'] else False
 
         if SEND_WELLCOME_EMAIL:
             send_wellcome_email(session_id)
@@ -193,7 +192,7 @@ def get_session_data(session_id,bd):
         port=int(creds.get('port', 3306))
     )
     with connection.cursor() as cursor:
-        cursor.execute("SELECT name, email, mailorigen, idioma, SalesHeaderNumber, send_email, email_password FROM sessions WHERE session_id = %s", (session_id,))
+        cursor.execute("SELECT name, email, mailorigen, idioma, SalesHeaderNumber, send_email, email_password, send_wellcome_email FROM sessions WHERE session_id = %s", (session_id,))
         row = cursor.fetchone()
         if row:
             return {
@@ -203,7 +202,8 @@ def get_session_data(session_id,bd):
                 "idioma": row[3],
                 "SalesHeaderNumber": row[4],
                 "send_email": row[5],
-                "email_password": row[6]
+                "email_password": row[6],
+                "send_wellcome_email": row[7]
             }
         else:
             return None
@@ -213,7 +213,7 @@ def get_session_data(session_id,bd):
 def send_email_with_pdf(pdf_data: bytes, filename: str, session_id: str):
     session_data = get_session_data(session_id, bd=BD)
     # Configuración SMTP (ejemplo con Gmail; sustituye con tus valores)
-    smtp_server = "smtp.planetpower.es"
+    smtp_server = "smtp.office365.com"
     smtp_port = 587
     global SEND_EMAIL, EMAIL_PASSWORD
     sender_email = session_data['mailorigen']
@@ -238,8 +238,8 @@ def send_email_with_pdf(pdf_data: bytes, filename: str, session_id: str):
     msg["From"] = sender_email
     msg["To"] = session_data['email']
 
-    cc_addresses = ["angel.r@planetpower.es"]
-    #cc_addresses = ["alfonso@planetpower.es", "angel.r@planetpower.es"]
+    #cc_addresses = ["angel.r@planetpower.es"]
+    cc_addresses = ["alfonso@planetpower.es", "angel.r@planetpower.es"]
     msg["Cc"] = ", ".join(cc_addresses)
 
 
@@ -398,24 +398,48 @@ style="font-size:5.0pt;font-family:&quot;Arial&quot;,sans-serif;color:#0563C1">C
     if (SEND_EMAIL) :
 
         print("🔄 Enviando correo electrónico...")
+        print("🔄 Conectando a SMTP...", smtp_server, smtp_port)
+        socket.setdefaulttimeout(20)
         try:
             if smtp_port == 465:
                 # TLS implícito
                 with smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=20) as server:
-                    server.login(sender_email, sender_password)
+                    SMTP_LOGIN = "ofertas@planetpower.es"
+
+
+                    server.login(SMTP_LOGIN, sender_password)
+                  
                     server.send_message(msg)
             else:
                 # STARTTLS (587 recomendado)
                 with smtplib.SMTP(smtp_server, smtp_port, timeout=20) as server:
-                    server.ehlo()
-                
-                    server.ehlo()
-                    server.login(sender_email, sender_password)
-                    server.send_message(msg)
+                    server.set_debuglevel(1)  # <-- CLAVE (ver conversación SMTP)
+                    with smtplib.SMTP(smtp_server, smtp_port, timeout=20) as server:
+                        server.set_debuglevel(1)
+
+                        print("STEP A: ehlo()")
+                        server.ehlo()
+
+                        print("STEP B: starttls()")
+                        server.starttls()
+                        print("STEP C: ehlo() post-tls")
+                        server.ehlo()
+
+                        print("STEP D: login()")
+                        SMTP_LOGIN = "ofertas@planetpower.es"
+
+
+                        server.login(SMTP_LOGIN, sender_password)
+
+                        print("STEP E: send_message()")
+                        server.send_message(msg)
+
+                    print("✅ FIN: después de send_message()")
+
 
             print("Correo enviado correctamente.")
             print("sender", sender_email)
-            print("recipient", sender_password) 
+            print("smtp", smtp_server, smtp_port)
             return {"status": "sent"}
 
         except smtplib.SMTPConnectError as e:
@@ -440,7 +464,7 @@ style="font-size:5.0pt;font-family:&quot;Arial&quot;,sans-serif;color:#0563C1">C
 def send_wellcome_email ( session_id: str):
     session_data = get_session_data(session_id, bd=BD)
     # Configuración SMTP (ejemplo con Gmail; sustituye con tus valores)
-    smtp_server = "smtp.planetpower.es"
+    smtp_server = "smtp.office365.com"
     smtp_port = 587
     global SEND_EMAIL, EMAIL_PASSWORD
     sender_email = session_data['mailorigen']
@@ -506,20 +530,28 @@ def send_wellcome_email ( session_id: str):
             if smtp_port == 465:
                 # TLS implícito
                 with smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=20) as server:
-                    server.login(sender_email, sender_password)
+
+                    SMTP_LOGIN = "ofertas@planetpower.es"
+
+
+                    server.login(SMTP_LOGIN, sender_password)
+                    
                     server.send_message(msg)
             else:
                 # STARTTLS (587 recomendado)
                 with smtplib.SMTP(smtp_server, smtp_port, timeout=20) as server:
                     server.ehlo()
-                
+                    server.starttls()
                     server.ehlo()
-                    server.login(sender_email, sender_password)
+                    SMTP_LOGIN = "ofertas@planetpower.es"
+
+
+                    server.login(SMTP_LOGIN, sender_password)
                     server.send_message(msg)
 
             print("Correo enviado correctamente.")
             print("sender", sender_email)
-            print("recipient", sender_password) 
+            print("smtp", smtp_server, smtp_port)
             return {"status": "sent"}
 
         except smtplib.SMTPConnectError as e:
@@ -584,11 +616,15 @@ def get_email_congfig (sender_email):
 
 def get_dropbox_access_token():
 
+    sm = boto3.client("secretsmanager", region_name=AWS_REGION)
+    resp = sm.get_secret_value(SecretId=DROPBOX_SECRET_NAME)
+    secret = json.loads(resp["SecretString"])
+
 
     # === CONFIGURA ESTOS DATOS ===
-    APP_KEY = 'gcwcrtb1njdp6zm'
-    APP_SECRET = '7r5f0uvnmfbhsz1'
-    REFRESH_TOKEN = 'sd2BXGVRNBUAAAAAAAAAASk4qlUGFPw6Z5NObZq4oEY114DUQFCxs9jkV-acFft_'
+    APP_KEY = secret["DROPBOX_APP_KEY"]
+    APP_SECRET = secret["DROPBOX_APP_SECRET"]
+    REFRESH_TOKEN =secret["DROPBOX_REFRESH_TOKEN"]
 
     # Codifica app_key:app_secret en base64
     user_pass = f"{APP_KEY}:{APP_SECRET}"
@@ -916,9 +952,18 @@ def render_email_body_images_folder(slug: str, lang: str = "en") -> str:
 
 if __name__ == "__main__":
 
-    from flask import Flask,request,  jsonify
+    from flask import Flask,request
+   
+    
+    from dotenv import load_dotenv
+
+
+
+    from pathlib import Path
     app = Flask(__name__)   
-  
+    load_dotenv(Path(__file__).resolve().parent / ".env")
+   
+    
    
 
     @app.route('/oferta', methods=['POST','GET'])
@@ -1013,7 +1058,7 @@ if __name__ == "__main__":
             send_email_with_pdf(pdf_data, document_no, session_id)
             print(f"✅ Correo enviado con el PDF adjunto: {document_no}")
 
-
+            SEND_WELLCOME_EMAIL = True if session_data['send_wellcome_email'] else False
             
 
             if SEND_WELLCOME_EMAIL:

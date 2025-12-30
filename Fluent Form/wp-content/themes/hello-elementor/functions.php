@@ -501,7 +501,7 @@ add_action('fluentform/submission_inserted', function ($entryId, $formData, $for
         'pais'                => $pais,
         'pistas_perimetrales' => $pistasPerimetrales,
         'pistas_laterales'    => $pistasLaterales,
-        'mailorigen'          => 'soporte@planetpower.es',
+        'mailorigen'          => 'web@planetpower.es',
         'origen'              => 'web_wp_formulario_contacto',
     ], JSON_UNESCAPED_UNICODE);
 

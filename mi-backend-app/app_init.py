@@ -4,6 +4,13 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_bcrypt import Bcrypt
+
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parent / ".env")
+
+
 from config import JWT_SECRET_KEY, LANGUAGES, SQLALCHEMY_DATABASE_URI,TOKEN_EXPIRATION_TIME
 
 

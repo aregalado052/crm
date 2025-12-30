@@ -17,8 +17,22 @@ from app_init import db
 import base64
 import urllib.parse
 import io
+import smtplib, ssl, socket
+
+
 from models import ResetToken, User, Project
-from config import (SENDER_EMAIL, SENDER_PASSWORD)
+from config import (SENDER_EMAIL, SENDER_PASSWORD, ENTORNO_COMPLETO)
+
+URL_LOCAL = "http://127.0.0.1:8000"
+URL_WWW = "https://crmplanetpower.es"
+
+
+
+
+if ENTORNO_COMPLETO == "PRODUCCION":
+    URL = URL_WWW
+else :
+    URL = URL_LOCAL
 
 
 client = boto3.client('scheduler', region_name='eu-north-1')
@@ -210,6 +224,12 @@ def send_new_password(email, reset_token):
     
     if __name__ != "__main__":
         # Configuración del correo
+        smtp_server = "smtp.office365.com"
+        smtp_port = 587
+       
+        
+        
+       
         sender_email = SENDER_EMAIL
         sender_password = SENDER_PASSWORD
         recipient_email = email
@@ -260,21 +280,58 @@ def send_new_password(email, reset_token):
     # Adjuntar la firma al mensaje
     message.attach(MIMEText(signature, "html"))
 
+    socket.setdefaulttimeout(20)
+    print("sender", sender_email)
+    print("smtp", smtp_server, smtp_port)
+
+    
+
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port, timeout=20) as server:
+            server.set_debuglevel(1)   # <-- IMPORTANTE: ver conversación SMTP
+
+            print("STEP 1: ehlo")
+            server.ehlo()
+
+            print("STEP 2: starttls")
+            server.starttls(context=ssl.create_default_context())
+
+            print("STEP 3: ehlo post-tls")
+            server.ehlo()
+
+            SMTP_LOGIN = "ofertas@planetpower.es"
+            print("STEP 4: login", SMTP_LOGIN)
+            server.login(SMTP_LOGIN, sender_password)
+
+            print("STEP 5: send_message")
+            server.send_message(message)
+
+        print("✅ Correo enviado correctamente.")
+        return ("Instrucciones enviadas al correo con éxito.", 1)
+
+    except smtplib.SMTPAuthenticationError as e:
+        print("❌ AUTH ERROR:", e)
+        return (f"Error autenticación SMTP: {e}", 0)
+
+    except smtplib.SMTPException as e:
+        print("❌ SMTP ERROR:", e)
+        return (f"Error SMTP: {e}", 0)
+
+    except (socket.timeout, TimeoutError) as e:
+        print("❌ TIMEOUT:", e)
+        return (f"Timeout conectando/enviando: {e}", 0)
+
+    except Exception as e:
+        print("❌ UNEXPECTED:", e)
+        return (f"Error inesperado: {e}", 0)
+
+
 
 
 
 
       
-    try:
-        # Establecer la conexión con el servidor SMTP
-        with smtplib.SMTP("smtp.planetpower.es", 587) as server:
-            server.starttls()  # Activar TLS
-            server.login(sender_email, sender_password)
-            server.send_message(message)
-            return ("Instruciones enviadas al coreo con éxito.", 1)
-    except Exception as e:
-        return (f"Error al enviar el correo: {e}",2)
-
+    
 # Ejemplo de uso
 
 def create_scheduler_by_project(pid,uid):
