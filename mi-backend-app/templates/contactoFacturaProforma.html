@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+  input, textarea, select {
+    color: #111 !important;        /* asegura texto visible */
+    caret-color: #111 !important;  /* asegura cursor visible */
+    background-color: #fff;        /* evita fondos raros que “camuflan” el caret */
+}
+</style>
+
+
+
+<div class="min-h-screen bg-white-100 flex items-center justify-center p-4">
+  <div class="bg-blue-100 rounded-2xl shadow-xl w-full max-w-2xl p-8">
+    <h2 class="text-3xl font-bold text-center text-blue-700 mb-6">
+    Datos de la Factura Proforma  
+    <span class="block text-base font-medium text-gray-500 mt-2">
+      Oferta: <span class="font-semibold text-gray-800">{{ quoteNumber }}</span>
+    </span>
+</h2>
+    <form id="formulario-contactoFacturaProforma" class="space-y-6">
+
+      <!-- Nombre -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de la Empresa</label>
+            <input 
+              type="text" 
+              name="name" required
+              id="name"
+              class="w-full px-4 py-2 border border-blue-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500"
+            />
+
+        </div>
+
+        <!-- Flag que viene del back -->
+        <input type="hidden" id="idMode" value="{{ id_mode }}">
+
+        <div id="identificacion-block">
+          <label id="identificacion-label" class="block text-sm font-medium text-gray-700 mb-1">Identificación</label>
+          <input
+            type="text"
+            id="identificacion"
+            name="identificacion"
+            required
+            class="w-full px-4 py-2 border border-blue-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500"
+          />
+          <p id="identificacion-hint" class="text-xs text-gray-500 mt-1"></p>
+        </div>
+
+        <!-- Campo extra opcional (solo si lo quieres en algunos casos) -->
+        <div id="registro-block" class="hidden">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nº Registro</label>
+          <input
+            type="text"
+            id="nRegistro"
+            name="nRegistro"
+            class="w-full px-4 py-2 border border-blue-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500"
+          />
+        </div>
+
+
+        <!-- Dirección -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Dirección 1</label>
+            <input
+                type="text"
+                id="direccion1"
+                name="direccion1"
+                required
+                class="w-full px-4 py-2 border border-blue-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500"
+            />
+
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Dirección 2</label>
+            <input
+                type="text"
+                id="direccion2"
+                name="direccion2"
+                class="w-full px-4 py-2 border border-blue-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500"
+            />
+
+        </div>
+
+        <!-- Dirección -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        <!-- Código Postal -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Código Postal
+          </label>
+          <input
+            type="text"
+            id="codigoPostal"
+            name="codigoPostal"
+            required
+            class="w-full px-4 py-2 border border-blue-200 rounded-lg shadow-sm
+                  focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500"
+          />
+        </div>
+
+        <!-- Población -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Población
+          </label>
+          <input
+            type="text"
+            id="poblacion"
+            name="poblacion"
+            required
+            class="w-full px-4 py-2 border border-blue-200 rounded-lg shadow-sm
+                  focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500"
+          />
+        </div>
+
+      </div>
+
+
+      
+
+       
+  
+    
+    <!-- Botón -->
+    <div class="text-center pt-2">
+      <button type="submit"
+          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-md transition duration-200">
+          Enviar Factura Proforma
+      </button>
+
+      <button id="btn-exit"
+          type="button"               
+          class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+          {{ _('Salir') }}
+      </button>
+    </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const name = document.getElementById('name');
+  const direccion1 = document.getElementById('direccion1');
+  const direccion2 = document.getElementById('direccion2');
+  const codigoPostal = document.getElementById('codigoPostal');
+  const poblacion = document.getElementById('poblacion');
+  const cif = document.getElementById('cif');
+  const nRegistro = document.getElementById('nRegistro'); // ✅ sin espacios
+  const mode = (document.getElementById('idMode')?.value || '').toUpperCase();
+
+  const label = document.getElementById('identificacion-label');
+  const input = document.getElementById('identificacion');
+  const hint  = document.getElementById('identificacion-hint');
+
+  const regBlock = document.getElementById('registro-block');
+  const regInput = document.getElementById('nRegistro');
+
+  // defaults
+  label.textContent = 'Identificación';
+  input.placeholder = '';
+  hint.textContent = '';
+  regBlock.classList.add('hidden');
+  if (regInput) regInput.required = false;
+
+  if (mode === 'VAT') {
+    label.textContent = 'VAT (IVA intracomunitario)';
+    input.placeholder = 'Ej: ESB12345678 / DE123456789';
+    hint.textContent = 'Introduce tu VAT con prefijo de país (ES, FR, DE...).';
+  } else if (mode === 'NIF') {
+    label.textContent = 'NIF/CIF';
+    input.placeholder = 'Ej: B12345678 / 12345678A';
+    hint.textContent = 'Introduce NIF/CIF (España).';
+  } else if (mode === 'REGISTRO') {
+    label.textContent = 'Nº de registro';
+    input.placeholder = 'Ej: 12345 / ABC-987';
+    hint.textContent = 'Introduce el número de registro.';
+  } else if (mode === 'VAT+REGISTRO') {
+    // si alguna vez necesitas 2 campos
+    label.textContent = 'VAT (IVA intracomunitario)';
+    input.placeholder = 'Ej: ESB12345678 / DE123456789';
+    regBlock.classList.remove('hidden');
+    if (regInput) regInput.required = true;
+  }
+  const form = document.getElementById('formulario-contactoFacturaProforma');
+  if (!form) return;
+
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const payloadContacto = {
+      name: name?.value || "",
+      direccion1: direccion1?.value || "",
+      direccion2: direccion2?.value || "",
+      codigoPostal: codigoPostal?.value || "",
+      poblacion: poblacion?.value || "",
+      
+      idMode: document.getElementById("idMode")?.value.trim() || "",
+      identificacion: document.getElementById("identificacion")?.value.trim() || "",
+      nRegistro: document.getElementById("nRegistro")?.value.trim() || "",
+
+      oferta: "{{ quoteNumber }}",
+      email: "{{ email }}",
+      idioma: "{{ idioma }}",
+      pais: "{{ pais }}"
+    };
+
+    
+    try {
+      Swal.fire({
+        title: 'Generando y enviando proforma...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      const r1 = await fetch("/actualizar_contacto_y_generar_proforma", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payloadContacto)
+      });
+
+      let j1 = {};
+      try {
+        j1 = await r1.json();
+      } catch {
+        // si no es JSON, seguimos con objeto vacío
+      }
+
+      if (!r1.ok) {
+        throw new Error(j1.error || j1.message || "Error al actualizar contacto");
+      }
+
+     
+      if (j1.ok === false) {
+        throw new Error(j1.error || j1.message || "Error al actualizar contacto");
+      }
+
+      Swal.fire({ icon: 'success', title: 'Listo', text: j1.message || 'Proforma generada' });
+
+    } catch (e) {
+      Swal.fire({ icon: 'error', title: 'Error', text: e?.message || 'Error inesperado' });
+    }
+
+  });
+  document.getElementById('btn-exit').addEventListener('click', function (e) {
+    e.preventDefault();
+    const ruta = '/base';
+
+    salir();
+    async function salir() {
+      try {
+        const response = await fetch(ruta, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({})
+        });
+
+        if (!response.ok) throw new Error("{{ _('Error en la respuesta del servidor.') }}");
+
+        const html = await response.text();
+        document.open();
+        document.write(html);
+        document.close();
+
+      } catch (error) {
+        console.error("Error al enviar datos:", error);
+        Swal.fire({
+          icon: 'error',
+          title: '{{ _("Error") | escapejs }}',
+          text: '{{ _("No se pudo cargar la página. Inténtalo de nuevo más tarde.") | escapejs }}',
+          confirmButtonColor: '#3085d6'
+        });
+      }
+    }
+  });
+  
+});
+
+</script>
+{% endblock %}

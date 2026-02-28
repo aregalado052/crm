@@ -1,8 +1,8 @@
 {
-  "id": "f4289755-28d4-49bd-ac16-afd378505d44",
+  "id": "f4289755-28d4-49bd-ac16-afd378505d45",
   "name": "SALESQUOTE_BD",
   "publisher": "AREGALADO",
-  "version": "1.0.0.8",
+  "version": "1.0.0.9",
   "runtime": "12.0",
   "target": "Cloud",
   "application": "26.0.0.0",
@@ -50,7 +50,6 @@
   ],
   "build": {
     "by": "AL Language Extension,15.2.1630495",
-    "timestamp": "2025-09-15T06:18:26.9503340+00:00",
-    "compilerVersion": "15.2.24.57679"
+    
   }
 }

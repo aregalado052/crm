@@ -37,8 +37,8 @@ from funciones import (create_reset_token,
                        send_new_password, update_user_password,
                        validate_reset_token, get_dropbox_access_token)
 from models import (  User)
-from config import (BD ,EMAIL_USER,EMAIL_PASSWORD,URL_CONTACTO ,URL_OFERTAS,
-                     API_KEY,ENVIRONMENT,SEND_EMAIL,SEND_WELLCOME_EMAIL,
+from config import (BD ,EMAIL_USER,EMAIL_PASSWORD,URL_CONTACTO ,URL_OFERTAS,URL_ACTUALIZAR_CONTACTO,
+                     API_KEY,ENVIRONMENT,SEND_EMAIL,SEND_WELLCOME_EMAIL,URL_PROFORMAS,URL_FORM_CONTACTO,
                     AWS_REGION,S3_BUCKET,ROOT_PREFIX_S3,ROOT_PREFIX_DROPBOX)
 
 
@@ -599,6 +599,9 @@ def ofertas():
                 "EMAIL_PASSWORD": EMAIL_PASSWORD,
                 "URL_CONTACTO": URL_CONTACTO,
                 "URL_OFERTAS": URL_OFERTAS,
+                "URL_ACTUALIZAR_CONTACTO": URL_ACTUALIZAR_CONTACTO,
+                "URL_FORM_CONTACTO": URL_FORM_CONTACTO,
+                "URL_PROFORMAS": URL_PROFORMAS,
                 "ENVIRONMENT": ENVIRONMENT,
                 "SEND_EMAIL": SEND_EMAIL,
                 "SEND_WELLCOME_EMAIL": SEND_WELLCOME_EMAIL,
@@ -608,6 +611,11 @@ def ofertas():
 
 
             print ("URL_CONTACTO", URL_CONTACTO)
+            print("URL_OFERTAS", URL_OFERTAS)
+            print("URL_ACTUALIZAR_CONTACTO", URL_ACTUALIZAR_CONTACTO)
+            print("URL_FORM_CONTACTO", URL_FORM_CONTACTO)
+            print("URL_PROFORMAS", URL_PROFORMAS)
+
 
 
     
@@ -642,6 +650,9 @@ def ofertas():
                 "EMAIL_PASSWORD": EMAIL_PASSWORD,
                 "URL_CONTACTO": URL_CONTACTO,
                 "URL_OFERTAS": URL_OFERTAS,
+                "URL_ACTUALIZAR_CONTACTO": URL_ACTUALIZAR_CONTACTO,
+                "URL_FORMCONTACTO": URL_FORM_CONTACTO,
+                "URL_PROFORMAS": URL_PROFORMAS,
                 "ENVIRONMENT": ENVIRONMENT ,
                 "SEND_EMAIL": SEND_EMAIL
 
@@ -679,6 +690,245 @@ def ofertas():
 
     # Si es GET, renderiza el formulario
     return render_template('ofertas.html')
+
+
+
+
+def tipo_identificacion_por_pais_texto(pais_texto: str) -> str:
+
+    if not pais_texto:
+        return "REGISTRO"
+
+    p = re.sub(r"\s+", " ", pais_texto).strip()
+
+    try:
+        creds = get_db_credentials("secretoBC/Mysql")
+        dbname = "bc_pruebas" if (BD == "PRUEBAS") else creds["dbname"]
+
+        conn = pymysql.connect(
+            host=creds['host'],
+            user=creds['username'],
+            password=creds['password'],
+            database=dbname,
+            port=int(creds.get('port', 3306)),
+            cursorclass=pymysql.cursors.DictCursor  # 👈 IMPORTANTE
+        )
+
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT codigo_pais, mercado
+                FROM pais
+                WHERE pais_es = %s OR pais_en = %s OR pais_fr = %s OR pais_it = %s
+                LIMIT 1
+            """, (p, p, p, p))
+
+            row = cur.fetchone()
+
+    except Exception as e:
+        print(f"Error consultando paises: {e}")
+        return "REGISTRO"
+
+    finally:
+        try:
+            conn.close()
+        except:
+            pass
+
+    if not row:
+        return "REGISTRO"
+
+    codigo_pais = (row["codigo_pais"] or "").upper()
+    mercado = (row["mercado"] or "").upper()
+
+    if codigo_pais == "ES" or mercado == "NACIONAL":
+        return "NIF"
+
+    if mercado == "UE":
+        return "VAT"
+
+    return "REGISTRO"
+
+
+
+
+
+@application.route('/facturaProforma', methods=['GET', 'POST'])
+def facturaProforma():
+    if request.method == 'GET':
+        return render_template('ofertas.html')
+
+    # POST
+    data = request.get_json(force=True) or {}
+    quoteNumber = (data.get('quoteNumber') or '').strip()
+    email = (data.get('email') or '').strip()
+    idioma = (data.get('idioma') or '').strip()
+    pais = (data.get('pais') or '').strip()
+
+
+    print("📥 Datos recibidos:")
+    print(f"QuoteNumber: {quoteNumber}")
+    print(f"email: {email}")
+    print(f"idioma: {idioma}")
+
+    
+
+    # Devolver algo que el front pueda leer como JSON
+    return jsonify({
+        "ok": True,
+        "redirect": f"/contactoFacturaProforma?quoteNumber={quoteNumber}&email={email}&idioma={idioma}&pais={pais}"
+    })
+
+
+
+@application.route('/contactoFacturaProforma', methods=['GET'])
+def contactoFacturaProforma():
+    quoteNumber = request.args.get("quoteNumber")
+    email = request.args.get("email")
+    idioma = request.args.get("idioma")
+    pais = request.args.get("pais")
+    id_mode= tipo_identificacion_por_pais_texto(pais)
+
+    print ("Renderizando contactoFacturaProforma con:", quoteNumber, email, idioma, pais, id_mode)
+    return render_template("contactoFacturaProforma.html",
+                           quoteNumber=quoteNumber,
+                           email=email,
+                           idioma=idioma,
+                           pais=pais,
+                           id_mode=id_mode )
+
+@application.route("/actualizar_contacto_y_generar_proforma", methods=["POST"])
+def actualizar_contacto():
+
+    from io import BytesIO
+    import pycurl
+    data = request.get_json(force=True) or {}
+
+    print("ESTOY en actualizar contacto y generar profroma")
+
+    QuoteNo = (data.get("oferta") or "").strip()
+    email = (data.get("email") or "").strip()
+    idioma = (data.get("idioma") or "").strip()
+    pais = (data.get("pais") or "").strip()
+    name = (data.get("name") or "").strip()
+    Address = (data.get("direccion1") or "").strip()
+    Address2 = (data.get("direccion2") or "").strip()
+    PostCode = (data.get("codigoPostal") or "").strip()
+    City = (data.get("poblacion") or "").strip()
+   
+
+    id_mode = data.get("idMode", "").upper()
+    ident = (data.get("identificacion") or "").strip()
+    n_reg = (data.get("nRegistro") or "").strip()
+
+    VATRegNo = ""
+    ForeignRegNo = ""
+
+    if id_mode == "NIF":
+        VATRegNo = ident
+    elif id_mode == "VAT":
+        VATRegNo = ident
+    elif id_mode == "REGISTRO":
+        ForeignRegNo = ident
+    elif id_mode == "VAT+REGISTRO":
+        VATRegNo = ident
+        ForeignRegNo = n_reg
+    else:
+        # fallback razonable
+        VATRegNo = ident
+
+
+
+    print ("Pais recibido en actualizar contacto:", pais)
+
+    
+
+    if not QuoteNo:
+        return jsonify({"ok": False, "error": "quoteNumber es obligatorio"}), 400
+
+    
+
+   
+            
+
+
+    print ("URL_ACTUALIZAR_CONTACTO", URL_ACTUALIZAR_CONTACTO)
+
+
+
+    api_key = API_KEY
+    
+
+    api_url = URL_ACTUALIZAR_CONTACTO
+
+    headers = [
+        "x-api-key: " + api_key,
+        "Request-Origin: SwaggerBootstrapUi",
+        "Accept: application/json",
+        "Content-Type: application/json",
+    ]
+
+    
+
+
+    body = json.dumps({
+        "QuoteNo": QuoteNo,
+        "Name": name,
+        "Address": Address,
+        "Address2": Address2,
+        "PostCode": PostCode,
+        "City": City,
+        "VATRegNo": VATRegNo,
+        "ForeignRegNo": ForeignRegNo,
+        "mailorigen": EMAIL_USER,
+        "email": email,
+        "idioma": idioma,
+        
+        #"origen": origen,
+        "BD": BD,
+        "EMAIL_USER": EMAIL_USER,
+        "EMAIL_PASSWORD": EMAIL_PASSWORD,
+        "URL_CONTACTO": URL_CONTACTO,
+        "URL_OFERTAS": URL_OFERTAS,
+        "URL_ACTUALIZAR_CONTACTO": URL_ACTUALIZAR_CONTACTO,
+        "URL_PROFORMAS": URL_PROFORMAS,
+        "URL_FORM_CONTACTO": URL_FORM_CONTACTO,
+        "ENVIRONMENT": ENVIRONMENT ,
+        "SEND_EMAIL": SEND_EMAIL
+
+    })
+
+    print ("Body a enviar en actualizar contacto:", body)
+    
+
+    buffer = BytesIO()
+    c = pycurl.Curl()
+    c.setopt(c.URL, api_url)
+    c.setopt(c.POST, 1)
+    c.setopt(c.POSTFIELDS, body)
+    c.setopt(pycurl.SSL_VERIFYPEER, 0)
+    c.setopt(pycurl.SSL_VERIFYHOST, 0)
+    c.setopt(pycurl.CONNECTTIMEOUT, 10)
+    c.setopt(pycurl.TIMEOUT, 60)
+    c.setopt(c.HTTPHEADER, headers)
+    c.setopt(c.WRITEDATA, buffer)
+
+    c.perform()
+    status_code = c.getinfo(pycurl.RESPONSE_CODE) or 500
+    response_body = buffer.getvalue().decode('utf-8')
+    c.close()
+
+    print(f"✅ Respuesta del backend (status {status_code}): {response_body}")
+
+    response = make_response(response_body, status_code)
+    response.headers["Content-Type"] = "application/json"
+    return response
+
+
+
+
+
+
+
 
 def _parse_date(s):
     if not s:

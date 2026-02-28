@@ -130,3 +130,91 @@ codeunit 50198 "SendQuotePDFToLambda"
         exit(TempBlob);
     end;
 }
+
+
+codeunit 50647 "SendProformaPDFToLambda"
+{
+    procedure SendProformaPDF(QuoteNo: Code[20]; SessionId: Text; Url: Text; BD: Text)
+    var
+        SalesHeader: Record "Sales Header";
+        TempBlob: Codeunit "Temp Blob";
+        InStr: InStream;
+
+        HttpClient: HttpClient;
+        HttpRequest: HttpRequestMessage;
+        HttpResponse: HttpResponseMessage;
+        HttpContent: HttpContent;
+        Headers: HttpHeaders;
+
+        DesignTimeSel: Codeunit "Design-time Report Selection";
+        ProformaLayoutCode: Code[20];
+
+        RespTxt: Text;
+        Url_Final: Text;
+    begin
+        if not SalesHeader.Get(SalesHeader."Document Type"::Quote, QuoteNo) then
+            Error('No se encontró la oferta %1', QuoteNo);
+
+        // 1) Forzar layout proforma
+        ProformaLayoutCode := '50630-000001';
+        DesignTimeSel.SetSelectedCustomLayout(ProformaLayoutCode);
+
+        // 2) Generar PDF
+        TempBlob := GenerateProformaPDF(QuoteNo);
+
+        // 3) Limpiar selección de layout
+        DesignTimeSel.ClearLayoutSelection();
+
+        // 4) Preparar stream
+        TempBlob.CreateInStream(InStr);
+
+        // 5) Preparar contenido HTTP
+        HttpContent.WriteFrom(InStr);
+        HttpContent.GetHeaders(Headers);
+        Headers.Clear();
+        Headers.Add('Content-Type', 'application/pdf');
+
+        // 6) URL destino
+        Url_Final := StrSubstNo('%1?session_id=%2&BD=%3&quoteNo=%4', Url, SessionId, BD, QuoteNo);
+
+        HttpRequest.SetRequestUri(Url_Final);
+        HttpRequest.Method := 'POST';
+        HttpRequest.Content := HttpContent;
+
+        if not HttpClient.Send(HttpRequest, HttpResponse) then
+            Error('No se pudo conectar a: %1', Url_Final);
+
+        HttpResponse.Content.ReadAs(RespTxt);
+
+        if not HttpResponse.IsSuccessStatusCode() then
+            Error('Error enviando Proforma. HTTP %1 %2. Resp: %3',
+                Format(HttpResponse.HttpStatusCode()), HttpResponse.ReasonPhrase(), CopyStr(RespTxt, 1, 500));
+    end;
+
+    local procedure GenerateProformaPDF(QuoteNo: Code[20]): Codeunit "Temp Blob"
+    var
+        SalesHeader: Record "Sales Header";
+        TempBlob: Codeunit "Temp Blob";
+        OutStr: OutStream;
+        RecRef: RecordRef;
+    begin
+        if not SalesHeader.Get(SalesHeader."Document Type"::Quote, QuoteNo) then
+            Error('Oferta no encontrada: %1', QuoteNo);
+
+        // filtro por la oferta
+        SalesHeader.SetRange("Document Type", SalesHeader."Document Type"::Quote);
+        SalesHeader.SetRange("No.", QuoteNo);
+
+        TempBlob.CreateOutStream(OutStr);
+
+        RecRef.Open(Database::"Sales Header");
+        RecRef.SetView(SalesHeader.GetView);
+        RecRef.FindFirst();
+
+        // 👇 Report ID (NO el layout). Tu report es 50630
+        Report.SaveAs(50630, '', ReportFormat::Pdf, OutStr, RecRef);
+
+        exit(TempBlob);
+    end;
+}
+

@@ -18,6 +18,7 @@
 /SalesQuote_BD/.venv/
 /SalesQuote_BD/python/
 /.git_backup/
+*/layer/
 
 
 # ---------- Node ----------
@@ -71,6 +72,7 @@
 *.pem
 *.pfx
 *.ppk
+*.app
 
 secrets*.yml
 # tus ficheros de secretos (evitar flags de GitHub)

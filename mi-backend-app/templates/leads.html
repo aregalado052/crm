@@ -272,6 +272,12 @@
                   aria-disabled="true"/>         
           </div>
         </div>
+        <button 
+            id="btn-proforma"
+            type="button"
+            class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg shadow-md transition duration-200">
+            Enviar Factura Proforma
+        </button>
 
          {% if incluir_transporte %}
         <div class="flex flex-col">
@@ -698,6 +704,58 @@ document.getElementById("lead").addEventListener("submit", async (e) => {
       if (btn) { btn.disabled = false; btn.textContent = originalText; }
     }
   
+});
+
+  
+document.getElementById("btn-proforma").addEventListener("click", function () {
+
+  const data = {
+    quoteNumber: (document.getElementById('inputQuoteNumber')?.value || '').trim(),
+    email: (document.querySelector('[name="email"]')?.value || '').trim(),
+    idioma: (document.getElementById('inputIdioma')?.value || '').trim(),
+    pais: (document.getElementById('inputPais')?.value || '').trim(),
+  };
+
+ 
+  
+
+  // Validación básica
+  if (!data.quoteNumber || !data.email) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Campos incompletos',
+      text: 'Debes indicar número de presupuesto y email'
+    });
+    return;
+  }
+
+  Swal.fire({
+    title: 'Generando factura proforma...',
+    allowOutsideClick: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
+
+  fetch('/facturaProforma', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  .then(r => {
+    if (!r.ok) throw new Error('Error en la respuesta del servidor');
+    return r.json();
+  })
+ .then(result => {
+    if (result.redirect) window.location.href = result.redirect;
+  })
+
+  .catch(err => {
+    console.error(err);
+    Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+  });
+
+
 });
 
 </script>
