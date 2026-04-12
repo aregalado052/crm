@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Unsubscription Confirmed</title>
+
+<style>
+body{
+  background:#f4f6f8;
+  font-family:Arial, Helvetica, sans-serif;
+}
+
+.wrapper{
+  max-width:600px;
+  margin:80px auto;
+  background:white;
+  padding:40px;
+  border-radius:12px;
+  text-align:center;
+  box-shadow:0 4px 18px rgba(0,0,0,0.08);
+}
+
+h1{
+  color:#16a34a;
+}
+
+p{
+  color:#555;
+  font-size:16px;
+}
+
+.timer{
+  margin-top:20px;
+  color:#888;
+  font-size:14px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="wrapper">
+
+<h1>✔ Unsubscription confirmed</h1>
+
+<p>
+You have been successfully unsubscribed from our communications.
+</p>
+
+<p>
+If this was a mistake, you can subscribe again at any time.
+</p>
+
+{% if preview %}
+<p style="color:#943030">
+Preview mode: no real data has been modified.
+</p>
+{% endif %}
+
+<p class="timer">
+You will be redirected in <span id="count">5</span> seconds...
+</p>
+
+</div>
+
+<script>
+
+let seconds = 5;
+const counter = document.getElementById("count");
+
+const interval = setInterval(() => {
+    seconds--;
+    counter.textContent = seconds;
+
+    if (seconds <= 0) {
+        clearInterval(interval);
+        window.location.href = "https://ledpadel.com";
+    }
+
+}, 1000);
+
+</script>
+
+</body>
+</html>

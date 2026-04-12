@@ -26,7 +26,46 @@
 <div class="min-h-screen bg-white-100 flex items-center justify-center p-4">
   <div class="bg-blue-100 rounded-2xl shadow-xl w-full max-w-8xl p-8">
     <h2 class="text-3xl font-bold text-center text-blue-700 mb-6 flex items-baseline gap-3">Gestionar un Lead</h2>
+
     <form id="lead" class="space-y-6">
+      <div class="flex gap-3 flex-wrap">
+        <button type="submit"
+            class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-md transition duration-200">
+            Actualizar
+        </button>
+
+        <button 
+          id="btn-campanas"
+          type="button"
+          class="h-12 inline-flex items-center justify-center bg-orange-600 hover:bg-orange-700 text-white font-semibold px-4 rounded-lg shadow-md transition duration-200 whitespace-nowrap">
+          Consultar Campañas
+        </button>
+
+        <a  
+          id="btn-email"
+          href="mailto:{{ lead.email }}"
+          class="h-12 inline-flex items-center justify-center bg-violet-600 hover:bg-violet-700 text-white font-semibold px-4 rounded-lg shadow-md transition duration-200 whitespace-nowrap">
+          Enviar Email
+        </a>
+
+        <button 
+          id="btn-proforma"
+          type="button"
+          class="h-12 inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white font-semibold px-4 rounded-lg shadow-md transition duration-200">
+          Enviar Factura Proforma
+        </button>
+
+       
+        
+        <button id="btn-exit"
+          type="button"               
+          class="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600">
+          {{ _('Volver') }}
+        </button>
+
+      
+
+      </div>
       <!-- Fila de fechas -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
           <!-- Fecha actual (no editable) -->
@@ -95,46 +134,42 @@
       </div>
         
 
-      <div class="grid grid-cols-[2fr_2fr_1fr] gap-4 items-end">
-          <!-- Nombre -->
+      <div class="grid grid-cols-[2fr_2fr_1fr_1fr] gap-4 items-end">
+
+        <!-- Nombre -->
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-            <input
-            type="text" name="name" 
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+          <input
+            type="text" name="name"
             class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
-                    bg-gray-100 text-gray-700 cursor-not-allowed
-                    focus:outline-none"
-            readonly
-            aria-disabled="true"/>
+                  bg-gray-100 text-gray-700 cursor-not-allowed focus:outline-none"
+            readonly />
         </div>
 
         <!-- Correo -->
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
-            <input
-            type="email" id="inputEmail" name="email" 
-            readonly
+          <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+          <input
+            type="email" id="inputEmail" name="email"
             class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
-                    bg-gray-100 text-gray-700 cursor-not-allowed
-                    focus:outline-none"
-            readonly
-            aria-disabled="true"/>
+                  bg-gray-100 text-gray-700 cursor-not-allowed focus:outline-none"
+            readonly />
         </div>
 
-        <!-- Número de Oferta (texto centrado) -->
+      
+        
+
+        <!-- Número de Oferta (más pequeño) -->
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Número de Oferta</label>
-            <input
-            type="text" id="inputQuoteNumber" name="quoteNumber" 
-            readonly
-            class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
-                    bg-gray-100 text-gray-700 cursor-not-allowed
-                    focus:outline-none"
-            
-            aria-disabled="true"/>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nº Oferta</label>
+          <input
+            type="text" id="inputQuoteNumber" name="quoteNumber"
+            class="w-full h-12 px-3 text-sm border border-blue-200 rounded-lg shadow-sm
+                  bg-gray-100 text-gray-700 cursor-not-allowed focus:outline-none"
+            readonly />
         </div>
-      </div>
 
+      </div>
 
         <!-- Idioma, Pais y Tipo Lead -->
         
@@ -313,12 +348,7 @@
           </div>
         </div>
         <!-- Botón Crear Factura Proforma -->
-        <button 
-            id="btn-proforma"
-            type="button"
-            class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg shadow-md transition duration-200">
-            Enviar Factura Proforma
-        </button>
+        
         {% if lead.incluir_transporte %}
         <div class="flex flex-col">
           <label for="importe_transporte" class="block text-sm font-medium text-gray-700 mb-1">
@@ -412,19 +442,8 @@
 
 
     
-    <!-- Botón -->
-    <div class="text-center pt-2">
-      <button type="submit"
-          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-md transition duration-200">
-          Actualizar
-      </button>
-      <button id="btn-exit"
-        type="button"               
-        class="bg-red-500 text-white px-6 py-2 rounded hover:bg-red-600">
-        {{ _('Salir') }}
-      </button>
 
-    </div>
+    
     </form>
   </div>
 </div>
@@ -687,15 +706,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   
 document.getElementById("btn-proforma").addEventListener("click", function () {
+  
+
+  const leadId = leadData.id || (document.getElementById('leadId')?.value || '').trim();
 
   const data = {
     quoteNumber: (document.getElementById('inputQuoteNumber')?.value || '').trim(),
     email: (document.querySelector('[name="email"]')?.value || '').trim(),
     idioma: (document.getElementById('inputIdioma')?.value || '').trim(),
     pais: (document.getElementById('inputPais')?.value || '').trim(),
+    lead_id: leadId,
   };
-
- 
+  
   
 
   // Validación básica
@@ -737,6 +759,23 @@ document.getElementById("btn-proforma").addEventListener("click", function () {
 
 });
 
+document.getElementById("btn-campanas").addEventListener("click", function () {
+  
+  const leadId = leadData.id || (document.getElementById('leadId')?.value || '').trim();
+
+
+
+  if (!leadId) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Falta lead_id',
+      text: 'No se puede consultar campañas sin lead.'
+    });
+    return;
+  }
+
+  window.location.href = `/consultar_campanas_por_lead?lead_id=${encodeURIComponent(leadId)}`;
+});
 
   
 

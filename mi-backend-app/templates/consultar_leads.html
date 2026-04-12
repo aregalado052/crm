@@ -15,6 +15,13 @@
     outline: 2px solid rgba(59,130,246,.6); /* ~ring-blue-500/60 */
     outline-offset: -2px;
   }
+
+  
+  th.filter-active {
+    background-color: #eef2ff;
+    box-shadow: inset 0 -3px 0 #4f46e5;
+  }
+
 </style>
 
 
@@ -85,10 +92,16 @@
         {{ _('Todos los Leads') }}
       </button>
 
+      <button id="btn-generar-target"
+        type="button"
+        class="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600">
+        {{ _('Generar Target') }}
+      </button>
+
       <button id="btn-exit"
         type="button"               
-        class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-        {{ _('Salir') }}
+        class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+        {{ _('Volver') }}
       </button>
 
     </div>
@@ -276,43 +289,101 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function toggleMenu(th, colIndex) {
     const existing = th.querySelector(".col-menu");
+    const tipo = getColumnType(colIndex);
     closeAllMenus();
     if (existing) return;
 
     const menu = document.createElement("div");
+       
     menu.className = "col-menu absolute right-2 top-full mt-1 w-40 rounded-xl border border-gray-200 bg-white shadow-lg p-2 z-50";
-    menu.innerHTML = `
-      <button data-action="asc" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">↑ Asc.</button>
-      <button data-action="desc" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">↓ Desc.</button>
-      <div class="mt-2 border-t border-gray-200 pt-2">
-        <div class="flex items-center gap-2 px-2">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-          <input type="text" placeholder="Buscar..." class="flex-1 text-sm px-2 py-1 border border-gray-200 rounded-md focus:outline-none focus:ring focus:ring-indigo-100" />
+    if (tipo === "date") {
+      menu.innerHTML = `
+        <button data-action="asc" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">↑ Asc.</button>
+        <button data-action="desc" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">↓ Desc.</button>
+        <div class="mt-2 border-t border-gray-200 pt-2">
+          <div class="px-2 mb-2">
+            <select class="date-operator w-full text-sm px-2 py-1 border border-gray-200 rounded-md">
+              <option value="=">= Igual</option>
+              <option value=">=">≥ Desde</option>
+              <option value="<=">≤ Hasta</option>
+            </select>
+          </div>
+          <div class="px-2">
+            <input type="date" class="date-value w-full text-sm px-2 py-1 border border-gray-200 rounded-md" />
+          </div>
+          <div class="flex gap-2 px-2 mt-2">
+            <button data-action="apply" class="px-2 py-1 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700">Aplicar</button>
+            <button data-action="clear" class="px-2 py-1 text-sm rounded-md bg-gray-100 hover:bg-gray-200">Limpiar</button>
+          </div>
         </div>
-        <div class="flex gap-2 px-2 mt-2">
-          <button data-action="apply" class="px-2 py-1 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700">Aplicar</button>
-          <button data-action="clear" class="px-2 py-1 text-sm rounded-md bg-gray-100 hover:bg-gray-200">Limpiar</button>
+      `;
+    }
+    
+    else if (tipo === "number") {
+      menu.innerHTML = `
+        <button data-action="asc" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">↑ Asc.</button>
+        <button data-action="desc" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">↓ Desc.</button>
+        <div class="mt-2 border-t border-gray-200 pt-2">
+          <div class="px-2 mb-2">
+            <select class="num-operator w-full text-sm px-2 py-1 border border-gray-200 rounded-md">
+              <option value="=">= Igual</option>
+              <option value=">=">≥ Mayor o igual</option>
+              <option value="<=">≤ Menor o igual</option>
+            </select>
+          </div>
+          <div class="px-2">
+            <input type="text" placeholder="Valor..." class="num-value w-full text-sm px-2 py-1 border border-gray-200 rounded-md" />
+          </div>
+          <div class="flex gap-2 px-2 mt-2">
+            <button data-action="apply" class="px-2 py-1 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700">Aplicar</button>
+            <button data-action="clear" class="px-2 py-1 text-sm rounded-md bg-gray-100 hover:bg-gray-200">Limpiar</button>
+          </div>
         </div>
-      </div>
-    `;
+      `;
+    } else {
+      menu.innerHTML = `
+        <button data-action="asc" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">↑ Asc.</button>
+        <button data-action="desc" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">↓ Desc.</button>
+        <div class="mt-2 border-t border-gray-200 pt-2">
+          <div class="flex items-center gap-2 px-2">
+            <input type="text" placeholder="Buscar..." class="text-value flex-1 text-sm px-2 py-1 border border-gray-200 rounded-md" />
+          </div>
+          <div class="flex gap-2 px-2 mt-2">
+            <button data-action="apply" class="px-2 py-1 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700">Aplicar</button>
+            <button data-action="clear" class="px-2 py-1 text-sm rounded-md bg-gray-100 hover:bg-gray-200">Limpiar</button>
+          </div>
+        </div>
+      `;
+    }
     th.appendChild(menu);
 
+    
     const input = menu.querySelector("input");
+    const operatorSelect = menu.querySelector(".num-operator, .date-operator");
+    
 
     menu.addEventListener("click", (ev) => {
       ev.stopPropagation();
-      const action = ev.target.dataset.action;
-      if (!action) return;
+      const btn = ev.target.closest("[data-action]");
+      if (!btn) return;
+
+      const action = btn.dataset.action;
 
       if (action === "asc" || action === "desc") {
         sortByColumn(colIndex, action === "asc");
         closeAllMenus();
+        return;
       }
+
       if (action === "apply") {
-        applyFilter(colIndex, input.value);
+        if (tipo === "number" || tipo === "date") {
+          applyFilter(colIndex, input.value, operatorSelect.value);
+        } else {
+          applyFilter(colIndex, input.value);
+        }
+        closeAllMenus();
       }
+
       if (action === "clear") {
         input.value = "";
         applyFilter(colIndex, "");
@@ -322,7 +393,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     input.addEventListener("keydown", (ev) => {
       if (ev.key === "Enter") {
-        applyFilter(colIndex, input.value);
+        if (tipo === "number" || tipo === "date") {
+          applyFilter(colIndex, input.value, operatorSelect.value);
+        } else {
+          applyFilter(colIndex, input.value);
+        }
+        closeAllMenus();
       }
     });
 
@@ -398,15 +474,79 @@ document.addEventListener("DOMContentLoaded", () => {
     return a.localeCompare(b, "es", { sensitivity: "base" });
   }
 
+  function sameDay(ts1, ts2) {
+    const d1 = new Date(ts1);
+    const d2 = new Date(ts2);
+
+    return (
+      d1.getFullYear() === d2.getFullYear() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getDate() === d2.getDate()
+    );
+  }
+
+  function parseDateInput(value) {
+    if (!value) return NaN;
+
+    const ts = Date.parse(value);
+    return Number.isNaN(ts) ? NaN : ts;
+  }
+
+  function normalizeText(str) {
+    return (str || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+  }
+
+  function updateFilterIndicators() {
+    ths.forEach((th, index) => {
+      th.classList.toggle("filter-active", activeFilters.has(index));
+    });
+  }
+
   // ------- Filtro por columna -------
   const activeFilters = new Map(); // colIndex -> string
 
-  function applyFilter(colIndex, query) {
-    if (query && query.trim()) {
-      activeFilters.set(colIndex, query.trim().toLowerCase());
+  function applyFilter(colIndex, value, operator = "contains") {
+    const tipo = getColumnType(colIndex);
+
+    if (tipo === "number") {
+      const num = toNumberEs(value);
+      if (value !== "" && !isNaN(num)) {
+        activeFilters.set(colIndex, {
+          type: "number",
+          operator,
+          value: num
+        });
+      } else {
+        activeFilters.delete(colIndex);
+      }
+    } else if (tipo === "date") {
+      const ts = parseDateInput(value);
+      if (value !== "" && !isNaN(ts)) {
+        activeFilters.set(colIndex, {
+          type: "date",
+          operator,
+          value: ts
+        });
+      } else {
+        activeFilters.delete(colIndex);
+      }
     } else {
-      activeFilters.delete(colIndex);
+      const q = normalizeText(value);
+      if (q) {
+        activeFilters.set(colIndex, {
+          type: "text",
+          query: q
+        });
+      } else {
+        activeFilters.delete(colIndex);
+      }
     }
+
+    updateFilterIndicators();
     filterRows();
   }
 
@@ -415,14 +555,38 @@ document.addEventListener("DOMContentLoaded", () => {
     const filas = Array.from(tbody.querySelectorAll("tr"));
 
     filas.forEach(tr => {
-      const visible = filtros.every(([colIndex, q]) => {
-        const txt = cellText(tr, colIndex).toLowerCase();
-        return txt.includes(q);
+      const visible = filtros.every(([colIndex, filter]) => {
+        if (filter.type === "number") {
+          const num = toNumberEs(cellText(tr, colIndex));
+          if (isNaN(num)) return false;
+
+          switch (filter.operator) {
+            case "=": return num === filter.value;
+            case ">=": return num >= filter.value;
+            case "<=": return num <= filter.value;
+            default: return true;
+          }
+        }
+
+        if (filter.type === "date") {
+          const ts = cellDateTs(tr, colIndex);
+          if (isNaN(ts)) return false;
+
+          switch (filter.operator) {
+            case "=": return sameDay(ts, filter.value);
+            case ">=": return ts >= filter.value;
+            case "<=": return ts <= filter.value;
+            default: return true;
+          }
+        }
+
+        const txt = normalizeText(cellText(tr, colIndex));
+        return txt.includes(filter.query);
       });
+
       tr.style.display = visible ? "" : "none";
     });
   }
-
   // ------- Selección de filas (clic/teclado) -------
   function selectRow(tr, {focus=true, scroll=false} = {}) {
     const prev = tbody.querySelector('tr.lead-row[aria-selected="true"]');
@@ -543,6 +707,100 @@ document.getElementById('btn-todos').addEventListener('click', async () => {
   
 });
 
+const btn = document.getElementById("btn-generar-target");
+
+if (btn) {
+  btn.addEventListener("click", guardarTargetSeleccionado);
+}
+
+function getLeadIdsParaTarget() {
+  return Array.from(document.querySelectorAll("#mi-tabla tbody tr"))
+    .filter(tr => tr.style.display !== "none")
+    .map(tr => Number(tr.dataset.id))
+    .filter(Number.isFinite);
+}
+
+async function guardarTargetSeleccionado() {
+  const leadIds = getLeadIdsParaTarget();
+
+  if (!leadIds.length) {
+    Swal.fire({
+      icon: "warning",
+      title: "Sin leads",
+      text: "No hay leads disponibles.",
+    });
+    return;
+  }
+
+  // 🔥 Modal para pedir nombre
+  const { value: nombreTarget } = await Swal.fire({
+    title: "Nombre del target",
+    input: "text",
+    inputLabel: `Se guardarán ${leadIds.length} leads`,
+    inputPlaceholder: "Ej: Leads Madrid Abril",
+    showCancelButton: true,
+    confirmButtonText: "Guardar",
+    cancelButtonText: "Cancelar",
+    inputValidator: (value) => {
+      if (!value || !value.trim()) {
+        return "Debes indicar un nombre";
+      }
+    }
+  });
+
+  if (!nombreTarget) return;
+
+  try {
+    // 🔄 loading
+    Swal.fire({
+      title: "Guardando...",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    const res = await fetch("/store_lead_targets", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        nombre_target: nombreTarget.trim(),
+        lead_ids: leadIds
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: data.message || "No se pudo crear el target"
+      });
+      return;
+    }
+
+    // ✅ éxito
+    Swal.fire({
+      icon: "success",
+      title: "Target creado",
+      text: `Target "${nombreTarget}" creado con ${leadIds.length} leads`,
+      timer: 2000,
+      showConfirmButton: false
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    Swal.fire({
+      icon: "error",
+      title: "Error de red",
+      text: "No se pudo conectar con el servidor"
+    });
+  }
+}
 document.getElementById('btn-exit').addEventListener('click', function (e) {
   
   e.preventDefault();

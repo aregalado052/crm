@@ -4,6 +4,8 @@ from datetime import timedelta
 
 
 
+BASE_URL_PRUEBAS = os.getenv("BASE_URL_PRUEBAS", "")
+BASE_URL_PRODUCCION = os.getenv("BASE_URL_PRODUCCION", "")
 
 
 SENDER_EMAIL = os.getenv("SENDER_EMAIL", "")
@@ -241,5 +243,6 @@ if ENVIRONMENT_AL == 'PRODUCCION' : ENVIRONMENT = 'Production'
 else :
     ENVIRONMENT = 'ProdSand2026'
 
-
+#BASE_URL = BASE_URL_PRUEBAS
+BASE_URL =  BASE_URL_PRODUCCION
 

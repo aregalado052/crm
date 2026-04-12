@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unsubscribe</title>
+
+<style>
+body {
+  margin:0;
+  padding:0;
+  background:#f4f6f8;
+  font-family:Arial, Helvetica, sans-serif;
+  color:#333;
+}
+
+.wrapper{
+  max-width:600px;
+  margin:40px auto;
+  background:#fff;
+  border-radius:12px;
+  box-shadow:0 4px 18px rgba(0,0,0,0.08);
+  overflow:hidden;
+}
+
+.hero img{
+  width:100%;
+}
+
+.content{
+  padding:32px;
+}
+
+.checkbox-box{
+  margin:24px 0;
+  padding:18px;
+  background:#f9fafb;
+  border:1px solid #e5e7eb;
+  border-radius:10px;
+}
+
+.btn-wrap{
+  text-align:center;
+  margin-top:28px;
+}
+
+.btn{
+  background:#dc2626;
+  color:white;
+  padding:14px 28px;
+  border-radius:8px;
+  font-size:16px;
+  border:none;
+  cursor:pointer;
+}
+
+.btn:disabled{
+  background:#9ca3af;
+  cursor:not-allowed;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="wrapper">
+
+<div class="hero">
+<img src="https://emailingledpadel.s3.eu-north-1.amazonaws.com/newsletters/assets/86_20260305134046_28.png">
+</div>
+
+<div class="content">
+
+<h1>Unsubscribe</h1>
+
+<p>
+ To unsubscribe from all LEDPADEL marketing communications, please check the box below and submit.
+</p>
+
+<form method="POST" action="/unsubscribe">
+
+<input type="hidden" name="token" value="{{ token }}">
+
+<div class="checkbox-box">
+<label>
+<input id="unsubscribe_check" type="checkbox" name="unsubscribe_all" value="1">
+<span>
+ Checking this box will remove you from all LEDPADEL marketing communications*
+</span>
+</label>
+</div>
+
+<div class="btn-wrap">
+<button id="unsubscribe_btn" class="btn" type="submit" disabled>
+Unsubscribe
+</button>
+</div>
+
+</form>
+
+<div class="footer">
+* This action will update your marketing preferences.
+</div>
+
+</div>
+</div>
+
+<script>
+
+const checkbox = document.getElementById("unsubscribe_check");
+const button = document.getElementById("unsubscribe_btn");
+
+checkbox.addEventListener("change", function(){
+    button.disabled = !checkbox.checked;
+});
+
+</script>
+
+</body>
+</html>

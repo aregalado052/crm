@@ -1,0 +1,30 @@
+{
+  "slug": "news1",
+  "display_name": "news1",
+  "default_lang": "es",
+  "languages": {
+    "es": {
+      "name": "news1",
+      "paths": {
+        "html": "emails/templates/news1/es/template.html",
+        "mjml": "emails/templates/news1/es/template.mjml",
+        "schema": "emails/templates/news1/es/schema.json",
+        "original": "emails/templates/news1/es/original.html"
+      },
+      "attachments": []
+    }
+  },
+  "shared": {
+    "images_dir": "emails/templates/news1/images/",
+    "images": {},
+    "attachments": []
+  },
+  "images_dir": "emails/templates/news1/images/",
+  "updated_at": null,
+  "type": "newsletter",
+  "base_prefix": "newsletters/templates",
+  "name": "News1",
+  "lang": "es",
+  "attachments": [],
+  "images_uploaded": []
+}

@@ -1,0 +1,15 @@
+{
+  "variables": {
+    "subject": "Asunto del email",
+    "headline": "Título principal",
+    "hero_url": "https://.../banner.jpg",
+    "hero_alt": "Texto alternativo",
+    "html_content": "",
+    "cta_label": "Ver más",
+    "cta_url": "https://tu-sitio.com/oferta",
+    "cta_url_wrapped": "...",
+    "unsubscribe_url": "...",
+    "open_pixel_url": "...",
+    "company_address": "Dirección legal / contacto"
+  }
+}

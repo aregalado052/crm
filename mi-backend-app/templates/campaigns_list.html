@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+{% block title %}Campañas{% endblock %}
+{% block content %}
+
+<style>
+  /* mano en toda la fila y sus celdas */
+  #mi-tabla tbody tr.lead-row,
+  #mi-tabla tbody tr.lead-row > td { cursor: pointer !important; }
+
+  /* fila seleccionada */
+  #mi-tabla tbody tr.lead-row[aria-selected="true"] {
+    background-color: rgb(219 234 254); /* ~bg-blue-100 */
+    outline: 2px solid rgba(59,130,246,.6); /* ~ring-blue-500/60 */
+    outline-offset: -2px;
+  }
+
+  .btn-violet {
+    background-color: #7c3aed;
+    color: white;
+  }
+
+  .btn-violet:hover {
+    background-color: #6d28d9;
+    color: white;
+  }
+</style>
+
+
+
+<div class="bg-blue-50 border border-blue-200 rounded-xl shadow-md p-6">
+
+  
+
+  <p class="text-3xl font-bold text-blue-700 mb-6 flex items-baseline gap-3">
+    {{ _('Aquí puedes consultar y gestionar tus  Campañas.') }}
+
+
+
+
+
+    <div class="d-flex flex-column gap-3 mb-3">
+
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <a class="btn btn-success" href="{{ url_for('campaign_new') }}">
+          <i class="bi bi-plus-lg"></i> Nueva campaña
+        </a>
+
+        <a class="btn btn-violet" href="{{ url_for('campaigns_history') }}">
+          <i class="bi bi-clock-history"></i> Histórico Campañas Enviadas
+        </a>
+        <button id="btn-exit"
+          type="button"
+          class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+          onclick="window.location.href='{{ url_for('base') }}'">
+          {{ _('Volver') }}
+        
+      </div>
+    
+
+      <form class="row g-2 mb-3">
+        <div class="col-md-4">
+          <input class="form-control" name="q" value="{{ q }}" placeholder="Buscar por nombre">
+        </div>
+        <div class="col-md-3">
+          <select class="form-select" name="type">
+            <option value="">Tipo (todos)</option>
+            <option value="emailing" {{ 'selected' if ctype=='emailing' else '' }}>emailing</option>
+            <option value="newsletter" {{ 'selected' if ctype=='newsletter' else '' }}>newsletter</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select" name="status">
+            <option value="">Estado (todos)</option>
+            {% for s in ['draft','ready','sending','sent','cancelled'] %}
+              <option value="{{s}}" {{ 'selected' if status==s else '' }}>{{s}}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-primary w-100">Filtrar</button>
+        </div>
+      </form>
+    </div>
+    <table class="table table-striped align-middle">
+      <thead>
+        <tr>
+          <th>ID</th><th>Nombre</th><th>Tipo</th><th>Estado</th><th>Creada</th><th>Target</th><th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c, total_targets in rows %}
+        <tr>
+          <td>{{ c.id }}</td>
+          <td>{{ c.name }}</td>
+          <td>{{ c.campaign_type }}</td>
+          <td>{{ c.status }}</td>
+          <td>{{ c.created_at.strftime('%Y-%m-%d') if c.created_at else '' }}</td>
+          <td>
+            <a href="{{ url_for('campaign_targets', cid=c.id) }}"
+              class="badge bg-info text-decoration-none">
+              {{ total_targets }}
+            </a>
+          </td>
+          <td class="text-end">
+
+            
+
+            <!-- Revisar -->
+            <a class="btn btn-sm btn-outline-success"
+              href="{{ url_for('campaign_review', cid=c.id) }}"
+              title="Revisar y Enviar campaña">
+              <i class="bi bi-send"></i>
+            </a>
+
+            <!-- Selector + botón -->
+            <button type="button"
+                    class="btn btn-sm btn-outline-warning"
+                    onclick="abrirModalTarget({{ c.id }}, '{{ c.name|e }}')"
+                    title="Generar target">
+              <i class="bi bi-people"></i>
+            </button>
+            <!-- Editar -->
+            <a class="btn btn-sm btn-outline-secondary"
+              href="{{ url_for('campaign_edit', cid=c.id) }}"
+              title="Editar Campaña">
+              <i class="bi bi-pencil"></i>
+            </a>
+
+            <!-- Borrar -->
+            <form method="POST"
+                  action="{{ url_for('campaign_delete', cid=c.id) }}"
+                  class="d-inline campaign-delete-form">
+              <button class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </p>    
+</div>
+
+<script>
+
+const TARGETS = [
+  {% for target in targets %}
+    {
+      id: {{ target.id }},
+      nombre: {{ target.nombre_target|tojson }},
+      fecha: {{ (target.created_at.strftime('%d-%m-%Y') if target.created_at else '')|tojson }},
+      total_leads: {{ target.total_leads if target.total_leads is defined else 0 }}
+    }{% if not loop.last %},{% endif %}
+  {% endfor %}
+];
+
+
+
+
+function abrirModalTarget(campaignId, campaignName) {
+  renderTargetModal(campaignId, campaignName, TARGETS);
+}
+
+function renderTargetModal(campaignId, campaignName, filteredTargets) {
+  const options = filteredTargets.map(t => `
+    <option value="${t.id}">
+      ${t.nombre} - ${t.fecha} - ${t.total_leads} leads
+    </option>
+  `).join("");
+
+  Swal.fire({
+    title: "Selecciona un target",
+    width: 600,
+    html: `
+      <div style="text-align:left; overflow-x:hidden;">
+        <div style="margin-bottom:10px; word-break:break-word;">
+          <strong>Campaña:</strong> ${campaignName}
+        </div>
+
+        <input id="target-search"
+               placeholder="Buscar por nombre"
+               style="display:block; width:100%; box-sizing:border-box; margin:0 0 12px 0; padding:10px; border:1px solid #d1d5db; border-radius:6px;">
+
+        <select id="swal-target-select"
+                style="display:block; width:100%; box-sizing:border-box; min-height:42px; padding:10px; border:1px solid #d1d5db; border-radius:6px;">
+          <option value="">Selecciona un target</option>
+          ${options}
+        </select>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: "Cargar target",
+    cancelButtonText: "Cancelar",
+    didOpen: () => {
+      const input = document.getElementById("target-search");
+      const select = document.getElementById("swal-target-select");
+
+      input.addEventListener("input", () => {
+        const q = input.value.trim().toLowerCase();
+
+        const filtered = TARGETS.filter(t =>
+          t.nombre.toLowerCase().includes(q)
+        );
+
+        const newOptions = filtered.map(t => `
+          <option value="${t.id}">
+            ${t.nombre} - ${t.fecha} - ${t.total_leads} leads
+          </option>
+        `).join("");
+
+        select.innerHTML = `
+          <option value="">Selecciona un target</option>
+          ${newOptions}
+        `;
+      });
+    },
+    preConfirm: () => {
+      const select = document.getElementById("swal-target-select");
+      if (!select.value) {
+        Swal.showValidationMessage("Debes seleccionar un target");
+        return false;
+      }
+      return select.value;
+    }
+  }).then((result) => {
+    if (!result.isConfirmed) return;
+
+    const targetId = result.value;
+    const target = TARGETS.find(t => String(t.id) === String(targetId));
+
+    Swal.fire({
+      icon: "warning",
+      title: "Confirmar reemplazo",
+      html: `
+        <div style="text-align:left;">
+          <p><strong>Campaña:</strong> ${campaignName}</p>
+          <p><strong>Target:</strong> ${target ? target.nombre : ""}</p>
+          <p><strong>Fecha:</strong> ${target ? target.fecha : ""}</p>
+          <p><strong>Leads:</strong> ${target ? target.total_leads : 0}</p>
+          <p>Se reemplazarán los destinatarios actuales de la campaña.</p>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: "Sí, reemplazar",
+      cancelButtonText: "Cancelar"
+    }).then((confirmResult) => {
+      if (confirmResult.isConfirmed) {
+        window.location.href = `/campanas/${campaignId}/generar_target/${targetId}`;
+      }
+    });
+  });
+}
+
+
+function generarTarget(campaignId) {
+    const select = document.getElementById(`target-select-${campaignId}`);
+    const targetId = select.value;
+
+    if (!targetId) {
+      Swal.fire({
+        icon: "warning",
+        title: "Selecciona un target",
+        text: "Debes elegir un target antes de generar la campaña"
+      });
+      return;
+    }
+
+    // redirección
+    window.location.href = `/campanas/${campaignId}/generar_target/${targetId}`;
+  }
+document.addEventListener("DOMContentLoaded", function () {
+
+  document.querySelectorAll(".campaign-delete-form").forEach(form => {
+
+    form.addEventListener("submit", function(e) {
+      e.preventDefault();
+
+      Swal.fire({
+        title: "¿Borrar campaña?",
+        text: "Esta acción no se puede deshacer",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: "Sí, borrar",
+        cancelButtonText: "Cancelar"
+      }).then((result) => {
+
+        if (result.isConfirmed) {
+          form.submit();
+        }
+
+      });
+
+    });
+
+  });
+
+  
+
+});
+</script>
+{% endblock %}
+

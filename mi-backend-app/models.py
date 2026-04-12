@@ -1,7 +1,10 @@
 
 
-from sqlalchemy import Column, Integer, ForeignKey, SmallInteger, Date
+from sqlalchemy import Column, Date, text,String, DateTime,  Index, ForeignKey
 from datetime import datetime
+
+from sqlalchemy.dialects.mysql import BIGINT
+from sqlalchemy.orm import relationship
 
 from app_init import db
 
@@ -105,85 +108,288 @@ from sqlalchemy.dialects.mysql import (
 
 Base = declarative_base()
 
-
-class LeadForm(Base):
+class LeadForm(db.Model):
     __tablename__ = "lead_forms"
 
-    id = Column(
+    id = db.Column(
         BIGINT(unsigned=True),
         primary_key=True,
         autoincrement=True,
     )
 
-    session_id = Column(String(64), nullable=True)
+    session_id = db.Column(db.String(64), nullable=True)
 
-    fecha_actual = Column(Date, nullable=False)
-    fecha_proyecto = Column(Date, nullable=False)
-    fecha_proxima_accion = Column(Date, nullable=False)
+    fecha_actual = db.Column(db.Date, nullable=False)
+    fecha_proyecto = db.Column(db.Date, nullable=False)
+    fecha_proxima_accion = db.Column(db.Date, nullable=False)
 
-    name = Column(String(200), nullable=False)
+    name = db.Column(db.String(200), nullable=False)
 
-    tipo_lead = Column(
+    tipo_lead = db.Column(
         MySQLEnum("Distribuidor", "Club", "Sin calificar", name="tipo_lead_enum"),
         nullable=False,
         server_default="Sin calificar",
     )
 
-    email = Column(String(254), nullable=False)
-    origen = Column(String(20), nullable=True)
-    vendedor = Column(String(20), nullable=True)
-    quote_number = Column(String(50), nullable=False)
+    email = db.Column(db.String(254), nullable=False)
+    origen = db.Column(db.String(20), nullable=True)
+    vendedor = db.Column(db.String(20), nullable=True)
+    quote_number = db.Column(db.String(50), nullable=False)
 
-    idioma = Column(String(32), nullable=True)
-    pais = Column(String(100), nullable=True)
+    idioma = db.Column(db.String(32), nullable=True)
+    pais = db.Column(db.String(100), nullable=True)
 
-    descuento_adicional = Column(Numeric(5, 2), nullable=True)
-    descuento_total = Column(Numeric(5, 2), nullable=False)
-    cantidad_total = Column(Numeric(15, 2), nullable=False)
+    descuento_adicional = db.Column(db.Numeric(5, 2), nullable=True)
+    descuento_total = db.Column(db.Numeric(5, 2), nullable=False)
+    cantidad_total = db.Column(db.Numeric(15, 2), nullable=False)
 
-    probabilidad_exito = Column(TINYINT(unsigned=True), nullable=False)
+    probabilidad_exito = db.Column(TINYINT(unsigned=True), nullable=False)
 
-    pistas_perimetrales = Column(TINYINT(unsigned=True), nullable=True)
-    pistas_laterales = Column(TINYINT(unsigned=True), nullable=True)
+    pistas_perimetrales = db.Column(TINYINT(unsigned=True), nullable=True)
+    pistas_laterales = db.Column(TINYINT(unsigned=True), nullable=True)
 
-    estado = Column(
+    estado = db.Column(
         MySQLEnum("En curso", "Ganada", "Perdida", "Sin calificar", name="estado_enum"),
         nullable=False,
     )
 
-    info_tecnica = Column(String(1000), nullable=True)
-    info_general = Column(String(1000), nullable=True)
-    observaciones = Column(String(200), nullable=True)
+    info_tecnica = db.Column(db.String(1000), nullable=True)
+    info_general = db.Column(db.String(1000), nullable=True)
+    observaciones = db.Column(db.String(200), nullable=True)
 
-    created_at = Column(
-        DateTime,
+    unsubscribed = db.Column(db.Boolean, default=False, nullable=False)
+    unsubscribed_at = db.Column(db.DateTime, nullable=True)
+
+    created_at = db.Column(
+        db.DateTime,
         nullable=False,
-        server_default=func.now(),  # CURRENT_TIMESTAMP
+        server_default=db.text("CURRENT_TIMESTAMP"),
     )
 
-    updated_at = Column(
-        DateTime,
+    updated_at = db.Column(
+        db.DateTime,
         nullable=True,
-        server_default=func.now(),  # CURRENT_TIMESTAMP
-        onupdate=func.now(),        # ON UPDATE CURRENT_TIMESTAMP
+        server_default=db.text("CURRENT_TIMESTAMP"),
+        onupdate=db.text("CURRENT_TIMESTAMP"),
+    )
+
+    target_items = db.relationship(
+        "LeadTargetItem",
+        back_populates="lead",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
     __table_args__ = (
-        # Índices
-        Index("idx_email", "email"),
-        Index("idx_quote_number", "quote_number"),
+        db.Index("idx_email", "email"),
+        db.Index("idx_quote_number", "quote_number"),
 
-        # CHECK constraints
-        CheckConstraint("descuento_adicional BETWEEN 0 AND 100", name="lead_forms_chk_1"),
-        CheckConstraint("descuento_total BETWEEN 0 AND 100", name="lead_forms_chk_2"),
-        CheckConstraint("cantidad_total >= 0", name="lead_forms_chk_3"),
-        CheckConstraint(
-            "pistas_perimetrales BETWEEN 0 AND 20",
-            name="lead_forms_chk_5",
+        db.CheckConstraint(
+            "descuento_adicional BETWEEN 0 AND 100",
+            name="lead_forms_chk_1"
         ),
-        CheckConstraint(
+        db.CheckConstraint(
+            "descuento_total BETWEEN 0 AND 100",
+            name="lead_forms_chk_2"
+        ),
+        db.CheckConstraint(
+            "cantidad_total >= 0",
+            name="lead_forms_chk_3"
+        ),
+        db.CheckConstraint(
+            "pistas_perimetrales BETWEEN 0 AND 20",
+            name="lead_forms_chk_5"
+        ),
+        db.CheckConstraint(
             "pistas_laterales BETWEEN 0 AND 20",
-            name="lead_forms_chk_6",
+            name="lead_forms_chk_6"
         ),
     )
 
+class Newsletter(db.Model):
+    __tablename__ = "newsletters"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False)
+    template_s3_path = db.Column(db.String(500), nullable=False)
+    lang = db.Column(db.String(10), nullable=False)
+    
+
+    created_at = db.Column(db.DateTime, nullable=False)
+    updated_at = db.Column(db.DateTime, nullable=False)
+
+class Campaign(db.Model):
+    __tablename__ = "campaigns"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False)
+    campaign_type = db.Column(db.Enum("emailing", "newsletter"), nullable=False)
+
+    status = db.Column(db.Enum("draft","ready","sending","sent","cancelled"), default="draft", nullable=False)
+    scheduled_at = db.Column(db.DateTime)
+    sent_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, nullable=False)
+    updated_at = db.Column(db.DateTime, nullable=False)
+
+    sender = db.Column(db.String(255), nullable=False)
+    reply_to = db.Column(db.String(255), nullable=True)
+    subject_es = db.Column(db.String(255), nullable=True)
+    subject_en = db.Column(db.String(255), nullable=True)
+
+    idioma = db.Column(db.String(10), nullable=True)
+
+    newsletter_es_id = db.Column(db.Integer, db.ForeignKey("newsletters.id"), nullable=True)
+    newsletter_en_id = db.Column(db.Integer, db.ForeignKey("newsletters.id"), nullable=True)
+
+    newsletter_es = db.relationship("Newsletter", foreign_keys=[newsletter_es_id])
+    newsletter_en = db.relationship("Newsletter", foreign_keys=[newsletter_en_id])
+
+    recipients = db.relationship(
+        "CampaignRecipient",
+        back_populates="campaign",
+        cascade="all, delete-orphan",
+        passive_deletes=True
+    )
+class CampaignRecipient(db.Model):
+    __tablename__ = "campaign_recipients"
+    id = db.Column(db.Integer, primary_key=True)
+
+    email = db.Column(db.String(255), nullable=False)
+    lead_id = db.Column(db.Integer, nullable=True)
+    segment = db.Column(db.String(80))
+
+    pais = db.Column(db.String(100))
+    idioma = db.Column(db.String(10))
+    origen = db.Column(db.String(100))
+
+    tipo_lead = db.Column(db.String(50))
+    estado = db.Column(db.String(50))
+
+    seleccionado = db.Column(db.Boolean, nullable=False, default=True)
+
+    send_status = db.Column(db.Enum(
+        "pending","sent","error","delivered","open","click","bounce","unsubscribe"
+    ), default="pending", nullable=False)
+
+    sent_at = db.Column(db.DateTime)
+    opened_at = db.Column(db.DateTime)
+    clicked_at = db.Column(db.DateTime)
+    error_message = db.Column(db.String(500))
+
+    ses_message_id = db.Column(db.String(255))
+
+    delivered_at = db.Column(db.DateTime)
+    bounced_at = db.Column(db.DateTime)
+    complained_at = db.Column(db.DateTime)
+
+    unsubscribe_token = db.Column(db.String(128), unique=True, index=True)
+    tracking_id = db.Column(db.String(64), nullable=True, index=True)
+
+    click_count = db.Column(db.Integer, nullable=False, default=0)
+    created_at = db.Column(db.DateTime)
+    updated_at = db.Column(db.DateTime)
+
+    campaign_id = db.Column(
+        db.Integer,
+        db.ForeignKey("campaigns.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    campaign = db.relationship("Campaign", back_populates="recipients")
+
+    __table_args__ = (
+        db.UniqueConstraint("unsubscribe_token", name="uq_campaign_recipients_unsubscribe_token"),
+        db.UniqueConstraint("tracking_id", name="uq_campaign_recipients_tracking_id"),
+        db.UniqueConstraint("campaign_id", "email", name="uq_campaign_email"),
+    )
+
+
+  
+
+class LeadTarget(db.Model):
+    __tablename__ = "lead_targets"
+
+    id = db.Column(
+        BIGINT(unsigned=True),
+        primary_key=True,
+        autoincrement=True,
+    )
+
+    nombre_target = db.Column(db.String(150), nullable=False)
+
+    created_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        server_default=db.text("CURRENT_TIMESTAMP"),
+    )
+
+    updated_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        server_default=db.text("CURRENT_TIMESTAMP"),
+        onupdate=db.text("CURRENT_TIMESTAMP"),
+    )
+
+    items = db.relationship(
+        "LeadTargetItem",
+        back_populates="target",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+
+class LeadTargetItem(db.Model):
+    __tablename__ = "lead_target_items"
+
+    target_id = db.Column(
+        BIGINT(unsigned=True),
+        db.ForeignKey("lead_targets.id", ondelete="CASCADE"),
+        primary_key=True,
+        nullable=False,
+    )
+
+    lead_id = db.Column(
+        BIGINT(unsigned=True),
+        db.ForeignKey("lead_forms.id", ondelete="CASCADE"),
+        primary_key=True,
+        nullable=False,
+    )
+
+    created_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        server_default=db.text("CURRENT_TIMESTAMP"),
+    )
+
+    target = db.relationship("LeadTarget", back_populates="items")
+    lead = db.relationship("LeadForm", back_populates="target_items")
+
+    __table_args__ = (
+        db.Index("idx_lead_target_items_lead_id", "lead_id"),
+    )
+
+
+
+class LeadCampaignHistory(db.Model):
+    __tablename__ = "lead_campaign_history"
+
+    id = db.Column(db.BigInteger, primary_key=True)
+
+    lead_id = db.Column(db.BigInteger, nullable=True)
+    campaign_id = db.Column(db.Integer, nullable=False)
+    recipient_id = db.Column(db.Integer, nullable=True)
+
+    email = db.Column(db.String(255), nullable=False)
+
+    campaign_name = db.Column(db.String(150), nullable=False)
+    campaign_type = db.Column(db.String(50), nullable=False)
+
+    sent_at = db.Column(db.DateTime, nullable=False)
+
+    send_status = db.Column(db.String(50), nullable=False)
+
+    idioma = db.Column(db.String(10))
+    pais = db.Column(db.String(100))
+    origen = db.Column(db.String(100))
+    tipo_lead = db.Column(db.String(50))
+    estado = db.Column(db.String(50))
+
+    created_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))

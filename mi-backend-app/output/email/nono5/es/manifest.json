@@ -1,0 +1,30 @@
+{
+  "slug": "nono5",
+  "display_name": "nono5",
+  "default_lang": "es",
+  "languages": {
+    "es": {
+      "name": "nono5",
+      "paths": {
+        "html": "emails/templates/nono5/es/template.html",
+        "mjml": "emails/templates/nono5/es/template.mjml",
+        "schema": "emails/templates/nono5/es/schema.json",
+        "original": "emails/templates/nono5/es/original.html"
+      },
+      "attachments": []
+    }
+  },
+  "shared": {
+    "images_dir": "emails/templates/nono5/images/",
+    "images": {},
+    "attachments": []
+  },
+  "images_dir": "emails/templates/nono5/images/",
+  "updated_at": null,
+  "type": "email",
+  "base_prefix": "emails/templates",
+  "name": "Nono5",
+  "lang": "es",
+  "attachments": [],
+  "images_uploaded": []
+}

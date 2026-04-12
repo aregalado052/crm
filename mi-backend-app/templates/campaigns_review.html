@@ -1,0 +1,380 @@
+{% extends "base.html" %}
+{% block content %}
+
+
+   <h3 class="text-3xl text-center font-bold text-blue-700 mb-6 flex items-baseline gap-3">Resumen de la campaña</h3>
+
+   <div class="card p-4 mb-4">
+
+      <h5 class="mb-3 font-bold text-blue-400">Datos de campaña</h5>
+
+      <table class="table">
+         <tr>
+            <td><strong>Nombre</strong></td>
+            <td>{{ campaign.name }}</td>
+         </tr>
+
+         <tr>
+            <td><strong>Tipo</strong></td>
+            <td>{{ campaign.campaign_type }}</td>
+         </tr>
+
+         <tr>
+            <td><strong>Subject</strong></td>
+            <td>
+               {% if campaign.idioma == 'es' %}
+                  {{ campaign.subject_es or 'No definido' }}
+
+               {% elif campaign.idioma == 'en' %}
+                  {{ campaign.subject_en or 'No definido' }}
+
+               {% elif campaign.idioma == 'both' %}
+                  <div><strong>ES:</strong> {{ campaign.subject_es or 'No definido' }}</div>
+                  <div><strong>EN:</strong> {{ campaign.subject_en or 'No definido' }}</div>
+               {% endif %}
+            </td>
+         </tr>
+
+         <tr>
+            <td><strong>Sender</strong></td>
+            <td>{{ campaign.sender }}</td>
+         </tr>
+
+         <tr>
+            <td><strong>Reply-To</strong></td>
+            <td>{{ campaign.reply_to }}</td>
+         </tr>
+
+         <tr>
+            <td><strong>Idioma</strong></td>
+            <td>{{ campaign.idioma }}</td>
+         </tr>
+         <tr>
+         <td><strong>Newsletter</strong></td>
+         <td>
+            {% if campaign.idioma == 'es' %}
+               {% if newsletter_es %}
+               {{ newsletter_es.name }}
+               <button class="btn btn-sm btn-outline-primary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#newsletterModal"
+                        data-url="{{ url_for('newsletter_preview', nid=newsletter_es.id) }}">
+                  <i class="bi bi-eye"></i>
+               </button>
+               {% else %}
+               No hay newsletter en español asociada
+               {% endif %}
+
+            {% elif campaign.idioma == 'en' %}
+               {% if newsletter_en %}
+               {{ newsletter_en.name }}
+               <button class="btn btn-sm btn-outline-primary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#newsletterModal"
+                        data-url="{{ url_for('newsletter_preview', nid=newsletter_en.id) }}">
+                  <i class="bi bi-eye"></i>
+               </button>
+               {% else %}
+               No hay newsletter en inglés asociada
+               {% endif %}
+
+            {% elif campaign.idioma == 'both' %}
+               <div class="mb-2">
+               <strong>ES:</strong>
+               {% if newsletter_es %}
+                  {{ newsletter_es.name }}
+                  <button class="btn btn-sm btn-outline-primary"
+                           data-bs-toggle="modal"
+                           data-bs-target="#newsletterModal"
+                           data-url="{{ url_for('newsletter_preview', nid=newsletter_es.id) }}">
+                     <i class="bi bi-eye"></i>
+                  </button>
+               {% else %}
+                  No asignada
+               {% endif %}
+               </div>
+
+               <div>
+               <strong>EN:</strong>
+               {% if newsletter_en %}
+                  {{ newsletter_en.name }}
+                  <button class="btn btn-sm btn-outline-primary"
+                           data-bs-toggle="modal"
+                           data-bs-target="#newsletterModal"
+                           data-url="{{ url_for('newsletter_preview', nid=newsletter_en.id) }}">
+                     <i class="bi bi-eye"></i>
+                  </button>
+               {% else %}
+                  No asignada
+               {% endif %}
+               </div>
+            {% endif %}
+         </td>
+         </tr>
+      </table>
+              
+      
+
+   </div>
+
+
+   
+   <div class="card p-4 mb-4">
+
+      <h5 class="mb-3 font-bold text-blue-400">Destinatarios</h5>
+
+      <div class="d-flex gap-5">
+
+         <div>
+            <div class="text-gray-500">Total registros</div>
+            <div class="text-2xl font-bold">{{ total }}</div>
+         </div>
+
+         <div>
+            <div class="text-gray-500">Seleccionados</div>
+            <div class="text-2xl font-bold">{{ selected }}</div>
+         </div>
+
+      </div>
+
+   </div>
+
+
+   <div class="d-flex gap-2">
+
+      <a class="btn btn-outline-secondary"
+         href="{{ url_for('campaign_edit', cid=campaign.id) }}">
+         <i class="bi bi-pencil"></i>
+      Editar
+      </a>
+
+      <a class="btn btn-outline-warning"
+         href="{{ url_for('campaign_targets', cid=campaign.id) }}">
+         <i class="bi bi-people"></i>
+         Regenerar target
+      </a>
+      
+      <button type="button"
+         class="btn btn-outline-primary"
+         id="btnSendTest"
+         data-url="{{ url_for('campaign_send_test', cid=campaign.id) }}">
+            <i class="bi bi-envelope"></i> Enviar prueba
+      </button>
+
+  
+
+    
+   <form id="sendCampaignForm" action="{{ url_for('campaign_send', cid=campaign.id) }}" method="post">
+      <button type="submit"
+                        class="btn btn-outline-success"
+                        title="Enviar campaña">
+                  <i class="bi bi-send"></i> Enviar Campaña
+      </button>
+   </form>
+
+   <a href="{{ url_for('campanas') }}"
+      class="btn btn-outline-danger"
+      title="Volver a campañas">
+      <i class="bi bi-arrow-left"></i> Volver
+   </a>
+   
+
+   <div class="modal fade" id="newsletterModal" tabindex="-1">
+      <div class="modal-dialog modal-xl modal-dialog-centered">
+         <div class="modal-content">
+
+            <div class="modal-header">
+            <h5 class="modal-title">Vista previa de newsletter</h5>
+               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body p-0">
+
+               <iframe id="newsletterFrame"
+                        style="width:100%; height:600px; border:0;">
+               </iframe>
+
+            </div>
+
+         </div>
+      </div>
+   </div>
+
+<script>
+
+const newsletterModal = document.getElementById('newsletterModal');
+
+newsletterModal.addEventListener('show.bs.modal', function (event) {
+
+  const button = event.relatedTarget;
+  const url = button.getAttribute('data-url');
+
+  const iframe = document.getElementById('newsletterFrame');
+  iframe.src = url;
+
+});
+
+
+document.getElementById("btnSendTest").addEventListener("click", async function () {
+   const postUrl = this.dataset.url;
+
+  
+   const { value: email, isConfirmed } = await Swal.fire({
+      title: "Enviar prueba",
+      input: "email",
+      inputLabel: "Introduce el email de prueba",
+      inputPlaceholder: "nombre@dominio.com",
+      showCancelButton: true,
+      confirmButtonText: "Enviar",
+      cancelButtonText: "Cancelar",
+      confirmButtonColor: "#198754",
+      cancelButtonColor: "#6c757d",
+      inputValidator: (value) => {
+         if (!value) {
+         return "Debes indicar un email";
+         }
+         const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+         if (!emailOk) {
+         return "El email no es válido";
+         }
+      }
+   });
+
+   if (!isConfirmed) return;
+
+   try {
+      const res = await fetch(postUrl, {
+         method: "POST",
+         headers: {
+         "Content-Type": "application/json"
+         },
+         body: JSON.stringify({ test_email: email })
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+         throw new Error(data.error || `HTTP ${res.status}`);
+      }
+
+      await Swal.fire({
+         icon: "success",
+         title: "Prueba enviada",
+         text: data.message || `Se ha enviado la prueba a ${email}`,
+         timer: 2500,
+         showConfirmButton: false
+      });
+
+   } catch (err) {
+      await Swal.fire({
+         icon: "error",
+         title: "Error",
+         text: err.message || "No se pudo enviar la prueba"
+      });
+   }
+});
+
+
+document.getElementById("sendCampaignForm").addEventListener("submit", async function(e){
+  e.preventDefault();
+
+  const form = e.target;
+  const action = form.getAttribute("action");
+  const streamUrl = action.replace(/\/send$/, "/send-stream");
+
+  const result = await Swal.fire({
+    title: "¿Enviar campaña?",
+    text: "Se enviarán todos los emails seleccionados.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#16a34a",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Sí, enviar",
+    cancelButtonText: "Cancelar"
+  });
+
+  if (!result.isConfirmed) return;
+
+  Swal.fire({
+    title: "Enviando campaña...",
+    html: `
+      <div style="text-align:left">
+        <p id="swalProgress">Enviados: 0 / 0</p>
+        <p id="swalFailed">Fallidos: 0</p>
+        <p id="swalLast">Último email: -</p>
+        <div style="margin-top:10px;background:#eee;height:10px;border-radius:6px">
+          <div id="swalBar" style="height:10px;width:0%;background:#16a34a;border-radius:6px"></div>
+        </div>
+      </div>
+    `,
+    allowOutsideClick: false,
+    showConfirmButton: false
+  });
+
+  const progressText = () => document.getElementById("swalProgress");
+  const failedText = () => document.getElementById("swalFailed");
+  const lastText = () => document.getElementById("swalLast");
+  const bar = () => document.getElementById("swalBar");
+
+  const eventSource = new EventSource(streamUrl);
+
+  eventSource.onmessage = function(event){
+    const data = JSON.parse(event.data);
+
+    if (data.error){
+      eventSource.close();
+
+      Swal.fire({
+        title: "Error",
+        text: data.error,
+        icon: "error"
+      });
+
+      return;
+    }
+
+    progressText().textContent = `Enviados: ${data.sent} / ${data.total}`;
+    failedText().textContent = `Fallidos: ${data.failed}`;
+
+    if (data.email){
+      lastText().textContent = `Último email: ${data.email}`;
+    }
+
+    if (data.total > 0){
+      const percent = Math.round((data.sent / data.total) * 100);
+      bar().style.width = percent + "%";
+    }
+
+    if (data.status === "done"){
+      eventSource.close();
+
+      Swal.fire({
+        title: "Campaña finalizada",
+        html: `
+          <b>Enviados:</b> ${data.sent} / ${data.total}<br>
+          <b>Fallidos:</b> ${data.failed}
+        `,
+        icon: "success",
+        confirmButtonColor: "#16a34a"
+      }).then(()=>{
+        location.reload();
+      });
+    }
+  };
+
+  eventSource.onerror = function(){
+    eventSource.close();
+
+    Swal.fire({
+      title: "Error",
+      text: "Se perdió la conexión con el servidor.",
+      icon: "error"
+    });
+  };
+
+});
+
+
+</script>
+
+{% endblock %}

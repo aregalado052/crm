@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+<div class="bg-blue-50 border border-blue-200 rounded-xl shadow-md p-6">
+
+  <p class="text-3xl font-bold text-blue-700 mb-6 flex items-baseline gap-3">
+    {{ _('Aquí puedes consultar y gestionar los targets de tu campaña: ') }}
+    <span class="text-blue-900 font-bold">
+      {{ campaign.name }}
+    </span>
+  </p>
+
+  <div class="flex justify-between items-center mb-4">
+    <div class="space-x-4">
+
+      <button id="btn-todos"
+        type="button"
+        class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-900"
+        onclick="window.location.href='{{ url_for('campaign_select_all_filtered',
+          cid=campaign.id,
+          pais=pais,
+          idioma=idioma,
+          origen=origen,
+          estado_envio=estado_envio,
+          estado_lead=estado_lead,
+          tipo_lead=tipo_lead) }}'">
+        {{ _('Seleccionar todos') }}
+      </button>
+
+      <button id="btn-ninguno"
+        type="button"
+        class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-900"
+        onclick="window.location.href='{{ url_for('campaign_unselect_all_filtered',
+          cid=campaign.id,
+          pais=pais,
+          idioma=idioma,
+          origen=origen,
+          estado_envio=estado_envio,
+          estado_lead=estado_lead,
+          tipo_lead=tipo_lead) }}'">
+        {{ _('Deseleccionar') }}
+      </button>
+
+      <button id="btn-seleccionados"
+        type="button"
+        class="bg-green-400 text-white px-4 py-2 rounded hover:bg-green-900"
+        onclick="window.location.href='{{ url_for('campaign_view_selected',
+          cid=campaign.id,
+          pais=pais,
+          idioma=idioma,
+          origen=origen,
+          estado_envio=estado_envio,
+          estado_lead=estado_lead,
+          tipo_lead=tipo_lead) }}'">
+        {{ _('Ver Seleccionados') }}
+      </button>
+
+      <button id="btn-exit"
+        type="button"
+        class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+        onclick="window.location.href='{{ url_for('campanas') }}'">
+        {{ _('Volver') }}
+      </button>
+
+    </div>
+  </div>
+
+  <form method="GET" class="row g-2 mb-4">
+
+    <div class="col">
+      <select name="pais" class="form-control">
+        <option value="">Todos los países</option>
+        {% for p in paises %}
+          <option value="{{ p }}" {% if p == pais %}selected{% endif %}>{{ p }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col">
+      <select name="idioma" class="form-control">
+        <option value="">Todos los idiomas</option>
+        {% for i in idiomas %}
+          <option value="{{ i }}" {% if i == idioma %}selected{% endif %}>{{ i }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col">
+      <select name="origen" class="form-control">
+        <option value="">Todos los orígenes</option>
+        {% for o in origenes %}
+          <option value="{{ o }}" {% if o == origen %}selected{% endif %}>{{ o }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col">
+      <select name="tipo_lead" class="form-control">
+        <option value="">Todos los tipos</option>
+        {% for t in tipos_lead %}
+          <option value="{{ t }}" {% if t == tipo_lead %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col">
+      <select name="estado_lead" class="form-control">
+        <option value="">Todos los estados lead</option>
+        {% for e in estados_lead %}
+          <option value="{{ e }}" {% if e == estado_lead %}selected{% endif %}>{{ e }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col">
+      <select name="estado_envio" class="form-control">
+        <option value="">Todos los estados envío</option>
+        {% for s in estados_envio %}
+          <option value="{{ s }}" {% if s == estado_envio %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col">
+      <button class="btn btn-primary">Filtrar</button>
+    </div>
+
+    <div class="col">
+      <a href="{{ url_for('campaign_targets', cid=campaign.id) }}" class="btn btn-secondary">
+        Eliminar Filtros
+      </a>
+    </div>
+
+  </form>
+
+  <span class="badge bg-blue-500 text-white px-3 py-1 rounded">
+    {{ targets|length }} visibles
+  </span>
+
+  <span class="badge bg-green-500 text-white px-3 py-1 rounded">
+    {{ targets | selectattr('seleccionado') | list | length }} seleccionados
+  </span>
+
+  <table class="table table-striped mt-3">
+    <thead>
+      <tr>
+        <th>Sel</th>
+        <th>Email</th>
+        <th>Pais</th>
+        <th>Idioma</th>
+        <th>Origen</th>
+        <th>Tipo Lead</th>
+        <th>Estado Lead</th>
+        <th>Estado Envío</th>
+        <th>Enviado</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for t in targets %}
+      <tr>
+        <td>
+          <form method="POST"
+                action="{{ url_for('campaign_toggle_target', cid=campaign.id, rid=t.id) }}"
+                class="d-inline">
+            <input type="hidden" name="seleccionado" value="{{ 0 if t.seleccionado else 1 }}">
+            <input type="checkbox"
+                  {% if t.seleccionado %}checked{% endif %}
+                  onchange="this.form.submit()">
+          </form>
+        </td>
+
+        <td>{{ t.email }}</td>
+        <td>{{ t.pais }}</td>
+        <td>{{ t.idioma }}</td>
+        <td>{{ t.origen }}</td>
+        <td>{{ t.tipo_lead }}</td>
+        <td>{{ t.estado }}</td>
+        <td>{{ t.send_status }}</td>
+        <td>{{ t.sent_at[:10] if t.sent_at is string else (t.sent_at.strftime('%Y-%m-%d') if t.sent_at else '') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

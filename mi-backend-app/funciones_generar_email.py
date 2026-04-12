@@ -1,11 +1,6 @@
-# -*- coding: utf-8 -*-
-"""
-Módulo para importar/normalizar emails/HTML como plantillas,
-rehostear imágenes en S3 y opcionalmente subir la plantilla completa al bucket.
 
-Requisitos:
-  pip install premailer beautifulsoup4 lxml jinja2 boto3 requests
-"""
+
+
 import html
 import os
 import re
@@ -27,9 +22,24 @@ from email.parser import BytesParser
 from PIL import Image
 import io
 from flask import Response as FlaskResponse
+import html as html_lib
 
 from pathlib import Path
 
+
+import zipfile
+
+from urllib.parse import unquote, urlparse,quote
+
+
+from app_init import  db
+
+
+from models import db, Campaign, Newsletter, User,CampaignRecipient, LeadForm, LeadTarget,LeadTargetItem
+
+
+
+#BASE_URL = "http://127.0.0.1:8000"   # en producción: https://ledpadel.com
 
 
 # Ajusta a tu raíz real
@@ -45,7 +55,7 @@ print("[BOOT] TEMPLATES_ROOT =", TEMPLATES_ROOT)
 
 
 
-from config import (ROOT_PREFIX_S3,AWS_REGION,S3_BUCKET, USE_S3)
+from config import (ROOT_PREFIX_S3,AWS_REGION,S3_BUCKET, USE_S3, BASE_URL)
 
 
 
@@ -590,7 +600,6 @@ def rehost_images_under_template(soup: BeautifulSoup, slug: str):
         if not img.get("alt"):
             img["alt"] = f"image-{img_id}"
 
-
 def build_framework(
     input_path_or_html,
     out_dir="output",
@@ -598,7 +607,9 @@ def build_framework(
     lang: str | None = None,
     upload_to_s3: bool = True,
     display_name: str | None = None,
-    lang_attachments: list | None = None
+    lang_attachments: list | None = None,
+    base_prefix: str = "emails/templates",
+    template_type: str = "email"
 ) -> dict:
     """
     Flujo clave:
@@ -621,30 +632,33 @@ def build_framework(
     raw = load_email_source(input_path_or_html)
     if not raw:
         raise RuntimeError("No se pudo leer el email/HTML de entrada.")
+
     original_path = os.path.join(out_dir, "original.html")
     with open(original_path, "w", encoding="utf-8") as f:
         f.write(raw)
 
-    # 2) Normaliza HTML (inline CSS, limpieza…)
+    # 2) Normaliza HTML
     soup_norm = normalize_html(raw)
     html_norm = str(soup_norm)
 
+    # 3) rehost de imágenes
+    try:
+        html_imgs_final, images_meta = rewrite_images_to_final_and_upload(
+            html_norm,
+            slug=slug,
+            base_prefix=base_prefix
+        )
 
+        
 
+    except TypeError:
+        # compatibilidad con versión anterior del helper
+        html_imgs_final, images_meta = rewrite_images_to_final_and_upload(
+            html_norm,
+            slug=slug,
+            base_prefix=base_prefix
+        )
 
-
-
-
-
-
-
-
-
-
-    # 3) rehost
-    html_imgs_final, images_meta = rewrite_images_to_final_and_upload(html_norm, slug=slug)
-
-    # 4) split robusto (nuevo)
     # 4) Split conservador
     msg_html, sig_html = _extract_signature_bottom_up(html_imgs_final)
 
@@ -652,33 +666,25 @@ def build_framework(
     print("sig_html sample:", sig_html[:200])
     print("[DEBUG] sig AFTER extract:", sorted(_collect_basenames_from_html(sig_html)))
 
-    msg_html_full = html_imgs_final
-
-# Debug opcional
-    #print("[DEBUG] sig sample:", BeautifulSoup(sig_html or "", "lxml").get_text(" ", strip=True)[:200])
-
-    # nombres que realmente están en el cuerpo (antes de quitarles imágenes)
+    # nombres que realmente están en el cuerpo
     msg_names_before_clean = _collect_basenames_from_html(msg_html)
 
-    # --- Fallback logos: si la firma no trae <img>, rescata PNGs del final, excluyendo los del cuerpo ---
+    # fallback logos al final
     sig_html = _sig_rescue_tail_pngs(
         full_html=html_imgs_final,
         current_sig_html=sig_html,
         body_names=msg_names_before_clean,
-        max_imgs=2,   # ⬅ solo dos logos
+        max_imgs=2,
     )
-    # debug temprano
+
     from bs4 import BeautifulSoup
     print("[DEBUG] sig BEFORE imgs:", sorted(_collect_basenames_from_html(sig_html)))
     sig_txt_dbg = BeautifulSoup(sig_html or "", "lxml").get_text(" ", strip=True)
     print("[DEBUG] sig text sample:", sig_txt_dbg[:200])
 
-        # === FILTRO: eliminar de la firma cualquier imagen >= 30KB ===
-   
+    # === FILTRO: eliminar de la firma cualquier imagen >= 30KB ===
+    SIGNATURE_MAX_BYTES = 30 * 1024
 
-    SIGNATURE_MAX_BYTES = 30 * 1024  # 30 KB
-
-    # construimos mapa basename -> size
     sizes_by_name: dict[str, int] = {}
     for meta in images_meta or []:
         src = (meta.get("url") or meta.get("key") or "").strip()
@@ -695,7 +701,6 @@ def build_framework(
         if name:
             sizes_by_name[name] = sz
 
-    # limpiamos la firma: fuera todas las imágenes grandes
     soup_sig = BeautifulSoup(sig_html or "", "lxml")
     changed = False
     for im in list(soup_sig.find_all("img")):
@@ -705,7 +710,6 @@ def build_framework(
         base = os.path.basename(src.split("?", 1)[0]).lower()
         sz = sizes_by_name.get(base, 0)
         if sz >= SIGNATURE_MAX_BYTES:
-            # imagen demasiado grande para estar en la firma
             im.decompose()
             changed = True
 
@@ -713,172 +717,154 @@ def build_framework(
         sig_html = str(soup_sig)
         print("[DEBUG] signature cleaned by size; remaining imgs:",
               sorted(_collect_basenames_from_html(sig_html)))
-    # === FIN FILTRO POR TAMAÑO EN FIRMA ===
 
-   
     # Cuerpo: SIEMPRE sin imágenes
-    msg_html = remove_all_images(msg_html)
+    # Cuerpo:
+# - email: quitamos imágenes y luego las reconstruimos
+# - newsletter: mantenemos las imágenes originales
+    if template_type == "email":
+        msg_html = remove_all_images(msg_html)
 
-    # === Firma: mantener solo logos y NUNCA fotos grandes ===
+    # === Firma: mantener solo logos ===
     sig_names = _collect_basenames_from_html(sig_html)
     print("[DEBUG] sig ALL imgs:", sorted(sig_names))
 
-    # 1) lee manifest (si existe) y toma los is_logo explícitos
-    man = _load_manifest_from_s3(slug) or {}
+    man = _load_manifest_from_s3(slug, base_prefix=base_prefix) or {}
     shared_images = (man.get("shared") or {}).get("images") or {}
     explicit_logo = {n.lower() for n, meta in shared_images.items() if meta.get("is_logo")}
 
-    # 2) decide allow-list
     if explicit_logo:
-        # usa SOLO las imágenes que estén en firma y además marcadas como logo en manifest
         allowed = sig_names & explicit_logo
     else:
-        # fallback: asumimos que los logos son PNG, las fotos (jpg) NO van en la firma
         allowed = {n for n in sig_names if n.lower().endswith(".png")}
 
     print("[DEBUG] sig allow-list (logos permitidos):", sorted(allowed))
 
-    from bs4 import BeautifulSoup
-
     if allowed:
-        # dejamos SOLO las imágenes que estén en allowed
         sig_html = keep_only_logo_images(sig_html, allowed)
     else:
-        # si no tenemos ningún logo reconocido,
-        # ELIMINAMOS TODAS las imágenes de la firma (pero dejamos el texto)
         sig_html = remove_all_images(sig_html)
 
-    # (IMPORTANTE) eliminar TODO el bloque viejo:
-    # if sig_names:
-    #     if explicit_logo:
-    #         ...
-    #     else:
-    #         print("[DEBUG] sig allow-list (no explicit): (no filtramos)")
-    # ...
-
-    
-
-
-       
-    
     # 8) Guardar parciales locales
-    # justo después de calcular msg_html/sig_html y limpiarlos
+    msg_html_fragment = _inner_body_html(msg_html or "")
+    sig_html_fragment = _inner_body_html(sig_html or "")
+
+    print("[DEBUG] msg_html starts with:", (msg_html or "")[:80])
+    print("[DEBUG] msg_html_fragment starts with:", msg_html_fragment[:80])
+
     out_dir_lang = os.path.join(out_dir, lang)
     msg_dir = os.path.join(out_dir_lang, "partials")
     os.makedirs(msg_dir, exist_ok=True)
 
     with open(os.path.join(msg_dir, "message.html"), "w", encoding="utf-8") as f:
-        f.write(msg_html or "")
-    with open(os.path.join(msg_dir, "message.txt"), "w", encoding="utf-8") as f:
-        f.write(BeautifulSoup(msg_html or "", "lxml").get_text(" ", strip=True))
+        f.write(msg_html_fragment)
 
-    # Aunque la firma esté vacía, subimos un placeholder pequeño para que “exista”
-    sig_html_to_save = sig_html or '<!-- empty-signature -->'
+    with open(os.path.join(msg_dir, "message.txt"), "w", encoding="utf-8") as f:
+        f.write(BeautifulSoup(msg_html_fragment, "lxml").get_text(" ", strip=True))
+
+    sig_html_to_save = sig_html_fragment or "<!-- empty-signature -->"
     with open(os.path.join(msg_dir, "signature.html"), "w", encoding="utf-8") as f:
         f.write(sig_html_to_save)
+
     with open(os.path.join(msg_dir, "signature.txt"), "w", encoding="utf-8") as f:
-        f.write(BeautifulSoup(sig_html or "", "lxml").get_text(" ", strip=True))
+        f.write(BeautifulSoup(sig_html_fragment or "", "lxml").get_text(" ", strip=True))
+        template_no_sig = remove_signature_block_by_images(html_imgs_final, sig_html)
 
-    # (la firma compartida no hace falta guardarla local si no quieres)
-
-    if upload_to_s3 and USE_S3:
-        base_lang = f"emails/templates/{slug}/{lang}/partials/"
-        print("[DEBUG] S3 put:", base_lang + "message.html")
-        put_public_s3(base_lang + "message.html",
-                    (msg_html or "").encode("utf-8"),
-                    "text/html; charset=utf-8", cache_seconds=0)
-        print("[DEBUG] S3 put:", base_lang + "message.txt")
-        put_public_s3(base_lang + "message.txt",
-                    BeautifulSoup(msg_html or "", "lxml").get_text(" ", strip=True).encode("utf-8"),
-                    "text/plain; charset=utf-8", cache_seconds=0)
-
-        shared_base = f"emails/templates/{slug}/partials/"
-        sig_html_to_upload = sig_html or "<!-- empty-signature -->"
-        print("[DEBUG] S3 put:", shared_base + "signature.html")
-        put_public_s3(shared_base + "signature.html",
-                    sig_html_to_upload.encode("utf-8"),
-                    "text/html; charset=utf-8", cache_seconds=0)
-        print("[DEBUG] S3 put:", shared_base + "signature.txt")
-        put_public_s3(shared_base + "signature.txt",
-                    BeautifulSoup(sig_html or "", "lxml").get_text(" ", strip=True).encode("utf-8"),
-                    "text/plain; charset=utf-8", cache_seconds=0)
-
-
- 
-
-    template_no_sig = remove_signature_block_by_images(html_imgs_final, sig_html)
-
-    
-    
-    # 10) Placeholders conservativos y archivos de plantilla locales
+    # 10) Placeholders y archivos de plantilla locales
     soup_final = to_placeholders_conservative(BeautifulSoup(template_no_sig or "", "lxml"))
-    html_path   = os.path.join(out_dir, "template.html")
-    mjml_path   = os.path.join(out_dir, "template.mjml")
+
+    html_path = os.path.join(out_dir, "template.html")
+    mjml_path = os.path.join(out_dir, "template.mjml")
     schema_path = os.path.join(out_dir, "schema.json")
+
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(template_no_sig)
 
-
-    #with open(html_path, "w", encoding="utf-8") as f:
-    #    f.write(str(soup_final))
     with open(mjml_path, "w", encoding="utf-8") as f:
         f.write(to_mjml(soup_final))
+
     schema = generate_schema()
     with open(schema_path, "w", encoding="utf-8") as f:
         json.dump(schema, f, indent=2, ensure_ascii=False)
 
-    # 11) (opcional) manifest local de debug
+    # 11) manifest local
     manifest_local = generate_initial_manifest(slug, images_meta, lang=lang)
+    manifest_local["type"] = template_type
+    manifest_local["base_prefix"] = base_prefix
+
     manifest_path = os.path.join(out_dir, "manifest.json")
     with open(manifest_path, "w", encoding="utf-8") as f:
         json.dump(manifest_local, f, indent=2, ensure_ascii=False)
 
-    # 12) Sube archivos de plantilla (NO cache fuerte)
+    # 12) Sube archivos de plantilla
+    root_prefix = f"{base_prefix}/{slug}/"
+    lang_prefix = f"{root_prefix}{lang}/"
     s3_keys = {}
     if upload_to_s3 and USE_S3:
-        base_prefix = f"emails/templates/{slug}/"
-        lang_prefix = f"{base_prefix}{lang}/"
+        root_prefix = f"{base_prefix}/{slug}/"
+        lang_prefix = f"{root_prefix}{lang}/"
+
         with open(original_path, "rb") as f:
-            put_public_s3(f"{lang_prefix}original.html", f.read(), "text/html; charset=utf-8", cache_seconds=0)
+            put_public_s3(
+                f"{lang_prefix}original.html",
+                f.read(),
+                "text/html; charset=utf-8",
+                cache_seconds=0
+            )
+
         with open(html_path, "rb") as f:
-            put_public_s3(f"{lang_prefix}template.html", f.read(), "text/html; charset=utf-8", cache_seconds=0)
+            put_public_s3(
+                f"{lang_prefix}template.html",
+                f.read(),
+                "text/html; charset=utf-8",
+                cache_seconds=0
+            )
+
         with open(mjml_path, "rb") as f:
-            put_public_s3(f"{lang_prefix}template.mjml", f.read(), "application/xml", cache_seconds=0)
+            put_public_s3(
+                f"{lang_prefix}template.mjml",
+                f.read(),
+                "application/xml",
+                cache_seconds=0
+            )
+
         with open(schema_path, "rb") as f:
-            put_public_s3(f"{lang_prefix}schema.json", f.read(), "application/json", cache_seconds=0)
+            put_public_s3(
+                f"{lang_prefix}schema.json",
+                f.read(),
+                "application/json",
+                cache_seconds=0
+            )
 
         s3_keys = {
             "original_key": f"{lang_prefix}original.html",
-            "html_key":     f"{lang_prefix}template.html",
-            "mjml_key":     f"{lang_prefix}template.mjml",
-            "schema_key":   f"{lang_prefix}schema.json",
+            "html_key": f"{lang_prefix}template.html",
+            "mjml_key": f"{lang_prefix}template.mjml",
+            "schema_key": f"{lang_prefix}schema.json",
         }
+        shared_dir = f"{root_prefix}images/"
 
-        # 13) Upsert manifest del idioma (y shared.images_dir) — PRIMERO
-        shared_dir = f"{base_prefix}images/"
         upsert_manifest_lang(
             slug=slug,
             lang=lang,
             display_name=display_name or slug,
             paths={
-                "html":     f"{lang_prefix}template.html",
-                "mjml":     f"{lang_prefix}template.mjml",
-                "schema":   f"{lang_prefix}schema.json",
+                "html": f"{lang_prefix}template.html",
+                "mjml": f"{lang_prefix}template.mjml",
+                "schema": f"{lang_prefix}schema.json",
                 "original": f"{lang_prefix}original.html",
             },
             lang_attachments=lang_attachments or [],
-            images_dir=None,                 # NO por idioma (usamos el común)
-            shared_images_dir=shared_dir     # común
+            images_dir=None,
+            shared_images_dir=shared_dir,
+            base_prefix=base_prefix,
+            template_type=template_type
         )
 
-        # 14) Apuntar parciales en el manifest (ya existe)
-        upsert_shared_signature_in_manifest(slug)   # shared.partials.signature_*
-        upsert_partials_in_manifest(slug, lang)     # languages[lang].partials.message_*
-
-        # 15) Reconstruir 'images' con ?v=<etag> (conserva target_w/h/fit/is_logo)
-        update_manifest(slug)
-        ensure_dimensions_if_missing(slug)  # añade target_w/target_h/fit si faltan
-
+        upsert_shared_signature_in_manifest(slug, base_prefix=base_prefix)
+        upsert_partials_in_manifest(slug, lang, base_prefix=base_prefix)
+        update_manifest(slug, base_prefix=base_prefix)
+        ensure_dimensions_if_missing(slug, base_prefix=base_prefix)
     return {
         "html_template": html_path,
         "mjml_template": mjml_path,
@@ -886,8 +872,6 @@ def build_framework(
         "manifest": manifest_path,
         "s3": s3_keys,
     }
-
-
 def bucket_exists(bucket: str) -> bool:
     s3 = get_s3()
     try:
@@ -903,7 +887,23 @@ def bucket_exists(bucket: str) -> bool:
         raise
 
 
+def unescape_pre_wrapped_html(html_text: str) -> str:
+    if not html_text:
+        return html_text
 
+    soup = BeautifulSoup(html_text, "lxml")
+
+    body = soup.body or soup
+    children = [c for c in body.contents if getattr(c, "name", None) or str(c).strip()]
+
+    if len(children) == 1 and getattr(children[0], "name", None) == "pre":
+        raw = children[0].get_text()
+        raw = html_lib.unescape(raw).strip()
+
+        if "<html" in raw.lower() or "<table" in raw.lower() or "<body" in raw.lower():
+            return raw
+
+    return html_text
 
 
 def rehost_images_under_template_from_html(html: str, slug: str):
@@ -1011,9 +1011,8 @@ def resolve_cid_with_attachments(html: str, slug: str, attachments: list):
 # funciones_generar_email.py
 
 
-
-def _manifest_key(slug: str) -> str:
-    return f"emails/templates/{slug}/manifest.json"
+def _manifest_key(slug: str, base_prefix: str = "emails/templates") -> str:
+    return f"{base_prefix}/{slug}/manifest.json"
 
 def _empty_manifest(slug: str, display_name: str | None) -> dict:
     return {
@@ -1029,18 +1028,30 @@ def _empty_manifest(slug: str, display_name: str | None) -> dict:
         "updated_at": int(datetime.now(timezone.utc).timestamp()),
     }
 
-def _load_manifest_from_s3(slug: str) -> dict | None:
+def _load_manifest_from_s3(
+    slug: str,
+    base_prefix: str = "emails/templates"
+) -> dict | None:
     s3 = get_s3()
-    mk = _manifest_key(slug)
+    mk = _manifest_key(slug, base_prefix=base_prefix)
+
     try:
         obj = s3.get_object(Bucket=S3_BUCKET, Key=mk)
         return json.loads(obj["Body"].read())
-    except s3.exceptions.NoSuchKey:
-        return None
+    except botocore.exceptions.ClientError as e:
+        code = e.response.get("Error", {}).get("Code")
+        if code in ("NoSuchKey", "404", "NotFound"):
+            return None
+        raise
 
-def _save_manifest_to_s3(slug: str, manifest: dict) -> None:
+def _save_manifest_to_s3(
+    slug: str,
+    manifest: dict,
+    base_prefix: str = "emails/templates"
+) -> None:
     s3 = get_s3()
-    mk = _manifest_key(slug)
+    mk = _manifest_key(slug, base_prefix=base_prefix)
+
     s3.put_object(
         Bucket=S3_BUCKET,
         Key=mk,
@@ -1060,8 +1071,10 @@ def upsert_manifest_lang(
     display_name: str | None = None,
     paths: dict | None = None,
     lang_attachments: list | None = None,
-    images_dir: str | None = None,      # si lo pasas, se guarda a nivel de idioma
-    shared_images_dir: str | None = None # opcional: para fijar/actualizar el común
+    images_dir: str | None = None,
+    shared_images_dir: str | None = None,
+    base_prefix: str = "emails/templates",
+    template_type: str = "email"
 ) -> dict:
     """
     Crea/actualiza el manifest de la plantilla `slug` para el idioma `lang`.
@@ -1069,26 +1082,33 @@ def upsert_manifest_lang(
     - `lang_attachments`: lista de adjuntos para el idioma.
     - `images_dir`: carpeta de imágenes para este idioma (si usas por-idioma).
     - `shared_images_dir`: si pasas uno común, se guarda en manifest['shared']['images_dir'].
+    - `base_prefix`: p.ej. "emails/templates" o "newsletters/templates"
+    - `template_type`: "email" o "newsletter"
     """
     lang = (lang or "en").lower()
 
-    manifest = _load_manifest_from_s3(slug)
+    try:
+        manifest = _load_manifest_from_s3(slug, base_prefix=base_prefix)
+    except TypeError:
+        manifest = _load_manifest_from_s3(slug, base_prefix=base_prefix)
+
     if manifest is None:
         manifest = _empty_manifest(slug, display_name)
     else:
         manifest = _migrate_legacy_manifest(manifest)
 
-    # display_name a nivel plantilla (si lo pasas, lo actualiza)
     if display_name:
         manifest["display_name"] = display_name
 
-    # shared images_dir (común) si te interesa fijarlo/actualizarlo
+    manifest["slug"] = slug
+    manifest["type"] = template_type
+    manifest["base_prefix"] = base_prefix
+
     if shared_images_dir:
         manifest.setdefault("shared", {}).setdefault("attachments", [])
         manifest["shared"]["images_dir"] = shared_images_dir
-        manifest["images_dir"] = shared_images_dir  # espejo por compatibilidad
+        manifest["images_dir"] = shared_images_dir
 
-    # nodo del idioma
     manifest.setdefault("languages", {})
     node = manifest["languages"].setdefault(lang, {})
     node.setdefault("attachments", [])
@@ -1097,39 +1117,32 @@ def upsert_manifest_lang(
     if shared_images_dir:
         node["images_dir"] = shared_images_dir
     elif images_dir:
-        # Si explícitamente te pasan un images_dir por idioma, úsalo.
         node["images_dir"] = images_dir
     else:
-        # Hereda el común si no hay otro
         node.setdefault("images_dir", manifest.get("images_dir"))
 
-    # nombre para el idioma (opcional: si quieres mostrarlo distinto)
     if display_name and not node.get("name"):
         node["name"] = display_name
 
-    # paths (solo sobreescribe los que pases)
     if paths:
         node["paths"].update(paths)
 
-    # images_dir por idioma (si lo pasas, lo fija aquí)
     if images_dir:
         node["images_dir"] = images_dir
     else:
-        # si no lo pasas y no existe uno previo, hereda el común por comodidad
         node.setdefault("images_dir", manifest.get("images_dir"))
 
-    # adjuntos del idioma
     if lang_attachments is not None:
         node["attachments"] = lang_attachments
 
-    # marca de actualización
     manifest["updated_at"] = int(datetime.now(timezone.utc).timestamp())
 
-    # guardar
-    _save_manifest_to_s3(slug, manifest)
+    try:
+        _save_manifest_to_s3(slug, manifest, base_prefix=base_prefix)
+    except TypeError:
+        _save_manifest_to_s3(slug, manifest, base_prefix=base_prefix)
+
     return manifest
-
-
 
 def insert_extra_files_into_html(html: str, slug: str, lang: str, attachments: list):
     # ...
@@ -1698,25 +1711,32 @@ def build_images_map(images_dir: str, manifest: dict | None = None) -> dict:
             }
     return out
 
-
-def update_manifest(slug: str) -> dict:
+def update_manifest(
+    slug: str,
+    base_prefix: str = "emails/templates"
+) -> dict:
     s3 = get_s3()
-    mk = f"emails/templates/{slug}/manifest.json"
-    man = json.loads(s3.get_object(Bucket=S3_BUCKET, Key=mk)["Body"].read())
+    mk = f"{base_prefix}/{slug}/manifest.json"
+
+    man = json.loads(
+        s3.get_object(Bucket=S3_BUCKET, Key=mk)["Body"].read()
+    )
+
+    man["slug"] = slug
+    man["base_prefix"] = base_prefix
 
     # shared
     shared_dir = (man.get("shared") or {}).get("images_dir")
     if shared_dir:
         man.setdefault("shared", {})
         prev = (man["shared"].get("images") or {}).copy()
-        fresh = build_images_map(shared_dir)  # <-- SOLO key/etag/last_modified/url
-        # fusiona conservando target_*/fit/is_logo previos
+        fresh = build_images_map(shared_dir)
         merged = {}
         for name, core in fresh.items():
             merged[name] = _merge_image_meta(prev.get(name), core)
         man["shared"]["images"] = merged
 
-    # por idioma (si lo usas)
+    # por idioma
     for lc, ld in (man.get("languages") or {}).items():
         images_dir = ld.get("images_dir") or man.get("images_dir")
         if images_dir:
@@ -1730,13 +1750,16 @@ def update_manifest(slug: str) -> dict:
     man["updated_at"] = int(datetime.now(timezone.utc).timestamp())
 
     s3.put_object(
-        Bucket=S3_BUCKET, Key=mk,
-        Body=json.dumps(man, indent=2, ensure_ascii=False).encode(),
+        Bucket=S3_BUCKET,
+        Key=mk,
+        Body=json.dumps(man, indent=2, ensure_ascii=False).encode("utf-8"),
         ContentType="application/json",
         CacheControl="no-cache, no-store, must-revalidate",
         Expires=0,
     )
     return man
+
+
 def update_manifest_for_key(slug: str, key: str) -> dict:
     s3 = get_s3()
     mk = f"emails/templates/{slug}/manifest.json"
@@ -1993,32 +2016,43 @@ def _download_bytes(url: str) -> tuple[bytes, str]:
     r.raise_for_status()
     return r.content, r.headers.get("Content-Type", "application/octet-stream")
 
-def rewrite_images_to_final_and_upload(html: str, *, slug: str, cid_map: dict | None = None):
+def rewrite_images_to_final_and_upload(
+    html: str,
+    *,
+    slug: str,
+    cid_map: dict | None = None,
+    base_prefix: str = "emails/templates"
+):
     """
     Reescribe todas las imágenes a su ruta final estable:
-      s3://emails/templates/<slug>/images/<id>.<ext>
+      s3://<base_prefix>/<slug>/images/<id>.<ext>
     y devuelve (html_reescrito, images_meta).
 
-    - Soporta: <img src>, data-src, data-original, srcset, background=, style="url(...)", VML (v:fill, v:imagedata).
+    - Soporta: <img src>, data-src, data-original, srcset, background=,
+      style="url(...)", VML (v:fill, v:imagedata).
     - http(s) y data: URIs. Si se pasa cid_map, también 'cid:...'.
-    - Imágenes con caché fuerte (1 año) — luego se versionan con ?v=<etag> vía manifest.
+    - Imágenes con caché fuerte (1 año).
     """
-   
-    base_key_prefix = f"emails/templates/{slug}/images/"
+
+    base_key_prefix = f"{base_prefix}/{slug}/images/"
 
     soup = BeautifulSoup(html or "", "lxml")
     alloc = make_id_allocator(1)
-    memo: dict[str, str] = {}     # src original -> url final
-    url2id: dict[str, str] = {}   # url final -> id (para poder añadir alt luego)
+    memo: dict[str, str] = {}
+    url2id: dict[str, str] = {}
     images_meta: list[dict] = []
 
     def _store(content: bytes, ct: str, hint: str = "") -> tuple[str, str, str]:
         ext = _guess_ext(ct, hint)
         img_id = str(alloc())
         key = f"{base_key_prefix}{img_id}.{ext}"
-        url = put_public_s3(key, content, ct or "application/octet-stream", cache_seconds=31536000)
+        url = put_public_s3(
+            key,
+            content,
+            ct or "application/octet-stream",
+            cache_seconds=31536000
+        )
 
-        # índice estable = orden de subida
         idx = len(images_meta)
         filename = key.rsplit("/", 1)[-1]
 
@@ -2028,13 +2062,11 @@ def rewrite_images_to_final_and_upload(html: str, *, slug: str, cid_map: dict | 
             "key": key,
             "url": url,
             "content_type": ct,
-            # ⬇️ inyecta tamaños aquí
             **_dimensions_for_image(idx, img_id)
         }
         images_meta.append(meta)
         url2id[url] = img_id
         return url, key, img_id
-    
 
     def _from_cid(cid: str) -> tuple[bytes, str]:
         if not cid_map:
@@ -2044,18 +2076,21 @@ def rewrite_images_to_final_and_upload(html: str, *, slug: str, cid_map: dict | 
             raise ValueError(f"CID no encontrado: {cid}")
         return entry["content"], entry.get("content_type", "application/octet-stream")
 
-    # ---- Reescritura de <img ...> ----
     def _rewrite_img_like_url(src: str) -> str:
         if not src:
             return src
 
-        # memo evita subidas repetidas
         if src in memo:
             return memo[src]
 
         try:
             if src.startswith("cid:"):
                 b, ct = _from_cid(src[4:])
+
+                if not (ct or "").lower().startswith("image/"):
+                    print(f"[WARN] CID no es imagen, se ignora: {src} -> {ct}")
+                    return src
+
                 url, _, _ = _store(b, ct, f"cid.{ct.split('/')[-1]}")
                 memo[src] = url
                 return url
@@ -2063,6 +2098,11 @@ def rewrite_images_to_final_and_upload(html: str, *, slug: str, cid_map: dict | 
             if src.startswith("data:"):
                 header, payload = src.split(",", 1)
                 ct = header.split(";")[0].split(":")[1] if ":" in header else "application/octet-stream"
+
+                if not (ct or "").lower().startswith("image/"):
+                    print(f"[WARN] DATA URI no es imagen, se ignora: {ct}")
+                    return src
+
                 content = base64.b64decode(payload) if ";base64" in header else payload.encode("utf-8")
                 url, _, _ = _store(content, ct, f"cid.{ct.split('/')[-1]}")
                 memo[src] = url
@@ -2070,19 +2110,23 @@ def rewrite_images_to_final_and_upload(html: str, *, slug: str, cid_map: dict | 
 
             if src.startswith("http://") or src.startswith("https://"):
                 content, ct = _download_bytes(src)
+
+                ct_l = (ct or "").lower()
+                if not ct_l.startswith("image/"):
+                    print(f"[WARN] URL no es imagen, se ignora: {src} -> {ct}")
+                    return src
+
                 url, _, _ = _store(content, ct, src)
                 memo[src] = url
                 return url
 
-            # rutas relativas u otras → no tocar
             return src
+
         except Exception:
-            # si falla, conserva src original para no romper
             return src
 
     # <img ...>
     for img in soup.find_all("img"):
-        # prioridades habituales
         cand = img.get("src") or img.get("data-src") or img.get("data-original")
         if cand:
             new_src = _rewrite_img_like_url(cand.strip())
@@ -2093,13 +2137,12 @@ def rewrite_images_to_final_and_upload(html: str, *, slug: str, cid_map: dict | 
             if img.get("data-original"):
                 img["data-original"] = new_src
 
-        # srcset: reescribe el primer recurso (simple; puedes expandir si necesitas múltiples)
         if img.get("srcset"):
             parts = [p.strip() for p in img["srcset"].split(",")]
             if parts:
                 first = parts[0].split()[0]
                 new_first = _rewrite_img_like_url(first)
-                # reconstruye manteniendo descriptores (1x, 2x, etc.)
+
                 new_srcset = []
                 for p in parts:
                     seg = p.split()
@@ -2111,30 +2154,34 @@ def rewrite_images_to_final_and_upload(html: str, *, slug: str, cid_map: dict | 
 
     # background="..."
     BG_ATTR_RE = re.compile(r'(<[^>]+?\sbackground=)(["\'])([^"\']+)\2', re.I)
+
     def _repl_bg(m):
         pre, q, u = m.groups()
         return f'{pre}{q}{_rewrite_img_like_url(u)}{q}'
+
     html_str = BG_ATTR_RE.sub(_repl_bg, str(soup))
 
     # VML (Outlook)
-    VML_FILL_RE    = re.compile(r'(<v:fill[^>]*?\ssrc=)(["\'])([^"\']+)\2', re.I)
+    VML_FILL_RE = re.compile(r'(<v:fill[^>]*?\ssrc=)(["\'])([^"\']+)\2', re.I)
     VML_IMGDATA_RE = re.compile(r'(<v:imagedata[^>]*?\ssrc=)(["\'])([^"\']+)\2', re.I)
+
     def _repl_vml(m):
         pre, q, u = m.groups()
         return f'{pre}{q}{_rewrite_img_like_url(u)}{q}'
+
     html_str = VML_FILL_RE.sub(_repl_vml, html_str)
     html_str = VML_IMGDATA_RE.sub(_repl_vml, html_str)
 
     # style="background: url(...)"
     URL_FUNC_RE = re.compile(r'url\((["\']?)([^)\'"]+)\1\)', re.I)
+
     def _repl_url(m):
         q, u = m.groups()
         return f'url({q}{_rewrite_img_like_url(u)}{q})'
+
     html_str = URL_FUNC_RE.sub(_repl_url, html_str)
 
-    # Devuelve HTML final y metadatos de subidas
     return html_str, images_meta
-
 
 def _attachments_html(att_list: list[dict]) -> str:
     if not att_list:
@@ -2335,9 +2382,13 @@ def _empty_manifest(slug: str, display_name: str | None = None) -> dict:
         "updated_at": int(datetime.now(timezone.utc).timestamp()),
     }
 
-def upsert_shared_signature_in_manifest(slug: str, display_name: str | None = None) -> dict:
+def upsert_shared_signature_in_manifest(
+    slug: str,
+    display_name: str | None = None,
+    base_prefix: str = "emails/templates"
+) -> dict:
     s3 = get_s3()
-    mk = f"emails/templates/{slug}/manifest.json"
+    mk = f"{base_prefix}/{slug}/manifest.json"
 
     # 1) cargar o crear base
     try:
@@ -2349,17 +2400,23 @@ def upsert_shared_signature_in_manifest(slug: str, display_name: str | None = No
         else:
             raise
 
-    # 2) asegurar shared.partials
+    # metadata base
+    man["slug"] = slug
+    man["base_prefix"] = base_prefix
     man.setdefault("shared", {}).setdefault("partials", {})
+
+    # 2) asegurar shared.partials
     man["shared"]["partials"].update({
-        "signature_html": f"emails/templates/{slug}/partials/signature.html",
-        "signature_text": f"emails/templates/{slug}/partials/signature.txt",
+        "signature_html": f"{base_prefix}/{slug}/partials/signature.html",
+        "signature_text": f"{base_prefix}/{slug}/partials/signature.txt",
     })
 
     # 3) timestamp y guardar
     man["updated_at"] = int(datetime.now(timezone.utc).timestamp())
+
     s3.put_object(
-        Bucket=S3_BUCKET, Key=mk,
+        Bucket=S3_BUCKET,
+        Key=mk,
         Body=json.dumps(man, indent=2, ensure_ascii=False).encode("utf-8"),
         ContentType="application/json",
         CacheControl="no-cache, no-store, must-revalidate",
@@ -2367,28 +2424,39 @@ def upsert_shared_signature_in_manifest(slug: str, display_name: str | None = No
     )
     return man
 
-def upsert_partials_in_manifest(slug: str, lang: str) -> dict:
+def upsert_partials_in_manifest(
+    slug: str,
+    lang: str,
+    base_prefix: str = "emails/templates"
+) -> dict:
     s3 = get_s3()
-    mk = f"emails/templates/{slug}/manifest.json"
-    man = json.loads(s3.get_object(Bucket=S3_BUCKET, Key=mk)["Body"].read())
+    mk = f"{base_prefix}/{slug}/manifest.json"
+
+    man = json.loads(
+        s3.get_object(Bucket=S3_BUCKET, Key=mk)["Body"].read()
+    )
+
+    man["slug"] = slug
+    man["base_prefix"] = base_prefix
+
     man.setdefault("languages", {}).setdefault(lang, {})
     man["languages"][lang].setdefault("partials", {})
     man["languages"][lang]["partials"].update({
-        "message_html":   f"emails/templates/{slug}/{lang}/partials/message.html",
-        "message_text":   f"emails/templates/{slug}/{lang}/partials/message.txt",
-        
+        "message_html": f"{base_prefix}/{slug}/{lang}/partials/message.html",
+        "message_text": f"{base_prefix}/{slug}/{lang}/partials/message.txt",
     })
+
     man["updated_at"] = int(datetime.now(timezone.utc).timestamp())
+
     s3.put_object(
-        Bucket=S3_BUCKET, Key=mk,
+        Bucket=S3_BUCKET,
+        Key=mk,
         Body=json.dumps(man, indent=2, ensure_ascii=False).encode("utf-8"),
         ContentType="application/json",
         CacheControl="no-cache, no-store, must-revalidate",
         Expires=0,
     )
     return man
-
-
 
 def _basename_from_src(src: str) -> str:
     if not src: return ""
@@ -3519,9 +3587,15 @@ def _merge_image_meta(old_meta: dict | None, new_core: dict) -> dict:
 
 
 
+def ensure_dimensions_if_missing(
+    slug: str,
+    base_prefix: str = "emails/templates"
+) -> None:
+    try:
+        man = _load_manifest_from_s3(slug, base_prefix=base_prefix) or {}
+    except TypeError:
+        man = _load_manifest_from_s3(slug, base_prefix=base_prefix) or {}
 
-def ensure_dimensions_if_missing(slug: str) -> None:
-    man = _load_manifest_from_s3(slug) or {}
     shared = man.setdefault("shared", {})
     imgs = shared.setdefault("images", {})
     s3 = get_s3()
@@ -3530,11 +3604,10 @@ def ensure_dimensions_if_missing(slug: str) -> None:
         meta = imgs.get(name) or {}
         has_any = any(k in meta for k in ("target_w", "target_h", "fit"))
         if has_any:
-            continue  # ya tiene dimensiones, no recalcular
+            continue
 
         key = meta.get("key")
         if not key:
-            # Si no hay key, no podemos descargar nada, saltamos
             continue
 
         try:
@@ -3547,10 +3620,10 @@ def ensure_dimensions_if_missing(slug: str) -> None:
         meta.update(_default_dims_for_index(idx, content))
         imgs[name] = meta
 
-    _save_manifest_to_s3(slug, man)
-
-#
-
+    try:
+        _save_manifest_to_s3(slug, man, base_prefix=base_prefix)
+    except TypeError:
+        _save_manifest_to_s3(slug, manifest, base_prefix=base_prefix)
 
 def _basename_no_qs(u: str) -> str:
     p = urlparse(u or "").path
@@ -3587,6 +3660,14 @@ def remove_signature_block_by_images(full_html: str, sig_html: str) -> str:
 
     return full_html
 
+
+def _inner_body_html(html_text: str) -> str:
+    if not html_text:
+        return ""
+    soup = BeautifulSoup(html_text, "lxml")
+    if soup.body:
+        return "".join(str(x) for x in soup.body.contents)
+    return html_text
 
 import json
 from flask import Response as FlaskResponse
@@ -3952,3 +4033,651 @@ def clean_signature_images(signature_html: str) -> str:
             img.decompose()   # eliminar la imagen
 
     return str(soup)
+def _upload_zip_assets_and_rewrite_html(zip_bytes: bytes, slug: str, lang: str, base_prefix: str):
+    zf = zipfile.ZipFile(io.BytesIO(zip_bytes))
+
+    html_entry = _find_html_in_zip(zf)
+    if not html_entry:
+        raise ValueError("El ZIP no contiene ningún archivo .html")
+
+    html_text = zf.read(html_entry).decode("utf-8", errors="replace")
+    html_dir = os.path.dirname(html_entry).replace("\\", "/").strip("/")
+
+    assets_prefix = f"{base_prefix}/{slug}/assets/"
+    uploaded_assets = []
+    rewrite_map = {}
+
+    for member in zf.namelist():
+        if member.endswith("/") or "__macosx/" in member.lower():
+            continue
+        if member == html_entry:
+            continue
+
+        filename = os.path.basename(member)
+        if not filename:
+            continue
+
+        content = zf.read(member)
+        content_type = _guess_content_type_from_name(filename)
+
+        s3_key = f"{assets_prefix}{filename}"
+        url = put_public_s3(
+            s3_key,
+            content,
+            content_type,
+            cache_seconds=31536000
+        )
+
+        uploaded_assets.append({
+            "name": filename,
+            "key": s3_key,
+            "url": url,
+            "content_type": content_type,
+            "zip_path": member
+        })
+
+        normalized_member = member.replace("\\", "/").strip("/")
+        filename = os.path.basename(normalized_member)
+
+        rewrite_map[normalized_member] = url
+        rewrite_map[normalized_member.lower()] = url
+        rewrite_map[filename] = url
+        rewrite_map[filename.lower()] = url
+        if html_dir:
+            rel_from_html = os.path.relpath(normalized_member, html_dir).replace("\\", "/")
+            rewrite_map[rel_from_html] = url
+            rewrite_map[rel_from_html.lower()] = url
+
+
+
+   
+
+    def _rewrite_url(u: str) -> str:
+        if not u:
+            return u
+
+        raw = u.strip().replace("\\", "/")
+        raw = unquote(raw)
+
+        # basename útil para cualquier caso
+        parsed = urlparse(raw)
+        path_part = parsed.path or raw
+        base = os.path.basename(path_part)
+        base_low = base.lower()
+
+        # 1) si el basename existe en assets subidos, usar SIEMPRE S3
+        if base_low in rewrite_map:
+            return rewrite_map[base_low]
+
+        # 2) absolutas que no conocemos: dejarlas
+        if raw.startswith(("http://", "https://", "data:", "cid:")):
+            return raw
+
+        # 3) limpiar relativas
+        raw = re.sub(r"^\./", "", raw)
+        while raw.startswith("../"):
+            raw = raw[3:]
+
+        raw_low = raw.lower()
+
+        # 4) match completo contra rewrite_map
+        for k, v in rewrite_map.items():
+            k_norm = k.replace("\\", "/").strip().lower()
+
+            if raw_low == k_norm:
+                return v
+
+            if base_low == os.path.basename(k_norm):
+                return v
+
+        # 5) carpetas típicas de assets
+        asset_markers = (
+            "_files/",
+            "-files/",
+            "files/",
+            "images/",
+            "image/",
+            "img/",
+            "assets/",
+        )
+
+        if any(marker in raw_low for marker in asset_markers):
+            return f"https://{S3_BUCKET}.s3.{AWS_REGION}.amazonaws.com/{base_prefix}/{slug}/assets/{base}"
+
+        print("[ZIP DEBUG] REWRITE MISS:", raw)
+        return raw
+    soup = BeautifulSoup(html_text, "lxml")
+
+    for tag in soup.find_all(src=True):
+        tag["src"] = _rewrite_url(tag.get("src"))
+
+    for tag in soup.find_all(srcset=True):
+        parts = [p.strip() for p in tag["srcset"].split(",")]
+        new_parts = []
+        for p in parts:
+            seg = p.split()
+            if not seg:
+                continue
+            seg[0] = _rewrite_url(seg[0])
+            new_parts.append(" ".join(seg))
+        tag["srcset"] = ", ".join(new_parts)
+
+    for tag in soup.find_all(href=True):
+        href = tag.get("href") or ""
+        tag["href"] = _rewrite_url(href)
+
+    for tag in soup.find_all(attrs={"background": True}):
+        tag["background"] = _rewrite_url(tag.get("background"))
+
+    url_func_re = re.compile(r'url\((["\']?)([^)\'"]+)\1\)', re.I)
+    for tag in soup.find_all(style=True):
+        style = tag.get("style") or ""
+
+        def _repl(m):
+            q, path = m.groups()
+            return f'url({q}{_rewrite_url(path)}{q})'
+
+        tag["style"] = url_func_re.sub(_repl, style)
+
+    html_rewritten = str(soup)
+    return html_rewritten, uploaded_assets
+def _find_html_in_zip(zf: zipfile.ZipFile) -> str | None:
+    candidates = []
+    for name in zf.namelist():
+        low = name.lower()
+        if low.endswith(".html") or low.endswith(".htm"):
+            if "__macosx/" in low:
+                continue
+            candidates.append(name)
+
+    if not candidates:
+        return None
+
+    # preferir plantilla.html si existe
+    for c in candidates:
+        base = os.path.basename(c).lower()
+        if base in ("plantilla.html", "index.html", "newsletter.html"):
+            return c
+
+    return candidates[0]
+
+def _guess_content_type_from_name(filename: str) -> str:
+    ct, _ = mimetypes.guess_type(filename)
+    return ct or "application/octet-stream"
+
+def build_email_footer(
+    unsubscribe_url: str,
+    privacy_url: str,
+    lang: str = "es",
+    contact_email: str = "newsletter@ledpadel.com",
+    company_name: str = "PLANET POWER TOOLS IBERICA, S.L.",
+    company_address: str = "Vizcaya, España"
+) -> str:
+
+    print ("[DEBUG] Construyendo footer para lang=", unsubscribe_url, privacy_url, lang, contact_email, company_name, company_address)
+
+    if lang == "en":
+
+        return f"""
+        <div style="margin-top:30px; padding-top:20px; border-top:1px solid #dddddd; font-family:Arial,Helvetica,sans-serif; font-size:12px; line-height:1.6; color:#666666; text-align:center;">
+          
+          <p style="margin:0 0 10px 0;">
+            You are receiving this email because you have visited our site or subscribed to our newsletter.
+          </p>
+
+          <p style="margin:0 0 10px 0;">
+            Make sure our messages reach your Inbox (and not your spam folder).
+            Please add <a href="mailto:{contact_email}" style="color:#2563eb;text-decoration:none;">{contact_email}</a> to your contacts.
+          </p>
+
+          <p style="margin:0 0 10px 0;">
+            <strong>{company_name}</strong><br>
+            {company_address}
+          </p>
+
+          <p style="margin:15px 0 0 0;">
+            <a href="{unsubscribe_url}" style="color:#2563eb;text-decoration:none;">Unsubscribe</a>
+            &nbsp; | &nbsp;
+            <a href="{privacy_url}" style="color:#2563eb;text-decoration:none;">Privacy Policy</a>
+            &nbsp; | &nbsp;
+            ©2026 {company_name}
+          </p>
+
+        </div>
+        """
+
+    else:
+
+        return f"""
+        <div style="margin-top:30px; padding-top:20px; border-top:1px solid #dddddd; font-family:Arial,Helvetica,sans-serif; font-size:12px; line-height:1.6; color:#666666; text-align:center;">
+          
+          <p style="margin:0 0 10px 0;">
+            Recibes este correo porque visitaste nuestro sitio web o solicitaste recibir nuestra newsletter.
+          </p>
+
+          <p style="margin:0 0 10px 0;">
+            Asegúrate de que nuestros correos lleguen a tu bandeja de entrada (y no a spam).
+            Añade <a href="mailto:{contact_email}" style="color:#2563eb;text-decoration:none;">{contact_email}</a> a tus contactos.
+          </p>
+
+          <p style="margin:0 0 10px 0;">
+            <strong>{company_name}</strong><br>
+            {company_address}
+          </p>
+
+          <p style="margin:15px 0 0 0;">
+            <a href="{unsubscribe_url}" style="color:#2563eb;text-decoration:none;">Darse de baja</a>
+            &nbsp; | &nbsp;
+            <a href="{privacy_url}" style="color:#2563eb;text-decoration:none;">Política de privacidad</a>
+            &nbsp; | &nbsp;
+            ©2026 {company_name}
+          </p>
+
+        </div>
+        """
+def build_final_email_html(
+    newsletter_html: str,
+    lang: str = "es",
+    unsubscribe_url: str = "https://ledpadel.com/unsubscribe",
+    privacy_url: str = "https://ledpadel.com/privacy",
+    contact_email: str = "newsletter@ledpadel.com",
+    company_name: str = "PLANET POWER TOOLS IBERICA, S.L.",
+    company_address: str = "Vizcaya, España"
+) -> str:
+
+    footer = build_email_footer(
+        lang=lang,
+        unsubscribe_url=unsubscribe_url,
+        privacy_url=privacy_url,
+        contact_email=contact_email,
+        company_name=company_name,
+        company_address=company_address
+    )
+
+    lower_html = newsletter_html.lower()
+    closing_body = "</body>"
+    print ("[DEBUG] Inyectando footer. ¿Tiene </body>? ", closing_body in lower_html    )
+    if closing_body in lower_html:
+        idx = lower_html.rfind(closing_body)
+        return newsletter_html[:idx] + footer + newsletter_html[idx:]
+
+    return newsletter_html + footer
+
+
+def load_newsletter_html(path):
+    s3 = boto3.client("s3", region_name="eu-north-1")
+
+    obj = s3.get_object(
+        Bucket="emailingledpadel",
+        Key=path
+    )
+    return obj["Body"].read().decode("utf-8")
+
+def send_email_ses(to_email, subject, html, sender, reply_to):
+    ses = boto3.client("ses", region_name="eu-north-1")
+
+    print(f"Enviando email a {to_email} con asunto '{subject}' desde '{sender}' (reply-to: '{reply_to}')")
+
+    params = {
+        "Source": sender,  # newsletter@ledpadel.com
+        "Destination": {
+            "ToAddresses": [to_email]
+        },
+        "Message": {
+            "Subject": {
+                "Data": subject,
+                "Charset": "UTF-8"
+            },
+            "Body": {
+                "Html": {
+                    "Data": html,
+                    "Charset": "UTF-8"
+                }
+            }
+        }
+    }
+
+    if reply_to:
+        params["ReplyToAddresses"] = [reply_to]
+
+    # NO pongas ReturnPath con Gmail
+    # params["ReturnPath"] = reply_to   <-- quitar si lo tienes
+
+    print("SES params:", params)
+    return ses.send_email(**params)
+
+
+
+def send_campaign_batch(cid):
+    campaign = db.session.get(Campaign, cid)
+    if not campaign:
+        raise Exception("Campaña no encontrada")
+
+    recipients = (
+    CampaignRecipient.query
+    .filter(
+        CampaignRecipient.campaign_id == cid,
+        CampaignRecipient.seleccionado == 1,
+        CampaignRecipient.send_status == "pending",
+        CampaignRecipient.sent_at.is_(None)
+    )
+    .order_by(CampaignRecipient.id.asc())
+    .all()
+)
+
+    if not recipients:
+        raise Exception("No hay destinatarios pendientes para enviar")
+
+    sent = 0
+    failed = 0
+
+    for recipient in recipients:
+        try:
+            recipient_lang = normalize_lang(recipient.idioma)
+
+            newsletter, subject = resolve_newsletter_and_subject(campaign, recipient_lang)
+
+            if not newsletter:
+                raise Exception(f"No hay newsletter para idioma {recipient_lang}")
+
+            if not subject:
+                raise Exception(f"No hay subject para idioma {recipient_lang}")
+
+            html = load_newsletter_html(newsletter.template_s3_path)
+
+
+            print("BASE_URL_DEBUG:", BASE_URL)
+
+            unsubscribe_url = f"{BASE_URL}/unsubscribe?token={recipient.unsubscribe_token}"
+
+            print(f"Enviando a {recipient.email} (lang={recipient_lang}) usando plantilla {newsletter.template_s3_path}")       
+
+            final_html = build_final_email_html(
+                newsletter_html=html,
+                lang=recipient_lang,
+                unsubscribe_url=unsubscribe_url,
+                privacy_url=f"{BASE_URL}/privacy"
+            )
+
+            
+            # Añadir pixel de apertura
+            tracking_pixel = f'''
+            <img src="{BASE_URL}/email/open?id={recipient.tracking_id}"
+                width="1"
+                height="1"
+                style="display:none;"
+                alt="">
+            '''
+
+            if "</body>" in final_html.lower():
+                idx = final_html.lower().rfind("</body>")
+                final_html = final_html[:idx] + tracking_pixel + final_html[idx:]
+            else:
+                final_html += tracking_pixel
+
+            # Reescribir enlaces para tracking de click
+            final_html = rewrite_links_for_tracking(
+                html=final_html,
+                tracking_id=recipient.tracking_id,
+                base_url=BASE_URL
+            )
+
+            print(f"Enviando email SES {recipient.email} con asunto '{subject}' desde '{campaign.sender}' (reply-to: '{campaign.reply_to}')")
+
+            send_email_ses(
+                to_email=recipient.email,
+                subject=subject,
+                html=final_html,
+                sender=campaign.sender,
+                reply_to=campaign.reply_to
+            )
+
+            recipient.send_status = "sent"
+            recipient.sent_at =datetime.now(timezone.utc)
+            recipient.error_message = None
+            sent += 1
+
+        except Exception as e:
+            recipient.send_status = "failed"
+            recipient.error_message = str(e)[:1000]
+            failed += 1
+
+        db.session.commit()
+
+    return sent, failed
+
+def normalize_lang(value):
+
+    v = (value or "").strip().lower()
+
+    if v in ("es", "español", "espanol", "spanish"):
+        return "es"
+    if v in ("en", "inglés", "ingles", "english"):
+        return "en"
+
+    return "es"
+
+def resolve_newsletter_and_subject(campaign, recipient_lang):
+    newsletter = None
+    subject = None
+
+    if recipient_lang == "es":
+        if campaign.newsletter_es_id:
+            newsletter = db.session.get(Newsletter, campaign.newsletter_es_id)
+        subject = campaign.subject_es
+
+    elif recipient_lang == "en":
+        if campaign.newsletter_en_id:
+            newsletter = db.session.get(Newsletter, campaign.newsletter_en_id)
+        subject = campaign.subject_en
+
+    return newsletter, subject
+
+import re
+import urllib.parse
+
+def rewrite_links_for_tracking(html: str, tracking_id: str, base_url: str) -> str:
+
+    def replace_href(match):
+        original_url = match.group(1)
+
+        # Ignorar anchors y protocolos especiales
+        if original_url.startswith(("#", "mailto:", "tel:", "javascript:")):
+            return match.group(0)
+
+       
+        encoded_url = urllib.parse.quote(original_url, safe="")
+        tracked_url = f"{base_url}/email/click?id={tracking_id}&url={encoded_url}"
+
+        return f'href="{tracked_url}"'
+
+    return re.sub(
+        r'href\s*=\s*["\']([^"\']+)["\']',
+        replace_href,
+        html,
+        flags=re.IGNORECASE
+    )
+
+
+def send_campaign_batch_stream(cid):
+    campaign = Campaign.query.get_or_404(cid)
+
+    print(f"Iniciando envío de campaña batch '{campaign.name}' (ID: {campaign.id})")
+
+    if campaign.status not in ("draft", "ready"):
+        raise Exception("La campaña no se puede enviar en este estado")
+
+    recipients = (
+        CampaignRecipient.query
+        .filter(
+            CampaignRecipient.campaign_id == cid,
+            CampaignRecipient.seleccionado == 1,
+            CampaignRecipient.send_status == "pending",
+        )
+        .order_by(CampaignRecipient.id.asc())
+        .all()
+    )
+
+    if not recipients:
+        raise Exception("No hay destinatarios pendientes para enviar")
+
+    sent = 0
+    failed = 0
+    total = len(recipients)
+
+    yield {
+        "status": "start",
+        "sent": sent,
+        "failed": failed,
+        "total": total
+    }
+
+    for recipient in recipients:
+        try:
+            recipient_lang = normalize_lang(recipient.idioma)
+
+            newsletter, subject = resolve_newsletter_and_subject(campaign, recipient_lang)
+
+            if not newsletter:
+                raise Exception(f"No hay newsletter para idioma {recipient_lang}")
+
+            if not subject:
+                raise Exception(f"No hay subject para idioma {recipient_lang}")
+
+            html = load_newsletter_html(newsletter.template_s3_path)
+
+            print("BASE_URL_DEBUG:", BASE_URL)
+
+            unsubscribe_url = f"{BASE_URL}/unsubscribe?token={recipient.unsubscribe_token}"
+
+            print(
+                f"Enviando a {recipient.email} "
+                f"(lang={recipient_lang}) usando plantilla {newsletter.template_s3_path}"
+            )
+
+            final_html = build_final_email_html(
+                newsletter_html=html,
+                lang=recipient_lang,
+                unsubscribe_url=unsubscribe_url,
+                privacy_url=f"{BASE_URL}/privacy"
+            )
+
+            tracking_pixel = f'''
+            <img src="{BASE_URL}/email/open?id={recipient.tracking_id}"
+                width="1"
+                height="1"
+                style="display:none;"
+                alt="">
+            '''
+
+            if "</body>" in final_html.lower():
+                idx = final_html.lower().rfind("</body>")
+                final_html = final_html[:idx] + tracking_pixel + final_html[idx:]
+            else:
+                final_html += tracking_pixel
+
+            final_html = rewrite_links_for_tracking(
+                html=final_html,
+                tracking_id=recipient.tracking_id,
+                base_url=BASE_URL
+            )
+
+            send_email_ses(
+                to_email=recipient.email,
+                subject=subject,
+                html=final_html,
+                sender=campaign.sender,
+                reply_to=campaign.reply_to
+            )
+
+            recipient.send_status = "sent"
+            recipient.sent_at = datetime.now(timezone.utc)
+            recipient.error_message = None
+            sent += 1
+
+        except Exception as e:
+            recipient.send_status = "error"
+            recipient.error_message = str(e)[:1000]
+            failed += 1
+
+        db.session.commit()
+
+        yield {
+            "status": "progress",
+            "sent": sent,
+            "failed": failed,
+            "total": total,
+            "email": recipient.email
+        }
+
+    if sent > 0 and failed == 0:
+        campaign.status = "sent"
+    elif sent > 0 and failed > 0:
+        campaign.status = "partial"
+    else:
+        campaign.status = "failed"
+
+    campaign.sent_at = datetime.now(timezone.utc) if sent > 0 else None
+
+    db.session.commit()
+
+    historico_insertado = guardar_historico_campaign(cid)
+    db.session.commit()
+
+    yield {
+        "status": "done",
+        "sent": sent,
+        "failed": failed,
+        "total": total,
+        "historico": historico_insertado
+    }    
+
+def guardar_historico_campaign(cid):
+    sql = """
+        INSERT INTO lead_campaign_history
+        (
+            lead_id,
+            campaign_id,
+            recipient_id,
+            email,
+            campaign_name,
+            campaign_type,
+            sent_at,
+            send_status,
+            idioma,
+            pais,
+            origen,
+            tipo_lead,
+            estado
+        )
+        SELECT
+            cr.lead_id,
+            c.id,
+            cr.id,
+            cr.email,
+            c.name,
+            c.campaign_type,
+            cr.sent_at,
+            cr.send_status,
+            cr.idioma,
+            cr.pais,
+            cr.origen,
+            cr.tipo_lead,
+            cr.estado
+        FROM campaign_recipients cr
+        JOIN campaigns c
+          ON c.id = cr.campaign_id
+        WHERE cr.campaign_id = :cid
+          AND cr.seleccionado = 1
+          AND cr.send_status = 'sent'
+          AND cr.sent_at IS NOT NULL
+          AND NOT EXISTS (
+              SELECT 1
+              FROM lead_campaign_history h
+              WHERE h.campaign_id = cr.campaign_id
+                AND h.recipient_id = cr.id
+          )
+    """
+
+    result = db.session.execute(db.text(sql), {"cid": cid})
+    return result.rowcount

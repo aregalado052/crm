@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1  text-3xl font-bold text-blue-700 flex items-baseline gap-3">Estadísticas de la campaña: </h2>
+      <p class="text-3xl text-center font-bold text-gray-400 mb-6 flex items-baseline gap-3">{{ campaign.name or ('Campaña #' ~ campaign.id) }}</p>
+    </div>
+    <a href="{{ url_for('campanas') }}" class="btn btn-warning">
+      Volver
+    </a>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-2">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small">Total</div>
+          <div class="fs-3 fw-bold">{{ total }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-2">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small">Enviados</div>
+          <div class="fs-3 fw-bold text-primary">{{ sent }}</div>
+        </div>
+      </div>
+    </div>
+
+    
+
+    <div class="col-md-2">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small">Abiertos</div>
+          <div class="fs-3 fw-bold text-info">{{ opened }}</div>
+          <div class="small text-muted">Open rate {{ open_rate }}%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-2">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small">Clicks</div>
+          <div class="fs-3 fw-bold text-warning">{{ clicked }}</div>
+          <div class="small text-muted">CTR {{ click_rate }}%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-2">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small">CTOR</div>
+          <div class="fs-3 fw-bold">{{ ctor }}%</div>
+          <div class="small text-muted">Total clicks {{ total_clicks }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small">Pendientes</div>
+          <div class="fs-4 fw-bold text-secondary">{{ pending }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small">Rebotes</div>
+          <div class="fs-4 fw-bold text-danger">{{ bounced }}</div>
+          <div class="small text-muted">{{ bounce_rate }}%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small">Bajas</div>
+          <div class="fs-4 fw-bold text-dark">{{ unsubscribed }}</div>
+          <div class="small text-muted">{{ unsubscribe_rate }}%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small">Errores / Quejas</div>
+          <div class="fs-4 fw-bold">{{ errors + complained }}</div>
+          <div class="small text-muted">Errores {{ errors }} | Quejas {{ complained }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Estado de campaña</h5>
+          <canvas id="statusChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Top países</h5>
+          <canvas id="countryChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Por estado</h5>
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Estado</th>
+                <th class="text-end">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for status, count in by_status %}
+              <tr>
+                <td>{{ status or 'Sin estado' }}</td>
+                <td class="text-end">{{ count }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    
+    <div class="col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Por tipo de lead</h5>
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Tipo lead</th>
+                <th class="text-end">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for tipo, count in by_lead_type %}
+              <tr>
+                <td>{{ tipo or 'Sin tipo' }}</td>
+                <td class="text-end">{{ count }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  const statusLabels = {{ by_status | map(attribute=0) | list | tojson }};
+  const statusData = {{ by_status | map(attribute=1) | list | tojson }};
+
+  const countryLabels = {{ by_country[:10] | map(attribute=0) | list | tojson }};
+  const countryData = {{ by_country[:10] | map(attribute=1) | list | tojson }};
+
+  new Chart(document.getElementById("statusChart"), {
+    type: "doughnut",
+    data: {
+      labels: statusLabels,
+      datasets: [{
+        data: statusData
+      }]
+    }
+  });
+
+  new Chart(document.getElementById("countryChart"), {
+    type: "bar",
+    data: {
+      labels: countryLabels,
+      datasets: [{
+        label: "Destinatarios",
+        data: countryData
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+</script>
+{% endblock %}

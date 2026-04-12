@@ -5,17 +5,30 @@
 <!-- Botón para abrir modal -->
 <button id="btnOpenImportModal" 
         class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-  📩 Subir Plantilla de Email
+  📩 Subir Plantilla
 </button>
 
-<button id="btnSeleccionPlantillas" 
+
+<button id="btnSeleccionPlantillasEmail" 
         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-  📩 Seleccionar Plantilla de Email
+  📩 Seleccionar Plantilla Email
+</button>
+
+
+<button id="btnSeleccionPlantillasNewsletter" 
+        class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-900">
+  📩 Seleccionar Plantilla Newsletter
 </button>
 
 <button id="btnActualizarPlantillas" 
-        class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+        class="px-4 py-2 bg-orange-400 text-white rounded-lg hover:bg-orange-700">
   📩 Subir Imagenes y Archivos Adjuntos
+</button>
+
+<button id="btn-exit"
+        type="button"               
+        class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+        {{ _('Salir') }}
 </button>
 
 <div class="mt-4 overflow-x-auto">
@@ -23,8 +36,9 @@
     <thead class="bg-gray-50">
       <tr>
         <th class="text-left p-2 border-b">Nombre</th>
-        <!--<th class="text-left p-2 border-b">Idiomas</th>-->
+        <th class="text-left p-2 border-b">Tipo</th>
         <th class="text-left p-2 border-b">Acciones</th>
+        <th class="text-left p-2 border-b"></th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -44,56 +58,74 @@
 
 
 <!-- Modal -->
+<!-- Modal -->
 <div id="importModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
   <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6">
-    <h2 class="text-xl font-bold mb-4">Importar Plantilla de Email</h2>
 
-    <!-- Campo para nombre de plantilla -->
-    <input id="templateName" type="text" 
-           placeholder="Nombre de la plantilla (opcional)" 
+    <h2 id="modalTitle" class="text-xl font-bold mb-4">Importar plantilla</h2>
+
+    <!-- Nombre -->
+    <input id="templateName" type="text"
+           placeholder="Nombre de la plantilla"
            class="w-full border rounded-lg p-2 mb-4">
 
-           <!-- Selector de idioma -->
-    <label for="templateLang" class="block text-sm mb-2">Idioma de la plantilla</label>
-    <select id="templateLang" 
-            class="w-full border rounded-lg p-2 mb-4">
-      <option value="es" selected>Español</option>
-      <option value="en">Inglés</option>
-      <option value="fr">Francés</option>
-      <option value="pt">Portugués</option>
-      <option value="de">Alemán</option>
+    <!-- Tipo -->
+    <label class="block text-sm mb-2">Tipo de plantilla</label>
+    <select id="templateType" class="w-full border rounded-lg p-2 mb-4">
+      <option value="email" selected>Email</option>
+      <option value="newsletter">Newsletter</option>
     </select>
 
-    <!-- Opción 1: Pegar HTML -->
-    <textarea id="templateHtml" rows="8" 
-              placeholder="Pega aquí el HTML del email..."
-              class="w-full border rounded-lg p-2 font-mono text-sm"></textarea>
+    <!-- Idioma -->
+    <label class="block text-sm mb-2">Idioma</label>
+    <select id="templateLang" class="w-full border rounded-lg p-2 mb-4">
+      <option value="es">Español</option>
+      <option value="en">Inglés</option>
+    </select>
 
-    <!-- Opción 2: Subir archivo -->
+    <!-- HTML -->
+    <textarea id="templateHtml"
+              rows="8"
+              class="w-full border rounded-lg p-2 font-mono text-sm"
+              placeholder="Pega aquí el HTML del email..."></textarea>
+
+    <!-- Archivo -->
     <div class="mt-4">
-      <label class="block text-sm mb-2">O selecciona un archivo .html</label>
-      <input id="fileInput" type="file" accept=".html,.htm,.eml" 
+      <label id="fileInputLabel" class="block text-sm mb-2">
+        O selecciona un archivo ()
+      </label>
+
+      <input id="fileInput"
+             type="file"
+             accept=".html,.htm,.eml"
              class="w-full border rounded-lg p-2">
+      <div id="dropZone"
+          class="mt-4 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-gray-500 bg-gray-50 transition">
+        Arrastra aquí un archivo o haz clic en el selector de arriba
+      </div>
     </div>
 
     <!-- Botones -->
     <div class="flex justify-end gap-2 mt-6">
-      <button id="btnCloseModal" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
+      <button id="btnCloseModal"
+              class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
         Cancelar
       </button>
-      <button id="btnUploadTemplate" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-        Guardar Plantilla
+
+      <button id="btnUploadTemplate"
+              class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+        Guardar plantilla
       </button>
     </div>
 
-    <!-- Vista previa -->
+    <!-- Preview -->
     <div id="previewContainer" class="hidden mt-6 border rounded-lg p-4 bg-gray-50">
       <h3 class="font-bold mb-2">Vista previa</h3>
       <iframe id="previewIframe" class="w-full h-64 border rounded-lg"></iframe>
     </div>
+
   </div>
 </div>
-
 
 
 
@@ -106,69 +138,214 @@ document.addEventListener("DOMContentLoaded", () => {
   const modal            = document.getElementById("importModal");
   const closeModalBtn    = document.getElementById("btnCloseModal");
   const uploadBtn        = document.getElementById("btnUploadTemplate");
+
   const fileInput        = document.getElementById("fileInput");
+  const fileInputLabel   = document.getElementById("fileInputLabel");
+  const dropZone         = document.getElementById("dropZone");
+
   const textArea         = document.getElementById("templateHtml");
   const previewContainer = document.getElementById("previewContainer");
   const previewIframe    = document.getElementById("previewIframe");
-  const nameInput        = document.getElementById("templateName");
 
-  // Comprobación de elementos obligatorios
-  const required = {openModalBtn, modal, closeModalBtn, uploadBtn, fileInput, textArea, nameInput};
+  const nameInput        = document.getElementById("templateName");
+  const templateType     = document.getElementById("templateType");
+  const templateLang     = document.getElementById("templateLang");
+  const modalTitle       = document.getElementById("modalTitle");
+
+  const required = {
+    openModalBtn, modal, closeModalBtn, uploadBtn,
+    fileInput, textArea, nameInput, templateType, templateLang
+  };
+
   for (const [k, el] of Object.entries(required)) {
     if (!el) {
-      console.error(`[IMPORT] Falta el elemento #${k} en el DOM (revisa IDs en el HTML)`);
+      console.error(`[IMPORT] Falta el elemento #${k} en el DOM`);
     }
   }
-  if (!openModalBtn || !modal) return; // sin estos no seguimos
 
-  // Evita petar si no existe preview
+  if (!openModalBtn || !modal) return;
+
   const safePreview = !!(previewContainer && previewIframe);
 
-  // (Opcional) establece accept si existe fileInput
-  try { fileInput && fileInput.setAttribute("accept", ".eml,.html,.htm"); } catch {}
+  function arrayBufferToBase64(buf) {
+    let b = "";
+    const bytes = new Uint8Array(buf);
+    for (let i = 0; i < bytes.length; i++) b += String.fromCharCode(bytes[i]);
+    return btoa(b);
+  }
 
-  // Mostrar/ocultar modal
+  function hidePreview() {
+    if (!safePreview) return;
+    previewContainer.classList.add("hidden");
+    previewIframe.removeAttribute("srcdoc");
+  }
+
+  function showPreview(html) {
+    if (!safePreview) return;
+    previewIframe.srcdoc = html;
+    previewContainer.classList.remove("hidden");
+  }
+
+  function resetFileAndPreview() {
+    if (fileInput) fileInput.value = "";
+    hidePreview();
+  }
+
+  function getCurrentTemplateType() {
+    return templateType?.value || "email";
+  }
+
+  function updateImportUI() {
+    const type = getCurrentTemplateType();
+
+    if (type === "newsletter") {
+      if (modalTitle) modalTitle.textContent = "Importar newsletter";
+      if (fileInput) fileInput.setAttribute("accept", ".html,.htm,.zip");
+      if (fileInputLabel) fileInputLabel.textContent = "Selecciona un archivo (.html o .zip)";
+      if (textArea) textArea.placeholder = "Pega aquí el HTML de la newsletter...";
+      if (dropZone) {
+        dropZone.textContent = "Arrastra aquí un .html o .zip de newsletter, o haz clic para seleccionar";
+      }
+    } else {
+      if (modalTitle) modalTitle.textContent = "Importar plantilla de email";
+      if (fileInput) fileInput.setAttribute("accept", ".html,.htm,.eml");
+      if (fileInputLabel) fileInputLabel.textContent = "Selecciona un archivo (.eml o .html)";
+      if (textArea) textArea.placeholder = "Pega aquí el HTML del email...";
+      if (dropZone) {
+        dropZone.textContent = "Arrastra aquí un .eml o .html de email, o haz clic para seleccionar";
+      }
+    }
+
+    resetFileAndPreview();
+  }
+
+  function isAllowedFile(file) {
+    if (!file) return false;
+
+    const name = (file.name || "").toLowerCase();
+    const type = getCurrentTemplateType();
+
+    if (type === "newsletter") {
+      return name.endsWith(".html") || name.endsWith(".htm") || name.endsWith(".zip");
+    }
+
+    return name.endsWith(".html") || name.endsWith(".htm") || name.endsWith(".eml");
+  }
+
+  async function processSelectedFile(file) {
+    if (!file) return;
+
+    if (!isAllowedFile(file)) {
+      await Swal.fire({
+        icon: "warning",
+        title: "Archivo no válido",
+        text: getCurrentTemplateType() === "newsletter"
+          ? "Para newsletter usa .html o .zip"
+          : "Para email usa .html o .eml"
+      });
+
+      if (fileInput) fileInput.value = "";
+      hidePreview();
+      return;
+    }
+
+    // Sincroniza el fichero en el input real
+    if (fileInput) {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      fileInput.files = dt.files;
+    }
+
+    const fileName = file.name || "";
+    const type = getCurrentTemplateType();
+
+    hidePreview();
+
+    // EMAIL
+    if (type === "email") {
+      if (/\.eml$/i.test(fileName)) {
+        if (textArea) {
+          textArea.value = `# .eml seleccionado: ${fileName}\n(Se enviará como eml_base64)`;
+        }
+        return;
+      }
+
+      if (/\.html?$/i.test(fileName)) {
+        const text = await file.text();
+        if (textArea) textArea.value = text;
+        showPreview(text);
+        return;
+      }
+    }
+
+    // NEWSLETTER
+    if (type === "newsletter") {
+      if (/\.zip$/i.test(fileName)) {
+        if (textArea) {
+          textArea.value = `# .zip seleccionado: ${fileName}\n(Se enviará como zip_base64)`;
+        }
+        // No preview si es ZIP
+        hidePreview();
+        return;
+      }
+
+      if (/\.html?$/i.test(fileName)) {
+        const text = await file.text();
+        if (textArea) textArea.value = text;
+        showPreview(text);
+        return;
+      }
+    }
+  }
+
   openModalBtn.addEventListener("click", (e) => {
     e.preventDefault();
     modal.classList.remove("hidden");
+    updateImportUI();
   });
-  closeModalBtn && closeModalBtn.addEventListener("click", (e) => {
+
+  closeModalBtn?.addEventListener("click", (e) => {
     e.preventDefault();
     modal.classList.add("hidden");
   });
 
-  function arrayBufferToBase64(buf){
-    let b = "", bytes = new Uint8Array(buf);
-    for (let i=0;i<bytes.length;i++) b += String.fromCharCode(bytes[i]);
-    return btoa(b);
-  }
-
-  // Cargar archivo
-  fileInput && fileInput.addEventListener("change", async () => {
-    const file = fileInput.files && fileInput.files[0];
-    if (!file) return;
-
-    if (/\.eml$/i.test(file.name)) {
-      textArea && (textArea.value = `# .eml seleccionado: ${file.name}\n(Se enviará como eml_base64)`);
-      if (safePreview) {
-        previewContainer.classList.add("hidden");
-        previewIframe.removeAttribute("srcdoc");
-      }
-      return;
-    }
-
-    const text = await file.text();
-    if (textArea) textArea.value = text;
-    if (safePreview) {
-      previewIframe.srcdoc = text;
-      previewContainer.classList.remove("hidden");
-    }
+  templateType?.addEventListener("change", () => {
+    updateImportUI();
   });
 
-  // Enviar
+  fileInput?.addEventListener("change", async () => {
+    const file = fileInput.files && fileInput.files[0];
+    await processSelectedFile(file);
+  });
+
+  // Drag & drop
+  if (dropZone) {
+    dropZone.addEventListener("click", () => {
+      fileInput?.click();
+    });
+
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("border-blue-500", "bg-blue-50", "text-blue-700");
+    });
+
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.classList.remove("border-blue-500", "bg-blue-50", "text-blue-700");
+    });
+
+    dropZone.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("border-blue-500", "bg-blue-50", "text-blue-700");
+
+      const file = e.dataTransfer?.files?.[0];
+      await processSelectedFile(file);
+    });
+  }
+
   uploadBtn.addEventListener("click", async (e) => {
     e.preventDefault();
-    const name = document.getElementById("templateName").value.trim();
+
+    const name = nameInput?.value?.trim() || "";
     if (!name) {
       return Swal.fire({
         icon: "warning",
@@ -177,34 +354,53 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
 
-    const lang = document.getElementById("templateLang")?.value || "es";  
+    const lang = templateLang?.value || "es";
+    const type = getCurrentTemplateType();
     const file = fileInput?.files && fileInput.files[0];
-    const payload = { name, lang };
+    const payload = { name, lang, template_type: type };
 
     try {
       if (file) {
         const buf = await file.arrayBuffer();
-        payload.eml_base64 = arrayBufferToBase64(buf);
+        const b64 = arrayBufferToBase64(buf);
+
+        if (type === "email") {
+          if (/\.eml$/i.test(file.name)) {
+            payload.eml_base64 = b64;
+          } else if (/\.html?$/i.test(file.name)) {
+            payload.html = await file.text();
+          } else {
+            throw new Error("Para email solo se permite .eml o .html");
+          }
+        } else {
+          if (/\.zip$/i.test(file.name)) {
+            payload.zip_base64 = b64;
+            payload.filename = file.name;
+          } else if (/\.html?$/i.test(file.name)) {
+            payload.html = await file.text();
+          } else {
+            throw new Error("Para newsletter solo se permite .zip o .html");
+          }
+        }
       } else {
         const pastedHtml = (textArea?.value || "").trim();
         if (!pastedHtml) {
           return Swal.fire({
             icon: "warning",
             title: "Contenido vacío",
-            text: "Pega HTML o selecciona un .eml/.html"
+            text: type === "newsletter"
+              ? "Pega HTML o selecciona un .html/.zip"
+              : "Pega HTML o selecciona un .html/.eml"
           });
         }
         payload.html = pastedHtml;
       }
 
-      // Mensaje de cargando
       Swal.fire({
         title: "Procesando...",
         text: "Guardando plantilla, por favor espera",
         allowOutsideClick: false,
-        didOpen: () => {
-          Swal.showLoading();
-        }
+        didOpen: () => Swal.showLoading()
       });
 
       console.log("[FRONT DEBUG] file?", !!file, "payload keys:", Object.keys(payload));
@@ -214,20 +410,22 @@ document.addEventListener("DOMContentLoaded", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
+
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
 
-      // Éxito
       Swal.fire({
         icon: "success",
         title: "Plantilla guardada ✅",
-        text: `ID: ${data.template_id || data.slug || ""}`,
+        text: `${type === "newsletter" ? "Newsletter" : "Email"}: ${data.slug || data.template_id || ""}`,
         timer: 2500,
         showConfirmButton: false
       });
 
+      hidePreview();
+      if (fileInput) fileInput.value = "";
+
     } catch (err) {
-      // Error
       Swal.fire({
         icon: "error",
         title: "Error al guardar",
@@ -236,48 +434,82 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-
+  updateImportUI();
 });
 
+document.getElementById('btn-exit').addEventListener('click', function (e) {
+  
+  e.preventDefault();
+  const ruta = '/base';
+  const data = {};
 
-const btn = document.getElementById("btnSeleccionPlantillas");
+  salir();
+  async function salir() {
+
+    try {
+      const response = await fetch(ruta, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) throw new Error("{{ _('Error en la respuesta del servidor.') }}");
+
+      const html = await response.text();
+      document.open();
+      document.write(html);
+      document.close();
+
+    } catch (error) {
+      console.error("Error al enviar datos:", error);
+      Swal.fire({
+        icon: 'error',
+        title: '{{ _("Error") | escapejs }}',
+        text: '{{ _("No se pudo cargar la página. Inténtalo de nuevo más tarde.") | escapejs }}',
+        confirmButtonColor: '#3085d6'
+      });
+    };
+  } 
+});
+
+const btnSelemail = document.getElementById("btnSeleccionPlantillasEmail");
+const btnSelnewsletter = document.getElementById("btnSeleccionPlantillasNewsletter");
 const tbody = document.querySelector("#tplTable tbody");
 const previewModal = document.getElementById("previewModal");
 const previewFrame = document.getElementById("previewFrame");
 const btnClosePreview = document.getElementById("btnClosePreview");
 const btnUpdate = document.getElementById("btnActualizarPlantillas");
 
-btn.addEventListener("click", async () => {
+btnSelemail.addEventListener("click", async () => {
   try {
-    const res = await fetch("/list_email_templates");
+    const res = await fetch("/list_templates?type=email");
     if (!res.ok) throw new Error("No se pudo listar");
     const templates = await res.json();
 
-    
     tbody.innerHTML = "";
 
     for (const tpl of templates) {
-      const slug  = tpl.slug || "";
-      const name  = tpl.display_name || slug;
+      const slug = tpl.slug || "";
+      const name = tpl.display_name || slug;
       const description = tpl.description || "";
-      //const langs = Object.keys(tpl.languages || {});
-      const langs = tpl.languages || {};
-      
+      const langs = Array.isArray(tpl.languages) ? tpl.languages : [];
+      const type = tpl.type || "email";
 
-
-      // Badges de idiomas
       const langsHtml = (langs.length > 0)
         ? langs.map(l => `<span class="px-2 py-0.5 rounded bg-gray-100 border mr-1">${l}</span>`).join("")
         : `<span class="text-gray-400 italic">sin idiomas</span>`;
 
-      // Botones por idioma (sin &&)
       let actionsHtml = "";
       if (langs.length > 0) {
         for (const lang of langs) {
           const ts = Date.now();
-          const rawUrl = `/templates/${slug}/${lang}/preview?raw=1&ts=${ts}`;
-          const tplUrl = `/templates/${slug}/${lang}/preview?raw=0&ts=${ts}`;
-         
+          const type = tpl.type || "email";
+          const rawUrl = `/templates/${slug}/${lang}/preview?type=${encodeURIComponent(type)}&raw=1&ts=${ts}`;
+          const tplUrl = `/templates/${slug}/${lang}/preview?type=${encodeURIComponent(type)}&raw=0&ts=${ts}`;
+
           actionsHtml += `
             <button class="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 mr-1"
                     onclick="window.open('${rawUrl}','_blank')">👀 ${lang}</button>
@@ -289,41 +521,85 @@ btn.addEventListener("click", async () => {
         actionsHtml = `<span class="text-gray-400">—</span>`;
       }
 
-        // Botón de borrado
+      
+      
       const deleteButton = `
-      <button class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 btn-delete"
-              data-slug="${encodeURIComponent(slug)}">🗑️</button>
-    `;
+        <button class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 btn-delete"
+                data-slug="${encodeURIComponent(slug)}"
+                data-type="${type}">🗑️</button>
+      `;
 
       tbody.insertAdjacentHTML("beforeend", `
         <tr class="border-b hover:bg-gray-50">
-          <td class="p-2">${name}</td>        
-          <!-- <td class="p-2">${langsHtml}</td>-->
+          <td class="p-2">${name}</td>
+          <td class="p-2">${type}</td>
           <td class="p-2"><div class="flex flex-wrap gap-1">${actionsHtml}</div></td>
           <td class="p-2 text-right">${deleteButton}</td>
         </tr>
       `);
     }
 
+  } catch (err) {
+    console.error(err);
+    alert("Error al cargar plantillas.");
+  }
+});
 
-    
+btnSelnewsletter.addEventListener("click", async () => {
+  try {
+    const res = await fetch("/list_templates?type=newsletter");
+    if (!res.ok) throw new Error("No se pudo listar");
+    const templates = await res.json();
+
+    tbody.innerHTML = "";
+
+    for (const tpl of templates) {
+      const slug = tpl.slug || "";
+      const name = tpl.display_name || slug;
+      const description = tpl.description || "";
+      const langs = Array.isArray(tpl.languages) ? tpl.languages : [];
+      const type = tpl.type || "email";
+
+      const langsHtml = (langs.length > 0)
+        ? langs.map(l => `<span class="px-2 py-0.5 rounded bg-gray-100 border mr-1">${l}</span>`).join("")
+        : `<span class="text-gray-400 italic">sin idiomas</span>`;
+
+      let actionsHtml = "";
+      if (langs.length > 0) {
+        for (const lang of langs) {
+          const ts = Date.now();
+          const type = tpl.type || "email";
+          const rawUrl = `/templates/${slug}/${lang}/preview?type=${encodeURIComponent(type)}&raw=1&ts=${ts}`;
+          const tplUrl = `/templates/${slug}/${lang}/preview?type=${encodeURIComponent(type)}&raw=0&ts=${ts}`;
 
 
-    // delegación de eventos para los botones Preview
-    tbody.querySelectorAll(".btnPreview").forEach(btn => {
-      btn.addEventListener("click", async (e) => {
-        const slug = e.currentTarget.getAttribute("data-slug");
-       //onst lang = e.currentTarget.getAttribute("data-lang");
-        const r = await fetch(`/templates/${slug}/${lang}/preview`);
-        const html = await r.text();
-        previewFrame.srcdoc = html;
-        previewModal.classList.remove("hidden");
+          actionsHtml += `
+            <button class="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 mr-1"
+                    onclick="window.open('${rawUrl}','_blank')">👀 ${lang}</button>
+            <button class="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 mr-2"
+                    onclick="openPreviewWindow('${tplUrl}','_blank')">🖌️ ${lang}</button>
+          `;
+        }
+      } else {
+        actionsHtml = `<span class="text-gray-400">—</span>`;
+      }
 
+      const deleteButton = `
+        <button class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 btn-delete"
+                data-slug="${encodeURIComponent(slug)}"
+                data-type="${type}">🗑️</button>
+      `;
 
+      tbody.insertAdjacentHTML("beforeend", `
+        <tr class="border-b hover:bg-gray-50">
+          <td class="p-2">${name}</td>
+          <td class="p-2">${type}</td>
+          <td class="p-2"><div class="flex flex-wrap gap-1">${actionsHtml}</div></td>
+          <td class="p-2 text-right">${deleteButton}</td>
+        </tr>
+      `);
+    }
 
-
-      });
-    });
   } catch (err) {
     console.error(err);
     alert("Error al cargar plantillas.");
@@ -331,22 +607,27 @@ btn.addEventListener("click", async () => {
 });
 
 
+
+
+
 tbody.addEventListener('click', async (e) => {
   const btn = e.target.closest('.btn-delete');
   if (!btn) return;
 
   const slug = decodeURIComponent(btn.dataset.slug);
-  await deleteRow(btn, slug);
+  const type = btn.dataset.type || "email";
+
+  await deleteRow(btn, slug, type);
 });
 
 // define deleteRow en el mismo scope (no dentro del addEventListener del botón principal)
-async function deleteRow(btn, slug) {
+async function deleteRow(btn, slug, type) {
   const row = btn.closest('tr');
   if (!row) return;
 
-  // Confirmación con Swal en lugar de confirm()
   const result = await Swal.fire({
     title: `¿Seguro que quieres borrar "${slug}"?`,
+    text: `Tipo: ${type}`,
     icon: "warning",
     showCancelButton: true,
     confirmButtonText: "Sí, borrar",
@@ -357,8 +638,9 @@ async function deleteRow(btn, slug) {
   if (!result.isConfirmed) return;
 
   btn.disabled = true;
+
   try {
-    const res = await fetch(`/templates/${encodeURIComponent(slug)}`, {
+    const res = await fetch(`/templates/${encodeURIComponent(slug)}?type=${encodeURIComponent(type)}`, {
       method: "DELETE",
       credentials: "same-origin",
       headers: { Accept: "application/json" }
@@ -382,7 +664,6 @@ async function deleteRow(btn, slug) {
 
     row.remove();
 
-    // Mensaje de éxito
     Swal.fire({
       icon: "success",
       title: "Borrado",
@@ -400,7 +681,6 @@ async function deleteRow(btn, slug) {
     btn.disabled = false;
   }
 }
-
 
 btnUpdate.addEventListener("click", () => {
   window.location.href = "/upload_files_s3"; // o window.location.assign(...)
@@ -707,7 +987,6 @@ function openPreviewWindow(url) {
     // Carga inicial
     loadSignature();
   }
-
 
 
 

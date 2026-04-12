@@ -16,8 +16,15 @@ from pathlib import PurePosixPath
 import mimetypes
 import hashlib
 from flask import render_template_string
-import re
+from sqlalchemy import func
 
+from sqlalchemy.orm import aliased
+import os
+
+import re
+import json
+
+import zipfile
 
 
 from bs4 import BeautifulSoup
@@ -30,13 +37,19 @@ from flask_jwt_extended import (create_access_token, get_jwt_identity,
 from sqlalchemy import and_, asc, case
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import joinedload
+from sqlalchemy import func
+
+
+from sqlalchemy.orm import aliased
+
 
 from app_init import bcrypt, create_app, db
 from creacion_BD import crear_base_si_no_existe
 from funciones import (create_reset_token,
                        send_new_password, update_user_password,
                        validate_reset_token, get_dropbox_access_token)
-from models import (  User)
+
+from models import db, Campaign, Newsletter, User,CampaignRecipient, LeadForm, LeadTarget,LeadTargetItem,LeadCampaignHistory
 from config import (BD ,EMAIL_USER,EMAIL_PASSWORD,URL_CONTACTO ,URL_OFERTAS,URL_ACTUALIZAR_CONTACTO,
                      API_KEY,ENVIRONMENT,SEND_EMAIL,SEND_WELLCOME_EMAIL,URL_PROFORMAS,URL_FORM_CONTACTO,
                     AWS_REGION,S3_BUCKET,ROOT_PREFIX_S3,ROOT_PREFIX_DROPBOX)
@@ -54,18 +67,21 @@ from funciones_generar_email import (build_framework,slugify,
                                      inject_preview_css,put_public_s3,
                                      public_url, parent_of,normalize_incoming_content,
                                      update_manifest,update_manifest_for_key,
-                                     apply_manifest_images_all,
+                                     apply_manifest_images_all,unescape_pre_wrapped_html,
                                      manifest_lookup,_attachments_html,
                                      enforce_dimensions_from_manifest,
-                                    insert_extra_files_into_html,
+                                    insert_extra_files_into_html, _inner_body_html,
                                     s3_key_exists,_norm_src,_collect_image_keys,split_body_and_signature,
                                     _coerce_items,paths, TEMPLATES_ROOT, get_s3,
+                                    _upload_zip_assets_and_rewrite_html,_guess_content_type_from_name,
+                                    _find_html_in_zip,send_email_ses,load_newsletter_html,
+                                    build_final_email_html,send_campaign_batch,send_campaign_batch_stream,
                                     USE_S3, S3_BUCKET,key_message, key_original,key_template, key_signature,
                                     s3_get_text, s3_put_text,BASE_DIR)
                                      
 
 
-
+from flask import Response, stream_with_context
 
 application = create_app()
 
@@ -763,6 +779,8 @@ def facturaProforma():
     email = (data.get('email') or '').strip()
     idioma = (data.get('idioma') or '').strip()
     pais = (data.get('pais') or '').strip()
+    
+    lead_id = str(data.get('lead_id') or '').strip()
 
 
     print("📥 Datos recibidos:")
@@ -775,9 +793,53 @@ def facturaProforma():
     # Devolver algo que el front pueda leer como JSON
     return jsonify({
         "ok": True,
-        "redirect": f"/contactoFacturaProforma?quoteNumber={quoteNumber}&email={email}&idioma={idioma}&pais={pais}"
+        "redirect": f"/contactoFacturaProforma?quoteNumber={quoteNumber}&email={email}&idioma={idioma}&pais={pais}&lead_id={lead_id}"
     })
 
+
+@application.route('/consultar_campanas_por_lead')
+def consultar_campanas_por_lead():
+    lead_id = request.args.get("lead_id")
+
+    if not lead_id:
+        return jsonify({"error": "missing_lead_id"}), 400
+
+    NewsletterES = aliased(Newsletter)
+    NewsletterEN = aliased(Newsletter)
+
+    rows = (
+        db.session.query(
+            LeadCampaignHistory.campaign_id,
+            LeadCampaignHistory.campaign_name,
+            LeadCampaignHistory.origen,
+            Campaign.idioma.label("idioma"),
+
+            Campaign.subject_es.label("subject_es"),
+            Campaign.subject_en.label("subject_en"),
+
+            NewsletterES.name.label("newsletter_es_name"),
+            NewsletterES.template_s3_path.label("newsletter_es_path"),
+
+            NewsletterEN.name.label("newsletter_en_name"),
+            NewsletterEN.template_s3_path.label("newsletter_en_path"),
+
+            LeadCampaignHistory.send_status,
+            LeadCampaignHistory.sent_at
+        )
+        .join(Campaign, Campaign.id == LeadCampaignHistory.campaign_id)
+        .outerjoin(NewsletterES, NewsletterES.id == Campaign.newsletter_es_id)
+        .outerjoin(NewsletterEN, NewsletterEN.id == Campaign.newsletter_en_id)
+        .filter(LeadCampaignHistory.lead_id == lead_id)
+        .order_by(LeadCampaignHistory.sent_at.desc())
+        .all()
+    )
+
+    return render_template(
+        "campanas_por_lead.html",
+        rows=rows,
+        lead_id=lead_id,
+        s3_bucket=S3_BUCKET
+    )
 
 
 @application.route('/contactoFacturaProforma', methods=['GET'])
@@ -786,6 +848,7 @@ def contactoFacturaProforma():
     email = request.args.get("email")
     idioma = request.args.get("idioma")
     pais = request.args.get("pais")
+    lead_id = request.args.get("lead_id")
     id_mode= tipo_identificacion_por_pais_texto(pais)
 
     print ("Renderizando contactoFacturaProforma con:", quoteNumber, email, idioma, pais, id_mode)
@@ -794,7 +857,8 @@ def contactoFacturaProforma():
                            email=email,
                            idioma=idioma,
                            pais=pais,
-                           id_mode=id_mode )
+                           id_mode=id_mode,
+                           lead_id=lead_id )
 
 @application.route("/actualizar_contacto_y_generar_proforma", methods=["POST"])
 def actualizar_contacto():
@@ -1414,18 +1478,490 @@ def redes():
     session.clear()  # Elimina todos los datos de sesión
     return redirect(url_for('login'))  # Cambiá 'login' por tu vista de inicio o login
 
-@application.route('/campanas', methods=['GET', 'POST'])
-def campanas():
-    session.clear()  # Elimina todos los datos de sesión
-    return redirect(url_for('login'))  # Cambiá 'login' por tu vista de inicio o login
+#@application.route('/campanas', methods=['GET', 'POST'])
+#def campanas():
+#    session.clear()  # Elimina todos los datos de sesión
+#    return redirect(url_for('login'))  # Cambiá 'login' por tu vista de inicio o login
 
+from datetime import datetime,timezone
 
+def save_newsletter_db(name, idioma,template_s3_path):
 
+    creds = get_db_credentials("secretoBC/Mysql")
+    dbname = "bc_pruebas" if (BD == "PRUEBAS") else creds["dbname"]
 
+    conn = pymysql.connect(
+        host=creds["host"],
+        user=creds["username"],
+        password=creds["password"],
+        database=dbname,
+        port=int(creds.get("port", 3306)),
+        cursorclass=pymysql.cursors.DictCursor
+    )
+    try:
+   
+   
+        cursor = conn.cursor()
+  
 
+        now = datetime.now(timezone.utc)
+
+        cursor.execute(
+            "SELECT id FROM newsletters WHERE name = %s AND lang=%s",
+            (name,idioma)
+        )
+        row = cursor.fetchone()
+
+        if row:
+            cursor.execute("""
+                UPDATE newsletters
+                SET                
+                    template_s3_path = %s,
+                
+                    lang = %s,
+                    updated_at = %s
+                WHERE name = %s
+            """, (
+                
+                template_s3_path,
+                idioma,
+                now,
+                name
+            ))
+        else:
+            cursor.execute("""
+                INSERT INTO newsletters
+                (name,template_s3_path, lang,created_at, updated_at)
+                VALUES (%s, %s, %s, %s,%s)
+            """, (
+                name,
+                template_s3_path,
+                idioma,
+                now,
+                now
+            ))
+
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
 
 @application.route('/upload_template_email', methods=['GET', 'POST'])
 def upload_template_email():
+    if request.method == "POST":
+        try:
+            payload = request.get_json(force=True, silent=False)
+        except Exception as e:
+            print("[ERROR] JSON parse:", repr(e))
+            return jsonify({"error": "JSON inválido"}), 400
+
+        print("[DEBUG] payload keys:", list(payload.keys()))
+
+        name = (payload.get("name") or "").strip()
+        eml_b64 = (payload.get("eml_base64") or "").strip()
+        zip_b64 = (payload.get("zip_base64") or "").strip()
+        html_in = (payload.get("html") or "").strip()
+        lang = (payload.get("lang") or "es").strip().lower()
+        template_type = (payload.get("template_type") or "email").strip().lower()
+
+        if template_type not in ("email", "newsletter"):
+            return jsonify({"error": "template_type debe ser 'email' o 'newsletter'"}), 400
+
+        if not name:
+            return jsonify({"error": "Campo 'name' es obligatorio"}), 400
+
+        if not eml_b64 and not html_in and not zip_b64:
+            return jsonify({"error": "Envía 'eml_base64', 'zip_base64' o 'html'"}), 400
+
+        slug = slugify(name)
+
+        # salida local separada por tipo
+        out_dir = os.path.join("output", template_type, slug, lang)
+
+        # prefijo S3 separado por tipo
+        base_prefix = "emails/templates" if template_type == "email" else "newsletters/templates"
+
+        def ensure_html(s: str) -> str:
+            if "<" in s and ">" in s:
+                return s
+            blocks = [f"<p>{line.strip()}</p>" for line in s.split("\n\n") if line.strip()]
+            return "<html><body>" + "\n".join(blocks) + "</body></html>"
+
+        attachments = []
+        images = []
+
+        # =========================================================
+        # 1) ENTRADA DESDE .EML
+        # =========================================================
+        if eml_b64:
+            print("[DEBUG] usando flujo EML; eml_base64 len:", len(eml_b64))
+            try:
+                eml_bytes = base64.b64decode(eml_b64, validate=True)
+                print("[DEBUG] eml_bytes len:", len(eml_bytes))
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                return jsonify({"ok": False, "where": "base64", "error": str(e)}), 400
+
+            try:
+                extracted = extract_html_inline_and_attachments_from_eml_bytes(
+                    eml_bytes,
+                    slug,
+                    lang,
+                    append_unreferenced_images=True,
+                    base_prefix=base_prefix   # <- importante
+                )
+            except TypeError:
+                # compatibilidad si tu helper aún no acepta base_prefix
+                extracted = extract_html_inline_and_attachments_from_eml_bytes(
+                    eml_bytes,
+                    slug,
+                    lang,
+                    append_unreferenced_images=True
+                )
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                return jsonify({"ok": False, "where": "extractor", "error": str(e)}), 400
+
+            if not extracted or not isinstance(extracted, dict):
+                return jsonify({
+                    "ok": False,
+                    "where": "extractor",
+                    "error": "Extractor devolvió None o tipo no dict"
+                }), 400
+
+            if not extracted.get("html"):
+                return jsonify({
+                    "ok": False,
+                    "where": "extractor",
+                    "error": "Extractor sin parte HTML"
+                }), 400
+
+            html_final = unescape_pre_wrapped_html(extracted["html"])
+            
+
+        # =====================================================
+        # NEWSLETTER + ZIP -> html + assets
+        # =====================================================
+        if template_type == "newsletter" and zip_b64:
+            try:
+                zip_bytes = base64.b64decode(zip_b64, validate=True)
+            except Exception as e:
+                return jsonify({"error": f"ZIP base64 inválido: {e}"}), 400
+
+            try:
+                html_final, uploaded_assets = _upload_zip_assets_and_rewrite_html(
+                    zip_bytes=zip_bytes,
+                    slug=slug,
+                    lang=lang,
+                    base_prefix=base_prefix
+                )
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                return jsonify({"error": f"No se pudo procesar el ZIP: {e}"}), 400
+
+            out_dir = os.path.join("output", template_type, slug, lang)
+            os.makedirs(out_dir, exist_ok=True)
+
+            original_key = f"{base_prefix}/{slug}/{lang}/original.html"
+            template_key = f"{base_prefix}/{slug}/{lang}/template.html"
+            schema_key = f"{base_prefix}/{slug}/{lang}/schema.json"
+            manifest_key = f"{base_prefix}/{slug}/manifest.json"
+
+            put_public_s3(
+                original_key,
+                html_final.encode("utf-8"),
+                "text/html; charset=utf-8",
+                cache_seconds=0
+            )
+
+            put_public_s3(
+                template_key,
+                html_final.encode("utf-8"),
+                "text/html; charset=utf-8",
+                cache_seconds=0
+            )
+
+            put_public_s3(
+                schema_key,
+                json.dumps({}, ensure_ascii=False).encode("utf-8"),
+                "application/json",
+                cache_seconds=0
+            )
+
+            existing_manifest = {}
+
+            try:
+                existing_txt = s3_get_text(manifest_key)
+                if existing_txt:
+                    existing_manifest = json.loads(existing_txt)
+            except Exception:
+                existing_manifest = {}
+
+            manifest = existing_manifest or {}
+
+            manifest["slug"] = slug
+            manifest["display_name"] = name
+            manifest["type"] = "newsletter"
+            manifest["base_prefix"] = base_prefix
+
+            shared = manifest.setdefault("shared", {})
+            existing_assets = shared.get("assets") or []
+
+            assets_by_key = {
+                a.get("key"): a for a in existing_assets if a.get("key")
+            }
+            for a in uploaded_assets:
+                if a.get("key"):
+                    assets_by_key[a["key"]] = a
+
+            shared["assets"] = list(assets_by_key.values())
+
+            languages = manifest.setdefault("languages", {})
+            languages[lang] = {
+                "paths": {
+                    "original": original_key,
+                    "html": template_key,
+                    "schema": schema_key
+                }
+            }
+
+            put_public_s3(
+                manifest_key,
+                json.dumps(manifest, indent=2, ensure_ascii=False).encode("utf-8"),
+                "application/json",
+                cache_seconds=0
+            )
+
+            put_public_s3(
+                manifest_key,
+                json.dumps(manifest, indent=2, ensure_ascii=False).encode("utf-8"),
+                "application/json",
+                cache_seconds=0
+            )
+            save_newsletter_db(
+                name=name,
+                idioma= lang,
+                template_s3_path=template_key
+            )
+
+            return jsonify({
+                "template_id": str(uuid.uuid4()),
+                "name": name,
+                "slug": slug,
+                "lang": lang,
+                "type": "newsletter",
+                "assets_uploaded": len(uploaded_assets),
+                "paths": {
+                    "original": original_key,
+                    "html": template_key,
+                    "schema": schema_key,
+                    "manifest": manifest_key
+                }
+            }), 200
+            attachments = extracted.get("attachments", [])
+            images = extracted.get("images", [])
+
+            print("[DEBUG] extractor.debug:", extracted.get("debug", {}))
+
+            put_public_s3(
+                f"{base_prefix}/{slug}/{lang}/original.html",
+                html_final.encode("utf-8"),
+                "text/html; charset=utf-8",
+                cache_seconds=0
+            )
+
+        # =========================================================
+        # 2) ENTRADA DESDE HTML
+        # =========================================================
+        else:
+            print("[DEBUG] usando flujo HTML")
+            html_final = ensure_html(html_in)
+
+            payload_attachments = payload.get("attachments") or []
+
+            # Resolver cid: si el front manda binarios
+            if payload_attachments:
+                try:
+                    html_final, resolved_info = resolve_cid_with_attachments(
+                        html_final,
+                        slug,
+                        payload_attachments,
+                        base_prefix=base_prefix
+                    )
+                except TypeError:
+                    html_final, resolved_info = resolve_cid_with_attachments(
+                        html_final,
+                        slug,
+                        payload_attachments
+                    )
+
+            # Rehost de imágenes a S3
+            try:
+                html_final, stats = rehost_images_under_template_from_html(
+                    html_final,
+                    slug,
+                    base_prefix=base_prefix
+                )
+            except TypeError:
+                html_final, stats = rehost_images_under_template_from_html(
+                    html_final,
+                    slug
+                )
+
+            print("[DEBUG] rehost stats:", stats)
+            images = stats.get("uploaded", [])
+
+            if any(
+                s.get("reason") == "cid_in_html_send_eml"
+                for s in (stats.get("skipped") or [])
+            ) and not payload_attachments:
+                return jsonify({
+                    "error": "El HTML contiene imágenes cid:. Sube el .eml (eml_base64) o envía attachments[] con los binarios."
+                }), 400
+
+            # Subir adjuntos extra
+            if payload_attachments:
+                try:
+                    html_final, added_files = insert_extra_files_into_html(
+                        html_final,
+                        slug,
+                        payload_attachments,
+                        base_prefix=base_prefix
+                    )
+                except TypeError:
+                    html_final, added_files = insert_extra_files_into_html(
+                        html_final,
+                        slug,
+                        payload_attachments
+                    )
+                attachments = added_files
+
+        # =========================================================
+        # 3) SEPARAR IMÁGENES DE FIRMA
+        # =========================================================
+        SIGNATURE_MAX_BYTES = 30 * 1024
+
+        signature_images = []
+        content_images = []
+
+        for img in images or []:
+            size = img.get("size") or img.get("filesize") or img.get("length") or 0
+            try:
+                size = int(size)
+            except (TypeError, ValueError):
+                size = 0
+
+            if size and size < SIGNATURE_MAX_BYTES:
+                signature_images.append(img)
+            else:
+                content_images.append(img)
+
+        images = content_images
+
+        # =========================================================
+        # 4) SEPARAR CUERPO Y FIRMA
+        # =========================================================
+        body_html, signature_html = split_body_and_signature(html_final)
+        signature_html = clean_signature_images(signature_html)
+        html_final = body_html
+
+        # =========================================================
+        # 5) CONSTRUIR FRAMEWORK INTERNO
+        # =========================================================
+        try:
+            result = build_framework(
+                input_path_or_html=html_final,
+                out_dir=out_dir,
+                slug=slug,
+                lang=lang,
+                upload_to_s3=True,
+                display_name=name,
+                lang_attachments=attachments,
+                base_prefix=base_prefix,      # <- importante
+                template_type=template_type   # <- importante
+            )
+        except TypeError:
+            # compatibilidad si build_framework aún no acepta esos parámetros
+            result = build_framework(
+                input_path_or_html=html_final,
+                out_dir=out_dir,
+                slug=slug,
+                lang=lang,
+                upload_to_s3=True,
+                display_name=name,
+                lang_attachments=attachments
+            )
+
+        # =========================================================
+        # 6) GUARDAR FIRMA COMO PARTIAL
+        # =========================================================
+        # Si quieres firma solo para emails, deja esta condición:
+        # if template_type == "email" and signature_html:
+        if signature_html:
+            signature_key = f"{base_prefix}/{slug}/partials/signature.html"
+
+            os.makedirs(os.path.join("output", template_type, slug, "partials"), exist_ok=True)
+
+            local_signature_path = os.path.join(
+                "output", template_type, slug, "partials", "signature.html"
+            )
+
+            with open(local_signature_path, "w", encoding="utf-8") as f:
+                f.write(signature_html)
+
+            put_public_s3(
+                signature_key,
+                signature_html.encode("utf-8"),
+                "text/html; charset=utf-8",
+                cache_seconds=0
+            )
+
+        # =========================================================
+        # 7) ACTUALIZAR MANIFEST
+        # =========================================================
+        manifest_path = result.get("manifest")
+        if manifest_path and os.path.exists(manifest_path):
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                m = json.load(f)
+        else:
+            m = {}
+
+        m["type"] = template_type
+        m["name"] = name
+        m["slug"] = slug
+        m["lang"] = lang
+        m["attachments"] = attachments
+        m["images_uploaded"] = images
+
+        if signature_html:
+            shared = m.setdefault("shared", {})
+            partials = shared.setdefault("partials", {})
+            partials["signature_html"] = f"{base_prefix}/{slug}/partials/signature.html"
+
+        os.makedirs(out_dir, exist_ok=True)
+        with open(os.path.join(out_dir, "manifest.json"), "w", encoding="utf-8") as f:
+            json.dump(m, f, indent=2, ensure_ascii=False)
+
+        return jsonify({
+            "template_id": str(uuid.uuid4()),
+            "name": name,
+            "slug": slug,
+            "lang": lang,
+            "type": template_type,
+            "base_prefix": base_prefix,
+            "paths": result,
+            "attachments": attachments,
+            "images": images,
+            "signature_html": signature_html
+        }), 200
+
+    return render_template('upload_template_email.html')
+
+@application.route('/upload_template_email1', methods=['GET', 'POST'])
+def upload_template_email1():
     if request.method == "POST":
 
 
@@ -1644,51 +2180,98 @@ def update_template_email():
 
 
 
-
-
-@application.route("/list_email_templates", methods=["GET"])
+@application.route("/list_templates", methods=["GET"])
 def list_email_templates():
     s3 = boto3.client("s3", region_name=AWS_REGION)
-    prefix = "emails/templates/"
+
+    template_type = (request.args.get("type") or "email").strip().lower()
+    if template_type not in ("email", "newsletter"):
+        return jsonify({"error": "type debe ser 'email' o 'newsletter'"}), 400
+
+    prefix = "emails/templates/" if template_type == "email" else "newsletters/templates/"
     items = []
 
     paginator = s3.get_paginator("list_objects_v2")
     for page in paginator.paginate(Bucket=S3_BUCKET, Prefix=prefix, Delimiter="/"):
         for cp in page.get("CommonPrefixes", []):
-            base = cp["Prefix"]  # p.ej. emails/templates/mi-slug/
+            base = cp["Prefix"]   # ej: emails/templates/mi-slug/
             slug = base.rstrip("/").split("/")[-1]
             manifest_key = f"{base}manifest.json"
 
             display_name = slug
             languages = []
+
             try:
                 obj = s3.get_object(Bucket=S3_BUCKET, Key=manifest_key)
                 man = json.loads(obj["Body"].read())
-                display_name = man.get("display_name") or man.get("slug") or slug
+                display_name = man.get("display_name") or man.get("name") or man.get("slug") or slug
                 languages = sorted((man.get("languages") or {}).keys())
-            except s3.exceptions.NoSuchKey:
-                pass
+            except botocore.exceptions.ClientError as e:
+                code = e.response.get("Error", {}).get("Code")
+                if code not in ("NoSuchKey", "404", "NotFound"):
+                    raise
 
             items.append({
                 "slug": slug,
                 "display_name": display_name,
-                "languages": languages
+                "languages": languages,
+                "type": template_type
             })
 
     items.sort(key=lambda x: x["display_name"].lower())
     return jsonify(items), 200
 
+
+def delete_newsletter_db_by_slug(slug):
+
+    creds = get_db_credentials("secretoBC/Mysql")
+    dbname = "bc_pruebas" if (BD == "PRUEBAS") else creds["dbname"]
+
+    conn = pymysql.connect(
+        host=creds["host"],
+        user=creds["username"],
+        password=creds["password"],
+        database=dbname,
+        port=int(creds.get("port", 3306)),
+        cursorclass=pymysql.cursors.DictCursor
+    )
+
+    try:
+        cursor = conn.cursor()
+
+        like_path = f"newsletters/templates/{slug}/%"
+
+        cursor.execute(
+            "DELETE FROM newsletters WHERE template_s3_path LIKE %s",
+            (like_path,)
+        )
+
+        conn.commit()
+
+    finally:
+        cursor.close()
+        conn.close()
+    
+   
+
+
+
 @application.route('/templates/<slug>', methods=['DELETE'])
 def delete_template(slug):
     """
-    Borra TODOS los objetos que cuelgan de emails/templates/<slug>/ en S3.
-    Retorna la cantidad de objetos borrados.
-       
+    Borra todos los objetos de:
+      - emails/templates/<slug>/
+      - newsletters/templates/<slug>/
+    según ?type=email|newsletter
     """
-     
+    template_type = (request.args.get("type") or "email").strip().lower()
+    if template_type not in ("email", "newsletter"):
+        return jsonify({"error": "type debe ser 'email' o 'newsletter'"}), 400
+
+    base = "emails/templates" if template_type == "email" else "newsletters/templates"
+    prefix = f"{base}/{slug.strip('/')}/"
+
     s3 = get_s3()
-    base = ROOT_PREFIX_S3.rstrip("/")
-    prefix= f"{base}/{slug.strip('/')}/" 
     paginator = s3.get_paginator("list_objects_v2")
     deleted_count = 0
     to_delete_batch = []
@@ -1702,91 +2285,65 @@ def delete_template(slug):
             for obj in contents:
                 to_delete_batch.append({"Key": obj["Key"]})
 
-                # S3 permite borrar hasta 1000 objetos por llamada
                 if len(to_delete_batch) == 1000:
                     resp = s3.delete_objects(
-                        Bucket=S3_BUCKET, Delete={"Objects": to_delete_batch, "Quiet": True}
+                        Bucket=S3_BUCKET,
+                        Delete={"Objects": to_delete_batch, "Quiet": True}
                     )
                     deleted_count += len(resp.get("Deleted", []))
                     to_delete_batch = []
 
-        # Último lote pendiente
         if to_delete_batch:
             resp = s3.delete_objects(
-                Bucket=S3_BUCKET, Delete={"Objects": to_delete_batch, "Quiet": True}
+                Bucket=S3_BUCKET,
+                Delete={"Objects": to_delete_batch, "Quiet": True}
             )
             deleted_count += len(resp.get("Deleted", []))
 
-        return "", 204  # borrado OK
+        if template_type == "newsletter":
+            delete_newsletter_db_by_slug(slug)
+
+        return "", 204
 
     except botocore.exceptions.ClientError as e:
         application.logger.exception("Error borrando en S3: %s", e)
-        # Usa -1 para indicar error
         return jsonify({"error": "Error al borrar en S3"}), 500
 
-
+        
 @application.route("/templates/<slug>/<lang>/preview", methods=["GET"])
 def preview_template_lang(slug, lang):
-    
+    template_type = (request.args.get("type") or "email").strip().lower()
+    if template_type not in ("email", "newsletter"):
+        abort(400, description="type debe ser 'email' o 'newsletter'")
 
-    # -------- keys --------
-    raw_key       = f"emails/templates/{slug}/{lang}/original.html"
-    tpl_key       = f"emails/templates/{slug}/{lang}/template.html"
-    schema_key    = f"emails/templates/{slug}/{lang}/schema.json"
-    schema_fbk    = f"emails/templates/{slug}/schema.json"
-    msg_key       = f"emails/templates/{slug}/{lang}/partials/message.html"
-    
-    sig_key       = f"emails/templates/{slug}/partials/signature.html"
-    manifest_key  = f"emails/templates/{slug}/manifest.json"
-    cidmap_key    = f"emails/templates/{slug}/cid-map.json"
+    base_prefix = "emails/templates" if template_type == "email" else "newsletters/templates"
 
-    # -------- flags --------
-    use_raw_param = request.args.get("raw")      # '1' | '0' | None
-    force_demo    = request.args.get("demo") == "1"
+    raw_key = f"{base_prefix}/{slug}/{lang}/original.html"
+    tpl_key = f"{base_prefix}/{slug}/{lang}/template.html"
+    msg_key = f"{base_prefix}/{slug}/{lang}/partials/message.html"
+    sig_key = f"{base_prefix}/{slug}/partials/signature.html"
+    manifest_key = f"{base_prefix}/{slug}/manifest.json"
+    cidmap_key = f"{base_prefix}/{slug}/cid-map.json"
 
-    # -------- elegir base (original vs template) --------
-    if use_raw_param == "1":
+    use_raw_param = request.args.get("raw")
+    force_raw = use_raw_param == "1"
+    force_template = use_raw_param == "0"
+
+    if force_raw:
         chosen = raw_key
-    elif use_raw_param == "0":
+    elif force_template:
         chosen = tpl_key
     else:
         chosen = tpl_key if s3_key_exists(tpl_key) else raw_key
 
     if not s3_key_exists(chosen):
-        abort(404, description="No hay template.html ni original.html para esta plantilla/idioma")
+        abort(404, description=f"No existe preview para {template_type}/{slug}/{lang}")
 
-    print("[DEBUG] preview use_raw:", use_raw_param, "chosen:", chosen)
+    if template_type == "newsletter":
+        html = s3_get_text(chosen) or ""
+        if not html:
+            abort(404, description="No existe HTML para esta newsletter")
 
-    html = s3_get_text(chosen) or ""
-
-    # 🚫 ORIGINAL: devolver tal cual (sin montaje)
-    if chosen.endswith("/original.html") or use_raw_param == "1":
-        # === Adjuntos (mismo código que en template) ===
-        s3=get_s3()
-        try:
-            man_obj = s3.get_object(Bucket=S3_BUCKET, Key=f"emails/templates/{slug}/manifest.json")
-            manifest = json.loads(man_obj["Body"].read())
-        except botocore.exceptions.ClientError:
-            manifest = {}
-
-        try:
-            lang_node = (manifest.get("languages") or {}).get(lang) or {}
-            att_list  = lang_node.get("attachments") or []
-        except Exception:
-            att_list = []
-
-        if att_list:
-            block = _attachments_html(att_list)  # <-- reutilizas tu helper
-            try:
-                soup_orig = BeautifulSoup(html, "lxml")
-                (soup_orig.body or soup_orig).append(BeautifulSoup(block, "lxml"))
-                html = str(soup_orig)
-            except Exception:
-                low = html.lower()
-                idx = low.rfind("</body>")
-                html = (html[:idx] + block + html[idx:]) if idx != -1 else (html + block)
-
-        # === Respuesta ===
         resp = Response(html, mimetype="text/html; charset=utf-8")
         resp.headers["Cache-Control"] = "no-store"
         resp.headers["Content-Security-Policy"] = (
@@ -1795,96 +2352,85 @@ def preview_template_lang(slug, lang):
         )
         return resp
 
+    print("[DEBUG] preview type:", template_type, "raw:", use_raw_param, "chosen:", chosen)
 
-    # A partir de aquí: TEMPLATE MODE (montaje UNA sola vía)
-    is_template_mode = True
-
-    # -------- carga schema -> ctx (para variables que use el template) --------
-    ctx = {}
-    if is_template_mode:
-        schema = {}
-        if not force_demo:
-            stxt = s3_get_text(schema_key)
-            if stxt:
-                try: schema = json.loads(stxt)
-                except Exception: schema = {}
-            else:
-                stxt = s3_get_text(schema_fbk)
-                if stxt:
-                    try: schema = json.loads(stxt)
-                    except Exception: schema = {}
-        vars_from_schema = (schema.get("variables") or {}) if isinstance(schema, dict) else {}
-        demo_defaults = {
-            "subject": "Asunto de ejemplo",
-            "headline": "Título de ejemplo",
-            "hero_url": f"https://{S3_BUCKET}.s3.{AWS_REGION}.amazonaws.com/emails/templates/{slug}/images/1.jpg",
-            "hero_alt": "Hero",
-            "html_content": "<p><strong>Vista previa:</strong> contenido de muestra.</p>",
-            "cta_label": "Ver más",
-            "cta_url": "https://ejemplo.com/oferta",
-            "cta_url_wrapped": "https://ejemplo.com/click?u={{ cta_url|urlencode }}",
-            "unsubscribe_url": "https://ejemplo.com/unsubscribe",
-            "open_pixel_url": "data:image/gif;base64,R0lGODlhAQABAAAAACw=",
-            "company_address": "Tu empresa · Dirección · Ciudad",
-        }
-        ctx = {**demo_defaults, **vars_from_schema}
-
-    # Corrige URLs de imágenes en ctx usando manifest (si aplicase)
-    mtxt = s3_get_text(manifest_key)
-    try: manifest = json.loads(mtxt) if mtxt else {}
-    except Exception: manifest = {}
-
-    def manifest_lookup_safe(mani, lang_code, name):
-        try:
-            return manifest_lookup(mani, lang_code, name)
-        except Exception:
-            return None
-
-    for k_, v_ in list(ctx.items()):
-        if isinstance(v_, str) and "/emails/templates/" in v_ and "/images/" in v_:
-            name = v_.split("?",1)[0].rsplit("/",1)[-1]
-            mv = manifest_lookup_safe(manifest, lang, name)
-            if mv:
-                ctx[k_] = mv
-  
-    def text_to_html_preserving_lf(txt: str) -> str:
+    def _load_manifest():
+        txt = s3_get_text(manifest_key)
         if not txt:
+            return {}
+        try:
+            return json.loads(txt)
+        except Exception:
+            return {}
+
+    def _extract_inner_html(html_text: str) -> str:
+        if not html_text:
             return ""
-        txt = txt.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        txt = txt.replace("\r\n", "\n").replace("\r", "\n").replace("\n", "<br>")
-        return txt
+        soup = BeautifulSoup(html_text, "lxml")
+        if soup.body:
+            return "".join(str(x) for x in soup.body.contents)
+        return html_text
 
-    # 1) Leer piezas
-    # 1) Leer piezas
-    msg_key = f"emails/templates/{slug}/{lang}/partials/message.html"
-    sig_key = f"emails/templates/{slug}/partials/signature.html"
-    message   = s3_get_text(msg_key) or ""
-    signature = s3_get_text(sig_key) or ""
+    def _append_attachments(rendered_html: str, manifest: dict, lang_code: str) -> str:
+        try:
+            lang_node = (manifest.get("languages") or {}).get(lang_code) or {}
+            att_list = lang_node.get("attachments") or []
+        except Exception:
+            att_list = []
 
-    #safe_message   = text_to_html_preserving_lf(message)  # → HTML
+        if not att_list:
+            return rendered_html
 
-    safe_message = normalize_incoming_content(message)
-    safe_signature = signature                             # ya viene HTML
+        block = _attachments_html(att_list)
+        try:
+            soup_prev = BeautifulSoup(rendered_html, "lxml")
+            (soup_prev.body or soup_prev).append(BeautifulSoup(block, "lxml"))
+            return str(soup_prev)
+        except Exception:
+            low = rendered_html.lower()
+            idx = low.rfind("</body>")
+            return (rendered_html[:idx] + block + rendered_html[idx:]) if idx != -1 else (rendered_html + block)
 
-    # 2) Parsear el template base PRÍSTINO (sin mensaje/firma)
-    tpl_key = f"emails/templates/{slug}/{lang}/template.html"
-    template_html_string = s3_get_text(tpl_key) or "" 
-    tpl_soup = BeautifulSoup(template_html_string, "lxml")
+    manifest = _load_manifest()
 
-    # Excluir cualquier imagen que esté dentro del slot de firma del template (por si acaso)
+    # ---------------------------------------------------------
+    # RAW MODE: devuelve original.html tal cual + attachments
+    # ---------------------------------------------------------
+    if chosen == raw_key:
+        html = s3_get_text(raw_key) or ""
+        html = _append_attachments(html, manifest, lang)
+
+        resp = Response(html, mimetype="text/html; charset=utf-8")
+        resp.headers["Cache-Control"] = "no-store"
+        resp.headers["Content-Security-Policy"] = (
+            "default-src 'none'; img-src https: data:; style-src 'unsafe-inline'; "
+            "font-src https: data:; frame-ancestors 'self';"
+        )
+        return resp
+
+    # ---------------------------------------------------------
+    # TEMPLATE MODE
+    # ---------------------------------------------------------
+    template_html = s3_get_text(tpl_key) or ""
+    message_html = s3_get_text(msg_key) or ""
+    signature_html = s3_get_text(sig_key) or ""
+
+    if not template_html:
+        abort(404, description="No existe template.html")
+
+    safe_message = _extract_inner_html(message_html)
+    safe_signature = _extract_inner_html(signature_html)
+
+    tpl_soup = BeautifulSoup(template_html, "lxml")
+
+    # quita imágenes dentro del slot de firma del template base
     for n in tpl_soup.select('[data-slot="signature"] img, [data-slot="signature"] source'):
         n.extract()
 
-    # Imágenes originales del template (PRÍSTINO)
-    #tpl_imgs = tpl_soup.find_all(["img", "source"])
-
-    
-    # --- construir bloque de imágenes NO-LOGO directamente desde manifest.shared.images ---
-
+    # bloque de imágenes no-logo desde manifest.shared.images
     shared_images = (manifest.get("shared") or {}).get("images") or {}
-
     non_logo_imgs = [
-        meta for name, meta in shared_images.items()
+        meta for _, meta in shared_images.items()
         if isinstance(meta, dict) and not meta.get("is_logo", False)
     ]
 
@@ -1906,55 +2452,63 @@ def preview_template_lang(slug, lang):
 
         imgs_holder_div.append(img)
 
-    # --- 3) RECONSTRUIR cuerpo NUEVO: message -> imágenes -> signature ---
     out = BeautifulSoup("<!doctype html><html><head></head><body></body></html>", "lxml")
 
-    # conservar <head> del template prístino (estilos, meta, etc.)
     if tpl_soup.head:
         out.head.replace_with(tpl_soup.head)
 
-    # message
-    out.body.append(BeautifulSoup(f"<div data-composed='message'>{safe_message}</div>", "lxml"))
+    # insertar message como nodos reales, no como string interpolado
+    msg_soup = BeautifulSoup(safe_message, "lxml")
+    message_nodes = list(msg_soup.body.contents) if msg_soup.body else list(msg_soup.contents)
 
-    # imágenes (las no-logo desde el manifest)
+    message_wrapper = out.new_tag("div")
+    message_wrapper["data-composed"] = "message"
+    for node in message_nodes:
+        message_wrapper.append(node)
+
+    # insertar signature como nodos reales
+    sig_soup = BeautifulSoup(safe_signature, "lxml")
+    signature_nodes = list(sig_soup.body.contents) if sig_soup.body else list(sig_soup.contents)
+
+    signature_wrapper = out.new_tag("div")
+    signature_wrapper["data-composed"] = "signature"
+    for node in signature_nodes:
+        signature_wrapper.append(node)
+
+    out.body.append(message_wrapper)
     out.body.append(imgs_holder_div)
-
-    # signature
-    out.body.append(BeautifulSoup(f"<div data-composed='signature'>{safe_signature}</div>", "lxml"))
+    out.body.append(signature_wrapper)
 
     rendered = str(out)
-    rendered_before_post = rendered
 
-    
-    # -------- Post-procesado (tu pipeline) --------
+    # reemplazar cid:
     cid_map = {}
     cmap_txt = s3_get_text(cidmap_key)
     if cmap_txt:
-        try: cid_map = json.loads(cmap_txt)
-        except Exception: cid_map = {}
+        try:
+            cid_map = json.loads(cmap_txt)
+        except Exception:
+            cid_map = {}
 
     rendered = replace_cid_everywhere(rendered, cid_map)
-
-    mtxt = s3_get_text(manifest_key)
-    try: manifest = json.loads(mtxt) if mtxt else {}
-    except Exception: manifest = {}
-
     rendered = fix_relative_imgs(rendered, slug)
     rendered = apply_manifest_images_all(rendered, manifest, lang=lang)
     rendered = enforce_dimensions_from_manifest(rendered, manifest)
     rendered = inject_preview_css(rendered)
 
+    # attachments
+    rendered = _append_attachments(rendered, manifest, lang)
+
+    # quitar logos duplicados fuera de la firma
     try:
         soup_final = BeautifulSoup(rendered, "lxml")
-
         sig_block = soup_final.select_one("[data-composed='signature']")
+
         if sig_block:
             sig_keys_final = _collect_image_keys(BeautifulSoup(str(sig_block), "lxml"))
-
             shared_images = (manifest.get("shared") or {}).get("images") or {}
 
             for im in list(soup_final.find_all("img")):
-                # ¿está dentro del bloque de firma?
                 parent = im
                 inside_signature = False
                 while parent is not None:
@@ -1962,10 +2516,11 @@ def preview_template_lang(slug, lang):
                         inside_signature = True
                         break
                     parent = getattr(parent, "parent", None)
+
                 if inside_signature:
                     continue
 
-                key = _norm_src(im.get("src","") or im.get("srcset",""))
+                key = _norm_src(im.get("src", "") or im.get("srcset", ""))
                 if key and key in sig_keys_final:
                     meta = shared_images.get(key.lower()) or {}
                     if meta.get("is_logo"):
@@ -1973,36 +2528,12 @@ def preview_template_lang(slug, lang):
 
         rendered = str(soup_final)
     except Exception as e:
-        print("[WARN] dedup firmas: salto por error:", e)
-        pass
-
-    # -------- attachments (desde manifest si existen) --------
-    try:
-        lang_node = (manifest.get("languages") or {}).get(lang) or {}
-        att_list  = lang_node.get("attachments") or []
-    except Exception:
-        att_list = []
-
-    if att_list:
-        block = _attachments_html(att_list)
-        try:
-            soup_prev = BeautifulSoup(rendered, "lxml")
-            (soup_prev.body or soup_prev).append(BeautifulSoup(block, "lxml"))
-            rendered = str(soup_prev)
-        except Exception:
-            low = rendered.lower()
-            idx = low.rfind("</body>")
-            rendered = (rendered[:idx] + block + rendered[idx:]) if idx != -1 else (rendered + block)
-
-    # -------- logs útiles --------
-    soup_raw = BeautifulSoup(rendered_before_post, "lxml")
+        print("[WARN] dedup firmas:", e)
 
     soup_out = BeautifulSoup(rendered, "lxml")
-    print("[DEBUG] tpl img count (raw/before):", len(soup_raw.find_all("img")))
     print("[DEBUG] preview img count:", len(soup_out.find_all("img")))
     print("[DEBUG] preview first 10 srcs:", [(i.get("src") or "") for i in soup_out.find_all("img")[:10]])
 
-    # -------- respuesta --------
     resp = Response(rendered, mimetype="text/html; charset=utf-8")
     resp.headers["Cache-Control"] = "no-store"
     resp.headers["Content-Security-Policy"] = (
@@ -2011,6 +2542,7 @@ def preview_template_lang(slug, lang):
         "base-uri 'none'; form-action 'none'; script-src 'none'"
     )
     return resp
+
 
 # app.py (o donde declares tu Flask app)
 from flask import Flask, Response, request, abort
@@ -2111,6 +2643,7 @@ def preview(slug, lang):
     html = html.replace("<!-- MESSAGE -->", msg).replace("<!-- SIGNATURE -->", sig)
 
     return Response(html, mimetype="text/html; charset=utf-8")
+
 
 
 @application.route("/list_s3")
@@ -2342,9 +2875,1359 @@ def upload_files_s3():
         
         return render_template('upload_files_s3.html')  # Cambiá 'login' por tu vista de inicio o login
 
+# routes_campaigns.py
+
+@application.route("/campanas")
+def campanas():
+    q = request.args.get("q", "").strip()
+    status = request.args.get("status", "").strip()
+    ctype = request.args.get("type", "").strip()
+
+    query = (
+        db.session.query(
+            Campaign,
+            func.count(CampaignRecipient.id).label("total_targets")
+        )
+        .outerjoin(CampaignRecipient, CampaignRecipient.campaign_id == Campaign.id)
+        .group_by(Campaign.id)
+    )
+
+    if q:
+        query = query.filter(Campaign.name.ilike(f"%{q}%"))
+    if status:
+        query = query.filter(Campaign.status == status)
+    if ctype:
+        query = query.filter(Campaign.campaign_type == ctype)
+
+    targets = (
+        db.session.query(
+            LeadTarget.id,
+            LeadTarget.nombre_target,
+            LeadTarget.created_at,
+            func.count(LeadTargetItem.lead_id).label("total_leads")
+        )
+        .outerjoin(LeadTargetItem, LeadTargetItem.target_id == LeadTarget.id)
+        .group_by(LeadTarget.id, LeadTarget.nombre_target, LeadTarget.created_at)
+        .order_by(LeadTarget.nombre_target.asc())
+        .all()
+    )
+
+    query = query.filter(Campaign.status != 'sent')
+
+    rows = query.order_by(Campaign.created_at.desc()).all()
+
+    return render_template(
+        "campaigns_list.html",
+        rows=rows,
+        q=q,
+        status=status,
+        ctype=ctype,
+        targets=targets
+    )
+@application.route("/campaigns_history")
+def campaigns_history():
+    q = request.args.get("q", "").strip()
+
+
+    
+    NewsletterES = aliased(Newsletter)
+    NewsletterEN = aliased(Newsletter)
+
+    query = (
+        db.session.query(
+            LeadCampaignHistory.campaign_id,
+            LeadCampaignHistory.campaign_name,
+            func.max(LeadCampaignHistory.origen).label("origen"),
+            func.max(Campaign.idioma).label("idioma"),
+
+            func.max(Campaign.subject_es).label("subject_es"),
+            func.max(Campaign.subject_en).label("subject_en"),
+
+            func.max(NewsletterES.name).label("newsletter_es_name"),
+            func.max(NewsletterES.template_s3_path).label("newsletter_es_path"),
+
+            func.max(NewsletterEN.name).label("newsletter_en_name"),
+            func.max(NewsletterEN.template_s3_path).label("newsletter_en_path"),
+
+            func.count(LeadCampaignHistory.id).label("total_leads"),
+            func.max(LeadCampaignHistory.sent_at).label("sent_at")
+        )
+        .join(Campaign, Campaign.id == LeadCampaignHistory.campaign_id)
+        .outerjoin(NewsletterES, NewsletterES.id == Campaign.newsletter_es_id)
+        .outerjoin(NewsletterEN, NewsletterEN.id == Campaign.newsletter_en_id)
+        .group_by(
+            LeadCampaignHistory.campaign_id,
+            LeadCampaignHistory.campaign_name
+        )
+    )    
+    if q:
+        query = query.filter(
+            LeadCampaignHistory.campaign_name.ilike(f"%{q}%")
+        )
+
+    rows = query.order_by(
+        func.max(LeadCampaignHistory.sent_at).desc()
+    ).all()
+
+    return render_template(
+        "campaigns_history.html",
+        rows=rows,
+        q=q,
+        s3_bucket=S3_BUCKET
+    )
+
+@application.route("/preview-newsletter")
+def preview_newsletter():
+    path = request.args.get("path")
+
+    if not path:
+        return "No path", 400
+
+    url = f"https://{S3_BUCKET}.s3.amazonaws.com/{path}"
+
+    return redirect(url)
+
+
+@application.route("/campanas/nueva", methods=["GET","POST"])
+def campaign_new():
+    newsletters = Newsletter.query.order_by(Newsletter.created_at.desc()).all()
+
+    print("[DEBUG] GET campanas/nueva - newsletters:", newsletters)
+
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        campaign_type = request.form.get("campaign_type", "").strip()
+
+        newsletter_es_id = request.form.get("newsletter_es_id") or None
+        newsletter_en_id = request.form.get("newsletter_en_id") or None
+
+        sender = request.form.get("sender", "").strip()
+        reply_to = request.form.get("reply_to", "").strip()
+
+        subject_es = request.form.get("subject_es", "").strip()
+        subject_en = request.form.get("subject_en", "").strip()
+
+        idioma = request.form.get("idioma", "es").strip()
+
+        print("POST recibido con datos:", {
+            "name": name,
+            "campaign_type": campaign_type,
+            "newsletter_es_id": newsletter_es_id,
+            "newsletter_en_id": newsletter_en_id,
+            "sender": sender,
+            "reply_to": reply_to,
+            "subject_es": subject_es,
+            "subject_en": subject_en,
+            "idioma": idioma
+        })
+
+        if not name:
+            flash("El nombre es obligatorio", "error")
+            return render_template("campaigns_form.html", newsletters=newsletters, item=None)
+
+        if campaign_type not in ("emailing", "newsletter"):
+            flash("Tipo de campaña inválido", "error")
+            return render_template("campaigns_form.html", newsletters=newsletters, item=None)
+
+        if not sender:
+            flash("El sender es obligatorio", "error")
+            return render_template("campaigns_form.html", newsletters=newsletters, item=None)
+
+        if idioma == "es" and not subject_es:
+            flash("El subject en español es obligatorio", "error")
+            return render_template("campaigns_form.html", newsletters=newsletters, item=None)
+
+        if idioma == "en" and not subject_en:
+            flash("El subject en inglés es obligatorio", "error")
+            return render_template("campaigns_form.html", newsletters=newsletters, item=None)
+
+        if idioma == "both" and (not subject_es or not subject_en):
+            flash("Debes indicar subject en español e inglés", "error")
+            return render_template("campaigns_form.html", newsletters=newsletters, item=None)
+
+        if campaign_type == "newsletter":
+            if idioma == "es" and not newsletter_es_id:
+                flash("Debes seleccionar la newsletter en español", "error")
+                return render_template("campaigns_form.html", newsletters=newsletters, item=None)
+
+            if idioma == "en" and not newsletter_en_id:
+                flash("Debes seleccionar la newsletter en inglés", "error")
+                return render_template("campaigns_form.html", newsletters=newsletters, item=None)
+
+            if idioma == "both" and (not newsletter_es_id or not newsletter_en_id):
+                flash("Debes seleccionar la newsletter en español e inglés", "error")
+                return render_template("campaigns_form.html", newsletters=newsletters, item=None)
+
+        if campaign_type == "emailing":
+            newsletter_es_id = None
+            newsletter_en_id = None
+
+        try:
+            item = Campaign(
+                name=name,
+                campaign_type=campaign_type,
+                newsletter_es_id=int(newsletter_es_id) if newsletter_es_id else None,
+                newsletter_en_id=int(newsletter_en_id) if newsletter_en_id else None,
+                sender=sender,
+                reply_to=reply_to or None,
+                subject_es=subject_es or None,
+                subject_en=subject_en or None,
+                idioma=idioma,
+                status="draft",
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc)
+            )
+
+            db.session.add(item)
+            db.session.commit()
+
+            flash("Campaña creada", "success")
+            return redirect(url_for("campanas"))
+
+        except Exception as e:
+            db.session.rollback()
+            print("[ERROR] creando campaña:", e)
+            flash(f"Error al crear la campaña: {e}", "error")
+            return render_template("campaigns_form.html", newsletters=newsletters, item=None)
+
+    return render_template("campaigns_form.html", newsletters=newsletters, item=None)
+
+@application.route("/campaigns_history/<int:cid>")
+def campaigns_history_detail(cid):
+
+    rows = (
+        LeadCampaignHistory.query
+        .filter(LeadCampaignHistory.campaign_id == cid)
+        .order_by(LeadCampaignHistory.sent_at.desc())
+        .all()
+    )
+
+    # 👇 sacamos nombre y fecha
+    campaign_name = rows[0].campaign_name if rows else ""
+    sent_at = rows[0].sent_at if rows else None
+
+    return render_template(
+        "campaigns_history_detail.html",
+        rows=rows,
+        cid=cid,
+        campaign_name=campaign_name,
+        sent_at=sent_at
+    )
+
+
+@application.route("/campanas/<int:cid>/editar", methods=["GET", "POST"])
+def campaign_edit(cid):
+    item = Campaign.query.get_or_404(cid)
+    newsletters = Newsletter.query.order_by(Newsletter.created_at.desc()).all()
+
+    if request.method == "POST":
+        print("POST recibido")
+        print(request.form)
+
+        item.name = request.form.get("name", "").strip()
+        item.campaign_type = request.form.get("campaign_type", "").strip()
+        item.status = request.form.get("status", item.status)
+
+        item.subject_es = request.form.get("subject_es", "").strip()
+        item.subject_en = request.form.get("subject_en", "").strip()
+
+        item.sender = request.form.get("sender", "").strip()
+        item.reply_to = request.form.get("reply_to", "").strip() or None
+       
+        item.idioma = request.form.get("idioma", "es").strip()
+
+        newsletter_es_id = request.form.get("newsletter_es_id") or None
+        newsletter_en_id = request.form.get("newsletter_en_id") or None
+
+        if not item.name:
+            flash("El nombre es obligatorio", "error")
+            return render_template("campaigns_form.html", newsletters=newsletters, item=item)
+
+        if item.campaign_type not in ("emailing", "newsletter"):
+            flash("Tipo de campaña inválido", "error")
+            return render_template("campaigns_form.html", newsletters=newsletters, item=item)
+
+        if not item.sender:
+            flash("El sender es obligatorio", "error")
+            return render_template("campaigns_form.html", newsletters=newsletters, item=item)
+
+       
+        if item.idioma not in ("es", "en", "both"):
+            flash("Idioma inválido", "error")
+            return render_template("campaigns_form.html", newsletters=newsletters, item=item)
+        if item.idioma == "es" and not item.subject_es:
+            flash("El subject en español es obligatorio", "error")
+            return render_template("campaigns_form.html", newsletters=newsletters, item=item)
+
+        if item.idioma == "en" and not item.subject_en:
+            flash("El subject en inglés es obligatorio", "error")
+            return render_template("campaigns_form.html", newsletters=newsletters, item=item)
+
+        if item.idioma == "both" and (not item.subject_es or not item.subject_en):
+            flash("Debes indicar subject en español e inglés", "error")
+            return render_template("campaigns_form.html", newsletters=newsletters, item=item)
+
+        # reset siempre
+        item.newsletter_es_id = None
+        item.newsletter_en_id = None
+
+        if item.campaign_type == "newsletter":
+            if item.idioma == "es":
+                if not newsletter_es_id:
+                    flash("Debes seleccionar una newsletter en español", "error")
+                    return render_template("campaigns_form.html", newsletters=newsletters, item=item)
+                item.newsletter_es_id = int(newsletter_es_id)
+
+            elif item.idioma == "en":
+                if not newsletter_en_id:
+                    flash("Debes seleccionar una newsletter en inglés", "error")
+                    return render_template("campaigns_form.html", newsletters=newsletters, item=item)
+                item.newsletter_en_id = int(newsletter_en_id)
+
+            elif item.idioma == "both":
+                if not newsletter_es_id or not newsletter_en_id:
+                    flash("Debes seleccionar una newsletter en español y otra en inglés", "error")
+                    return render_template("campaigns_form.html", newsletters=newsletters, item=item)
+                item.newsletter_es_id = int(newsletter_es_id)
+                item.newsletter_en_id = int(newsletter_en_id)
+
+        print("Guardando idioma:", item.idioma)
+        print("Guardando newsletter_es_id:", item.newsletter_es_id)
+        print("Guardando newsletter_en_id:", item.newsletter_en_id)
+
+        try:
+            db.session.commit()
+            flash("Campaña actualizada", "success")
+            return redirect(url_for("campanas"))
+        except Exception as e:
+            db.session.rollback()
+            print("ERROR AL GUARDAR:", e)
+            flash(f"Error al guardar: {e}", "error")
+            return render_template("campaigns_form.html", newsletters=newsletters, item=item)
+
+    return render_template("campaigns_form.html", newsletters=newsletters, item=item)
+
+from flask import request, jsonify
+import boto3
+
+@application.route("/campanas/<int:cid>/send-test", methods=["POST"])
+def campaign_send_test(cid):
+    campaign = Campaign.query.get_or_404(cid)
+
+    data = request.get_json(silent=True) or {}
+    test_email = (data.get("test_email") or "").strip()
+
+    if not test_email:
+        return jsonify({"error": "Debes indicar un email de prueba"}), 400
+
+    try:
+        # Elegir newsletter y subject según idioma
+        if campaign.idioma == "es":
+            if not campaign.newsletter_es_id:
+                return jsonify({"error": "La campaña no tiene newsletter en español"}), 400
+            newsletter =db.session.get(Newsletter,campaign.newsletter_es_id)
+            subject = campaign.subject_es
+
+        elif campaign.idioma == "en":
+            if not campaign.newsletter_en_id:
+                return jsonify({"error": "La campaña no tiene newsletter en inglés"}), 400
+            newsletter = db.session.get(Newsletter,campaign.newsletter_en_id)
+            subject = campaign.subject_en
+
+        else:
+            # Para prueba, puedes enviar la ES por defecto o decidir otra lógica
+            if not campaign.newsletter_es_id:
+                return jsonify({"error": "La campaña no tiene newsletter ES para prueba"}), 400
+            newsletter = db.session.get(Newsletter,campaign.newsletter_es_id)
+            subject = campaign.subject_es
+
+        if not newsletter:
+            return jsonify({"error": "Newsletter no encontrada"}), 400
+
+        html = load_newsletter_html(newsletter.template_s3_path)
+
+        
+        #unsubscribe_url = f"http://127.0.0.1:8000/unsubscribe?token=preview-demo"
+
+        unsubscribe_url = f"https://api.ledpadel.com/unsubscribe?token=preview-demo"
+        final_html = build_final_email_html(
+            html,
+            lang=campaign.idioma,
+            unsubscribe_url=unsubscribe_url
+        )
+
+        print(f"[DEBUG] Enviando email de prueba a {test_email} con replay_to '{campaign.reply_to}' con subject '{subject}' y sender '{campaign.sender}'")
+
+        send_email_ses(
+            to_email=test_email,
+            subject=subject,
+            html=final_html,
+            sender=campaign.sender,
+            reply_to=campaign.reply_to
+        )
+
+        return jsonify({
+            "ok": True,
+            "message": f"Se ha enviado la prueba a {test_email}"
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@application.route("/campanas/<int:cid>/send", methods=["POST"])
+def campaign_send(cid):
+    campaign = Campaign.query.get_or_404(cid)
+
+    if campaign.status not in ("draft", "ready"):
+        flash("La campaña no se puede enviar en este estado", "error")
+        return redirect(url_for("campanas"))
+
+    try:
+        sent, failed = send_campaign_batch(cid)
+
+        if sent > 0 and failed == 0:
+            campaign.status = "sent"
+        elif sent > 0 and failed > 0:
+            campaign.status = "partial"
+        else:
+            campaign.status = "failed"
+        db.session.commit()
+
+        flash(f"Campaña enviada. Enviados: {sent}. Fallidos: {failed}.", "success")
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error enviando campaña: {e}", "error")
+
+    return redirect(url_for("campanas"))
+
+
+@application.route("/campanas/<int:cid>/generar_target_review")
+def campaign_generate_target_review(cid):
+    conn = None
+    try:
+        creds = get_db_credentials("secretoBC/Mysql")
+        dbname = "bc_pruebas" if (BD == "PRUEBAS") else creds["dbname"]
+
+        conn = pymysql.connect(
+            host=creds["host"],
+            user=creds["username"],
+            password=creds["password"],
+            database=dbname,
+            port=int(creds.get("port", 3306)),
+            cursorclass=pymysql.cursors.DictCursor
+        )
+
+        sql = """
+            INSERT IGNORE INTO campaign_recipients
+            (campaign_id, lead_id, email, pais, idioma, origen, tipo_lead, estado, unsubscribe_token, tracking_id, created_at)
+
+            SELECT
+                %s,
+                id,
+                LOWER(TRIM(email)),
+                pais,
+                idioma,
+                'Leads Oferta',
+                tipo_lead,
+                estado,
+                SHA2(UUID(),256),
+                UUID(),
+                NOW()
+
+            FROM lead_forms
+            WHERE email IS NOT NULL
+            AND email <> ''
+            AND (unsubscribed IS NULL OR unsubscribed = '0' OR unsubscribed = 0)
+
+            GROUP BY LOWER(TRIM(email))
+            """
+        with conn.cursor() as cur:
+            rows = cur.execute(sql, (cid,))
+        conn.commit()
+
+        flash(f"Target generado correctamente ({rows} filas insertadas/intentadas).", "success")
+
+    except Exception as e:
+        print(f"Error al generar target para campaña {cid}: {e}")
+        flash("Error al generar target: " + str(e), "error")
+
+    finally:
+        if conn:
+            conn.close()
+
+    return redirect(url_for("campanas"))
 
 
 
+
+
+
+@application.route("/campanas/<int:cid>/review")
+def campaign_review(cid):
+    campaign = Campaign.query.get_or_404(cid)
+
+    newsletter_es = campaign.newsletter_es
+    newsletter_en = campaign.newsletter_en
+
+    total = db.session.execute(
+        db.text("""
+        SELECT COUNT(*)
+        FROM campaign_recipients
+        WHERE campaign_id = :cid
+        """),
+        {"cid": cid}
+    ).scalar()
+
+    selected = db.session.execute(
+        db.text("""
+        SELECT COUNT(*)
+        FROM campaign_recipients
+        WHERE campaign_id = :cid
+          AND seleccionado = 1
+        """),
+        {"cid": cid}
+    ).scalar()
+
+    return render_template(
+        "campaigns_review.html",
+        campaign=campaign,
+        newsletter_es=newsletter_es,
+        newsletter_en=newsletter_en,
+        total=total,
+        selected=selected
+    )
+
+
+@application.route("/campanas/<int:cid>/borrar", methods=["POST"])
+def campaign_delete(cid):
+    item = Campaign.query.get_or_404(cid)
+
+    try:
+        db.session.delete(item)
+        db.session.commit()
+        flash("Campaña borrada correctamente", "success")
+    except Exception as e:
+        db.session.rollback()
+        print("[ERROR] borrando campaña:", e)
+        flash(f"Error al borrar la campaña: {e}", "error")
+
+    return redirect(url_for("campanas"))
+
+@application.route("/campanas/<int:cid>/generar_target/<int:target_id>")
+def campaign_generate_target(cid, target_id):
+    conn = None
+    try:
+        creds = get_db_credentials("secretoBC/Mysql")
+        dbname = "bc_pruebas" if (BD == "PRUEBAS") else creds["dbname"]
+
+        conn = pymysql.connect(
+            host=creds["host"],
+            user=creds["username"],
+            password=creds["password"],
+            database=dbname,
+            port=int(creds.get("port", 3306)),
+            cursorclass=pymysql.cursors.DictCursor
+        )
+
+        sql_delete = """
+            DELETE FROM campaign_recipients
+            WHERE campaign_id = %s
+        """
+
+        sql_insert = """
+            INSERT INTO campaign_recipients
+            (
+                campaign_id,
+                lead_id,
+                email,
+                pais,
+                idioma,
+                origen,
+                tipo_lead,
+                estado,
+                unsubscribe_token,
+                tracking_id,
+                created_at
+            )
+            SELECT
+                %s,
+                lf.id,
+                LOWER(TRIM(lf.email)),
+                lf.pais,
+                lf.idioma,
+                lt.nombre_target,
+                lf.tipo_lead,
+                lf.estado,
+                SHA2(UUID(), 256),
+                UUID(),
+                NOW()
+            FROM lead_target_items lti
+            INNER JOIN lead_targets lt
+                ON lt.id = lti.target_id
+            INNER JOIN lead_forms lf
+                ON lf.id = lti.lead_id
+            INNER JOIN (
+                SELECT
+                    MIN(lf2.id) AS selected_id
+                FROM lead_target_items lti2
+                INNER JOIN lead_forms lf2
+                    ON lf2.id = lti2.lead_id
+                WHERE lti2.target_id = %s
+                  AND lf2.email IS NOT NULL
+                  AND TRIM(lf2.email) <> ''
+                  AND (lf2.unsubscribed IS NULL OR lf2.unsubscribed = 0 OR lf2.unsubscribed = '0')
+                GROUP BY LOWER(TRIM(lf2.email))
+            ) dedup
+                ON dedup.selected_id = lf.id
+            WHERE lti.target_id = %s
+        """
+
+        with conn.cursor() as cur:
+            cur.execute(sql_delete, (cid,))
+            deleted_rows = cur.rowcount
+
+            cur.execute(sql_insert, (cid, target_id, target_id))
+            inserted_rows = cur.rowcount
+
+        conn.commit()
+
+        flash(
+            f"Target regenerado correctamente. "
+            f"Destinatarios anteriores borrados: {deleted_rows}. "
+            f"Nuevos insertados: {inserted_rows}.",
+            "success"
+        )
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        print(f"Error al generar target para campaña {cid}, target {target_id}: {e}")
+        flash("Error al generar target: " + str(e), "error")
+
+    finally:
+        if conn:
+            conn.close()
+
+    return redirect(url_for("campanas"))
+
+
+
+@application.route("/campanas/<int:cid>/targets")
+def campaign_targets(cid):
+    campaign = Campaign.query.get_or_404(cid)
+
+    pais = request.args.get("pais", "").strip()
+    idioma = request.args.get("idioma", "").strip()
+    origen = request.args.get("origen", "").strip()
+    estado_envio = request.args.get("estado_envio", "").strip()
+    estado_lead = request.args.get("estado_lead", "").strip()
+    tipo_lead = request.args.get("tipo_lead", "").strip()
+
+    q = CampaignRecipient.query.filter(CampaignRecipient.campaign_id == cid)
+
+    if pais:
+        q = q.filter(CampaignRecipient.pais == pais)
+
+    if idioma:
+        q = q.filter(CampaignRecipient.idioma == idioma)
+
+    if origen:
+        q = q.filter(CampaignRecipient.origen == origen)
+
+    if estado_envio:
+        q = q.filter(CampaignRecipient.send_status == estado_envio)
+
+    if estado_lead:
+        q = q.filter(CampaignRecipient.estado == estado_lead)
+
+    if tipo_lead:
+        q = q.filter(CampaignRecipient.tipo_lead == tipo_lead)
+
+    targets = q.order_by(CampaignRecipient.email).all()
+
+    paises = (
+        db.session.query(func.trim(CampaignRecipient.pais))
+        .filter(CampaignRecipient.campaign_id == cid)
+        .filter(CampaignRecipient.pais.isnot(None))
+        .filter(func.trim(CampaignRecipient.pais) != "")
+        .distinct()
+        .order_by(func.trim(CampaignRecipient.pais))
+        .all()
+    )
+    paises = [p[0] for p in paises]
+
+    idiomas = (
+        db.session.query(func.trim(CampaignRecipient.idioma))
+        .filter(CampaignRecipient.campaign_id == cid)
+        .filter(CampaignRecipient.idioma.isnot(None))
+        .filter(func.trim(CampaignRecipient.idioma) != "")
+        .distinct()
+        .order_by(func.trim(CampaignRecipient.idioma))
+        .all()
+    )
+    idiomas = [i[0] for i in idiomas]
+
+    origenes = (
+        db.session.query(func.trim(CampaignRecipient.origen))
+        .filter(CampaignRecipient.campaign_id == cid)
+        .filter(CampaignRecipient.origen.isnot(None))
+        .filter(func.trim(CampaignRecipient.origen) != "")
+        .distinct()
+        .order_by(func.trim(CampaignRecipient.origen))
+        .all()
+    )
+    origenes = [o[0] for o in origenes]
+
+    estados_envio = (
+        db.session.query(CampaignRecipient.send_status)
+        .filter(CampaignRecipient.campaign_id == cid)
+        .filter(CampaignRecipient.send_status.isnot(None))
+        .distinct()
+        .order_by(CampaignRecipient.send_status)
+        .all()
+    )
+    estados_envio = [s[0] for s in estados_envio]
+
+    estados_lead = (
+        db.session.query(func.trim(CampaignRecipient.estado))
+        .filter(CampaignRecipient.campaign_id == cid)
+        .filter(CampaignRecipient.estado.isnot(None))
+        .filter(func.trim(CampaignRecipient.estado) != "")
+        .distinct()
+        .order_by(func.trim(CampaignRecipient.estado))
+        .all()
+    )
+    estados_lead = [e[0] for e in estados_lead]
+
+    tipos_lead = (
+        db.session.query(func.trim(CampaignRecipient.tipo_lead))
+        .filter(CampaignRecipient.campaign_id == cid)
+        .filter(CampaignRecipient.tipo_lead.isnot(None))
+        .filter(func.trim(CampaignRecipient.tipo_lead) != "")
+        .distinct()
+        .order_by(func.trim(CampaignRecipient.tipo_lead))
+        .all()
+    )
+    tipos_lead = [t[0] for t in tipos_lead]
+
+    return render_template(
+        "campaign_targets.html",
+        campaign=campaign,
+        targets=targets,
+        pais=pais,
+        idioma=idioma,
+        origen=origen,
+        estado_envio=estado_envio,
+        estado_lead=estado_lead,
+        tipo_lead=tipo_lead,
+        paises=paises,
+        idiomas=idiomas,
+        origenes=origenes,
+        estados_envio=estados_envio,
+        estados_lead=estados_lead,
+        tipos_lead=tipos_lead
+    )
+
+@application.route("/campanas/<int:cid>/targets/<int:rid>/toggle", methods=["POST"])
+def campaign_toggle_target(cid, rid):
+    target = CampaignRecipient.query.filter_by(id=rid, campaign_id=cid).first_or_404()
+
+    new_value = request.form.get("seleccionado", "1")
+    target.seleccionado = True if str(new_value) == "1" else False
+
+    db.session.commit()
+
+    return redirect(url_for(
+        "campaign_targets",
+        cid=cid,
+        pais=request.args.get("pais", ""),
+        idioma=request.args.get("idioma", ""),
+        origen=request.args.get("origen", ""),
+        estado_envio=request.args.get("estado_envio", ""),
+        estado_lead=request.args.get("estado_lead", ""),
+        tipo_lead=request.args.get("tipo_lead", "")
+    ))
+
+
+def _filtered_targets_query(cid):
+    pais = request.args.get("pais", "").strip()
+    idioma = request.args.get("idioma", "").strip()
+    origen = request.args.get("origen", "").strip()
+    estado_envio = request.args.get("estado_envio", "").strip()
+    estado_lead = request.args.get("estado_lead", "").strip()
+    tipo_lead = request.args.get("tipo_lead", "").strip()
+
+    q = CampaignRecipient.query.filter(CampaignRecipient.campaign_id == cid)
+
+    if pais:
+        q = q.filter(CampaignRecipient.pais == pais)
+
+    if idioma:
+        q = q.filter(CampaignRecipient.idioma == idioma)
+
+    if origen:
+        q = q.filter(CampaignRecipient.origen == origen)
+
+    if estado_envio:
+        q = q.filter(CampaignRecipient.send_status == estado_envio)
+
+    if estado_lead:
+        q = q.filter(CampaignRecipient.estado == estado_lead)
+
+    if tipo_lead:
+        q = q.filter(CampaignRecipient.tipo_lead == tipo_lead)
+
+    return q
+
+
+@application.route("/campanas/<int:cid>/targets/select_all")
+def campaign_select_all_filtered(cid):
+    q = _filtered_targets_query(cid)
+    q.update({"seleccionado": True}, synchronize_session=False)
+    db.session.commit()
+
+    return redirect(url_for(
+        "campaign_targets",
+        cid=cid,
+        pais=request.args.get("pais", ""),
+        idioma=request.args.get("idioma", ""),
+        origen=request.args.get("origen", ""),
+        estado_envio=request.args.get("estado_envio", ""),
+        estado_lead=request.args.get("estado_lead", ""),
+        tipo_lead=request.args.get("tipo_lead", "")
+    ))
+
+
+@application.route("/campanas/<int:cid>/targets/unselect_all")
+def campaign_unselect_all_filtered(cid):
+    q = _filtered_targets_query(cid)
+    q.update({"seleccionado": False}, synchronize_session=False)
+    db.session.commit()
+
+    return redirect(url_for(
+        "campaign_targets",
+        cid=cid,
+        pais=request.args.get("pais", ""),
+        idioma=request.args.get("idioma", ""),
+        origen=request.args.get("origen", ""),
+        estado_envio=request.args.get("estado_envio", ""),
+        estado_lead=request.args.get("estado_lead", ""),
+        tipo_lead=request.args.get("tipo_lead", "")
+    ))
+
+
+@application.route("/campanas/<int:cid>/targets/seleccionados")
+def campaign_view_selected(cid):
+    campaign = Campaign.query.get_or_404(cid)
+
+    pais = request.args.get("pais", "").strip()
+    idioma = request.args.get("idioma", "").strip()
+    origen = request.args.get("origen", "").strip()
+    estado_envio = request.args.get("estado_envio", "").strip()
+    estado_lead = request.args.get("estado_lead", "").strip()
+    tipo_lead = request.args.get("tipo_lead", "").strip()
+
+    q = CampaignRecipient.query.filter(
+        CampaignRecipient.campaign_id == cid,
+        CampaignRecipient.seleccionado == True
+    )
+
+    if pais:
+        q = q.filter(CampaignRecipient.pais == pais)
+
+    if idioma:
+        q = q.filter(CampaignRecipient.idioma == idioma)
+
+    if origen:
+        q = q.filter(CampaignRecipient.origen == origen)
+
+    if estado_envio:
+        q = q.filter(CampaignRecipient.send_status == estado_envio)
+
+    if estado_lead:
+        q = q.filter(CampaignRecipient.estado == estado_lead)
+
+    if tipo_lead:
+        q = q.filter(CampaignRecipient.tipo_lead == tipo_lead)
+
+    targets = q.order_by(CampaignRecipient.email).all()
+
+    # listas para que los filtros sigan funcionando también en "Ver seleccionados"
+    paises = [p[0] for p in (
+        db.session.query(func.trim(CampaignRecipient.pais))
+        .filter(CampaignRecipient.campaign_id == cid)
+        .filter(CampaignRecipient.pais.isnot(None))
+        .filter(func.trim(CampaignRecipient.pais) != "")
+        .distinct()
+        .order_by(func.trim(CampaignRecipient.pais))
+        .all()
+    )]
+
+    idiomas = [i[0] for i in (
+        db.session.query(func.trim(CampaignRecipient.idioma))
+        .filter(CampaignRecipient.campaign_id == cid)
+        .filter(CampaignRecipient.idioma.isnot(None))
+        .filter(func.trim(CampaignRecipient.idioma) != "")
+        .distinct()
+        .order_by(func.trim(CampaignRecipient.idioma))
+        .all()
+    )]
+
+    origenes = [o[0] for o in (
+        db.session.query(func.trim(CampaignRecipient.origen))
+        .filter(CampaignRecipient.campaign_id == cid)
+        .filter(CampaignRecipient.origen.isnot(None))
+        .filter(func.trim(CampaignRecipient.origen) != "")
+        .distinct()
+        .order_by(func.trim(CampaignRecipient.origen))
+        .all()
+    )]
+
+    estados_envio = [s[0] for s in (
+        db.session.query(CampaignRecipient.send_status)
+        .filter(CampaignRecipient.campaign_id == cid)
+        .filter(CampaignRecipient.send_status.isnot(None))
+        .distinct()
+        .order_by(CampaignRecipient.send_status)
+        .all()
+    )]
+
+    estados_lead = [e[0] for e in (
+        db.session.query(func.trim(CampaignRecipient.estado))
+        .filter(CampaignRecipient.campaign_id == cid)
+        .filter(CampaignRecipient.estado.isnot(None))
+        .filter(func.trim(CampaignRecipient.estado) != "")
+        .distinct()
+        .order_by(func.trim(CampaignRecipient.estado))
+        .all()
+    )]
+
+    tipos_lead = [t[0] for t in (
+        db.session.query(func.trim(CampaignRecipient.tipo_lead))
+        .filter(CampaignRecipient.campaign_id == cid)
+        .filter(CampaignRecipient.tipo_lead.isnot(None))
+        .filter(func.trim(CampaignRecipient.tipo_lead) != "")
+        .distinct()
+        .order_by(func.trim(CampaignRecipient.tipo_lead))
+        .all()
+    )]
+
+    return render_template(
+        "campaign_targets.html",
+        campaign=campaign,
+        targets=targets,
+        pais=pais,
+        idioma=idioma,
+        origen=origen,
+        estado_envio=estado_envio,
+        estado_lead=estado_lead,
+        tipo_lead=tipo_lead,
+        paises=paises,
+        idiomas=idiomas,
+        origenes=origenes,
+        estados_envio=estados_envio,
+        estados_lead=estados_lead,
+        tipos_lead=tipos_lead
+    )
+
+@application.route("/newsletters/<int:nid>/preview")
+def newsletter_preview(nid):
+
+    lang = request.args.get("lang", "es")
+
+    newsletter = Newsletter.query.get_or_404(nid)
+
+    path = newsletter.template_s3_path
+
+    if lang == "en":
+        path = path.replace("/es/", "/en/")
+
+    s3 = boto3.client("s3", region_name="eu-north-1")
+
+    obj = s3.get_object(
+        Bucket="emailingledpadel",
+        Key=path
+    )
+
+    html = obj["Body"].read().decode("utf-8")
+
+    return Response(html, mimetype="text/html")
+
+
+
+@application.route("/privacy")
+def privacy_policy():
+    return """
+    <h2>Privacy Policy</h2>
+    <p>This page will contain our privacy policy.</p>
+    """
+
+@application.route("/preferences")
+def email_preferences():
+    return """
+    <h2>Email Preferences</h2>
+    <p>This page will allow users to manage email preferences.</p>
+    """
+@application.route("/unsubscribe")
+def unsubscribe():
+
+    token = request.args.get("token")
+
+    print("Token recibido para baja:", token)
+
+    if not token:
+        return "Token inválido", 400
+    
+    if token == 'preview-demo':
+        lang =  "en"
+        email=''
+    else:
+        recipient = CampaignRecipient.query.filter_by(
+            unsubscribe_token=token
+        ).first()
+
+        if not recipient:
+            return "Token inválido", 404
+
+        lang = recipient.idioma or "es"
+        email=recipient.email
+
+    if lang == "en":
+        template = "unsubscribe_en.html"
+    else:
+        template = "unsubscribe_es.html"
+
+    return render_template(
+        template,
+        token=token,
+        email=email
+        )
+
+@application.route("/unsubscribe", methods=["POST"])
+def unsubscribe_submit():
+    print("Formulario de baja recibido con datos:", request.form)
+    token = request.form.get("token")
+    print("Token recibido para procesar baja:", token)
+
+    if token == "preview-demo":
+        return render_template(
+            "unsubscribe_en_OK.html",
+            preview=True
+        )
+    recipient = CampaignRecipient.query.filter_by(
+        unsubscribe_token=token
+    ).first()
+
+    lang = recipient.idioma if recipient else "es"  
+    if not recipient:
+        return "Token inválido", 404
+
+    # marcar baja global por email o lead
+    lead = LeadForm.query.filter_by(email=recipient.email).first()
+    if lead:
+        lead.unsubscribed = True
+        lead.unsubscribed_at = datetime.now(timezone.utc)
+
+    db.session.commit()
+
+    if lang == "en":
+        template = "unsubscribe_en_OK.html"
+    else:
+        template = "unsubscribe_es_OK.html"
+
+    return render_template(
+        template,
+        preview=False,
+        
+        )
+
+@application.route("/email/open")
+def email_open():
+    tracking_id = request.args.get("id", "").strip()
+
+    if tracking_id:
+        recipient = db.session.query(CampaignRecipient).filter_by(
+            tracking_id=tracking_id
+        ).first()
+
+        if recipient and not recipient.opened_at:
+            recipient.opened_at = datetime.now(timezone.utc)
+            db.session.commit()
+
+    # Pixel PNG transparente 1x1
+    pixel = base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO8Z3ZkAAAAASUVORK5CYII="
+    )
+
+    return Response(pixel, mimetype="image/png")
+
+
+@application.route("/email/click")
+def email_click():
+    tracking_id = request.args.get("id", "").strip()
+    target_url = request.args.get("url", "").strip()
+
+    if tracking_id:
+        recipient = db.session.query(CampaignRecipient).filter_by(
+            tracking_id=tracking_id
+        ).first()
+
+        if recipient:
+            if not recipient.clicked_at:
+                recipient.clicked_at = datetime.now(timezone.utc)
+
+            
+            recipient.click_count = (recipient.click_count or 0) + 1
+
+            db.session.commit()
+
+    if not target_url:
+        return "URL inválida", 400
+
+    return redirect(target_url, code=302)
+
+
+@application.route("/campanas/<int:cid>/send-stream")
+def campaign_send_stream(cid):
+    def generate():
+        try:
+            for item in send_campaign_batch_stream(cid):
+                yield f"data: {json.dumps(item)}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+
+
+
+
+
+@application.route("/campanas/<int:cid>/stats")
+def campaign_stats(cid):
+    campaign = Campaign.query.get_or_404(cid)
+
+    stats = db.session.query(
+        func.count(CampaignRecipient.id).label("total"),
+        func.sum(func.if_(CampaignRecipient.send_status == "pending", 1, 0)).label("pending"),
+        func.sum(func.if_(CampaignRecipient.sent_at.isnot(None), 1, 0)).label("sent"),
+        func.sum(func.if_(CampaignRecipient.delivered_at.isnot(None), 1, 0)).label("delivered"),
+        func.sum(func.if_(CampaignRecipient.opened_at.isnot(None), 1, 0)).label("opened"),
+        func.sum(func.if_(CampaignRecipient.clicked_at.isnot(None), 1, 0)).label("clicked"),
+        func.sum(func.if_(CampaignRecipient.bounced_at.isnot(None), 1, 0)).label("bounced"),
+
+        func.sum(func.if_(LeadForm.unsubscribed == 1, 1, 0)).label("unsubscribed"),
+
+        func.sum(func.if_(CampaignRecipient.send_status == "error", 1, 0)).label("errors"),
+        func.coalesce(func.sum(CampaignRecipient.click_count), 0).label("total_clicks")
+
+    ).outerjoin(
+        LeadForm, LeadForm.id == CampaignRecipient.lead_id
+    ).filter(
+        CampaignRecipient.campaign_id == cid
+    ).first()
+
+    
+
+    total = stats.total or 0
+    pending = stats.pending or 0
+    sent = stats.sent or 0
+    delivered = stats.delivered or 0
+    opened = stats.opened or 0
+    clicked = stats.clicked or 0
+    bounced = stats.bounced or 0
+    unsubscribed = stats.unsubscribed or 0
+    errors = stats.errors or 0
+    total_clicks = stats.total_clicks or 0
+
+    delivery_rate = round((delivered / sent) * 100, 2) if sent else 0
+    open_rate = round((opened / delivered) * 100, 2) if delivered else 0
+    click_rate = round((clicked / delivered) * 100, 2) if delivered else 0
+
+    by_status = db.session.query(
+        CampaignRecipient.send_status,
+        func.count(CampaignRecipient.id)
+    ).filter(
+        CampaignRecipient.campaign_id == cid
+    ).group_by(
+        CampaignRecipient.send_status
+    ).all()
+
+    by_country = db.session.query(
+        CampaignRecipient.pais,
+        func.count(CampaignRecipient.id)
+    ).filter(
+        CampaignRecipient.campaign_id == cid
+    ).group_by(
+        CampaignRecipient.pais
+    ).order_by(
+        func.count(CampaignRecipient.id).desc()
+    ).all()
+
+
+    complained =  0
+
+    return render_template(
+        "campaign_stats.html",
+        campaign=campaign,
+        total=total,
+        pending=pending,
+        sent=sent,
+        delivered=delivered,
+        opened=opened,
+        clicked=clicked,
+        bounced=bounced,
+        unsubscribed=unsubscribed,
+        errors=errors,
+        complained=complained,
+        total_clicks=total_clicks,
+        delivery_rate=delivery_rate,
+        open_rate=open_rate,
+        click_rate=click_rate,
+        by_status=by_status,
+        by_country=by_country,
+        #by_language=by_language,
+        #by_origin=by_origin,
+        #by_lead_type=by_lead_type
+    )
+
+
+
+@application.route("/store_lead_targets", methods=["POST"])
+def store_lead_targets():
+    data = request.get_json() or {}
+
+    nombre_target = (data.get("nombre_target") or "").strip()
+    lead_ids = data.get("lead_ids") or []
+
+    if not nombre_target:
+        return jsonify({
+            "ok": False,
+            "error": "nombre_target es obligatorio"
+        }), 400
+
+    if not isinstance(lead_ids, list) or not lead_ids:
+        return jsonify({
+            "ok": False,
+            "error": "lead_ids debe ser una lista con al menos un id"
+        }), 400
+
+    try:
+        lead_ids = [int(x) for x in lead_ids]
+    except (TypeError, ValueError):
+        return jsonify({
+            "ok": False,
+            "error": "Todos los lead_ids deben ser numéricos"
+        }), 400
+
+    # quitar duplicados manteniendo orden
+    lead_ids = list(dict.fromkeys(lead_ids))
+
+    print(f"[INFO] Almacenando lead targets para '{nombre_target}' con {len(lead_ids)} leads: {lead_ids}")
+
+    creds = get_db_credentials("secretoBC/Mysql")
+    dbname = "bc_pruebas" if (BD == "PRUEBAS") else creds["dbname"]
+
+    print(
+        f"Conectando a la base de datos con host: {creds['host']}, "
+        f"usuario: {creds['username']}, base de datos: {dbname}"
+    )
+
+    conn = pymysql.connect(
+        host=creds["host"],
+        user=creds["username"],
+        password=creds["password"],
+        database=dbname,
+        port=int(creds.get("port", 3306)),
+        autocommit=False
+    )
+
+    try:
+        with conn.cursor() as cur:
+            # 1) Insertar cabecera en lead_targets
+            sql_target = """
+                INSERT INTO lead_targets (nombre_target)
+                VALUES (%s)
+            """
+            cur.execute(sql_target, (nombre_target,))
+            new_id = cur.lastrowid
+
+            # 2) Validar que los leads existen
+            placeholders = ",".join(["%s"] * len(lead_ids))
+            sql_check = f"""
+                SELECT id
+                FROM lead_forms
+                WHERE id IN ({placeholders})
+            """
+            cur.execute(sql_check, tuple(lead_ids))
+            existing_ids = {row[0] for row in cur.fetchall()}
+
+            missing_ids = [lead_id for lead_id in lead_ids if lead_id not in existing_ids]
+            if missing_ids:
+                conn.rollback()
+                return jsonify({
+                    "ok": False,
+                    "error": "Algunos leads no existen",
+                    "missing_ids": missing_ids
+                }), 400
+
+            # 3) Insertar detalle en lead_target_items
+            sql_item = """
+                INSERT INTO lead_target_items (target_id, lead_id)
+                VALUES (%s, %s)
+            """
+            params_items = [(new_id, lead_id) for lead_id in lead_ids]
+            cur.executemany(sql_item, params_items)
+
+        conn.commit()
+
+        return jsonify({
+            "ok": True,
+            "id": new_id,
+            "nombre_target": nombre_target,
+            "total_leads": len(lead_ids),
+            "message": f"Lead target '{nombre_target}' almacenado con {len(lead_ids)} leads."
+        }), 201
+
+    except pymysql.err.IntegrityError as e:
+        conn.rollback()
+        errno = e.args[0] if e.args else None
+        errmsg = e.args[1] if len(e.args) > 1 else str(e)
+        print(f"DB IntegrityError {errno}: {errmsg} | nombre_target={repr(nombre_target)}")
+        return jsonify({
+            "ok": False,
+            "error": f"MySQL {errno}: {errmsg}"
+        }), 400
+
+    except pymysql.err.Error as e:
+        conn.rollback()
+        print(f"DB Error: {e}")
+        return jsonify({
+            "ok": False,
+            "error": str(e)
+        }), 500
+
+    except Exception as e:
+        conn.rollback()
+        print(f"Error inesperado: {e}")
+        return jsonify({
+            "ok": False,
+            "error": str(e)
+        }), 500
+
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 @application.route('/base', methods=['GET', 'POST'])
 def base():

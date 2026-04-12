@@ -1,0 +1,314 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:v="urn:schemas-microsoft-com:vml"
+  xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+  <!--[if (gte mso 9)|(IE)]>
+  <xml>
+    <o:OfficeDocumentSettings>
+      <o:AllowPNG/>
+      <o:PixelsPerInch>96</o:PixelsPerInch>
+    </o:OfficeDocumentSettings>
+  </xml>
+  <![endif]-->
+
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="format-detection" content="date=no" />
+  <meta name="format-detection" content="address=no" />
+  <meta name="format-detection" content="email=no" />
+  <meta name="x-apple-disable-message-reformatting" />
+
+  <title>Iluminación Profesional para Pádel</title>
+
+  <style type="text/css">
+    .ReadMsgBody { width: 100%; background-color: #ffffff; }
+    .ExternalClass { width: 100%; background-color: #ffffff; }
+    .ExternalClass, .ExternalClass p, .ExternalClass span, .ExternalClass font,
+    .ExternalClass td, .ExternalClass div { line-height: 100%; }
+    html { width: 100%; }
+    body {
+      -webkit-text-size-adjust: none;
+      -ms-text-size-adjust: none;
+      margin: 0;
+      padding: 0;
+      width: 100% !important;
+      background-color: #F7F7F7;
+      mso-line-height-rule: exactly;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    table { border-spacing: 0; table-layout: fixed; margin: 0 auto; border-collapse: collapse; }
+    img { height: auto; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; border: 0; }
+    a[x-apple-data-detectors] {
+      color: inherit !important;
+      text-decoration: none !important;
+      font-size: inherit !important;
+      font-family: inherit !important;
+      font-weight: inherit !important;
+      line-height: inherit !important;
+    }
+    u + #body a { color: inherit; font-family: inherit; text-decoration: none; font-size: inherit; font-weight: inherit; line-height: inherit; }
+    span.preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
+
+    @media only screen and (max-width: 699px) {
+      table.hideMobile, tr.hideMobile, td.hideMobile, br.hideMobile {display:none!important;}
+      table.row, div.row {width: 100%!important; max-width: 100%!important;}
+      td.centerText{text-align: center!important;}
+      td.containerPadding {width: 100%!important; padding-left: 15px!important; padding-right: 15px!important;}
+      td.spaceControl {height:15px!important; font-size:15px!important; line-height:15px!important;}
+      td.imgResponsive img {width:100%!important; max-width: 100%!important; height:auto!important;}
+    }
+  </style>
+</head>
+
+<body id="body">
+  <!-- Preheader (texto que muestra Gmail junto al asunto) -->
+  <span class="preheader">Iluminación profesional para pistas de pádel: más uniformidad, menos deslumbramiento, ahorro energético.</span>
+
+  <center>
+
+    <!-- TOP BAR: ver en navegador -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#F7F7F7">
+      <tr>
+        <td align="center">
+          <table class="row" width="700" cellpadding="0" cellspacing="0" border="0" style="max-width:700px;">
+            <tr>
+              <td align="center" bgcolor="#F7F7F7">
+                <table class="row" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;">
+                  <tr><td style="font-size:15px; height:15px; line-height:15px;">&nbsp;</td></tr>
+                  <tr>
+                    <td align="right" style="font-family:Arial, sans-serif; color:#666666; font-size:12px; line-height:22px;">
+                      Ver en <b><a href="https://example.com/" style="text-decoration:underline; color:#666666;">Navegador</a></b>
+                    </td>
+                  </tr>
+                  <tr><td style="font-size:15px; height:15px; line-height:15px;">&nbsp;</td></tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <!-- SUB HEADER -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#F7F7F7">
+      <tr>
+        <td align="center">
+          <table class="row" width="700" cellpadding="0" cellspacing="0" border="0" style="max-width:700px;">
+            <tr>
+              <td bgcolor="#00CC66" align="center">
+                <table class="row" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;">
+                  <tr><td style="font-size:10px; height:10px; line-height:10px;">&nbsp;</td></tr>
+
+                  <tr>
+                    <td align="left" style="font-size:0; padding:0;">
+                      <!-- left -->
+                      <div class="row" style="display:inline-block; max-width:390px; vertical-align:middle; width:100%;">
+                        <table width="390" cellpadding="0" cellspacing="0" border="0" style="max-width:390px;">
+                          <tr>
+                            <td align="left" style="font-family:Arial, sans-serif; color:#ffffff; font-size:13px; line-height:24px;">
+                              <a href="mailto:info@planetpower.es" style="color:#ffffff; text-decoration:none;">
+                                <img src="https://editor.liramail.com/images/grapestheme/impact/icon-email.png" width="25" alt="email" style="vertical-align:middle; margin-right:8px;" />
+                                info@planetpower.es
+                              </a>
+                              &nbsp;&nbsp;
+                              <a href="https://www.instagram.com/ledpadel.es/" style="text-decoration:none;">
+                                <img src="https://editor.liramail.com/images/grapestheme/impact/instagram.png" width="25" alt="instagram" style="vertical-align:middle;" />
+                              </a>
+                            </td>
+                          </tr>
+                        </table>
+                      </div>
+
+                      <!-- right logos -->
+                      <div class="row" style="display:inline-block; max-width:190px; vertical-align:middle; width:100%;">
+                        <table width="190" cellpadding="0" cellspacing="0" border="0" align="right" style="max-width:190px;">
+                          <tr>
+                            <td align="center" valign="middle">
+                              <!-- ⚠️ CAMBIA ESTAS URLS POR RUTAS ABSOLUTAS -->
+                              <a href="https://www.ledpadel.com/" style="text-decoration:none;">
+                                <img src="https://ABSOLUTE_URL/Logo-Ellite-Padel.png" width="63" height="28" alt="Ellite" />
+                              </a>
+                            </td>
+                            <td width="10">&nbsp;</td>
+                            <td align="center" valign="middle">
+                              <a href="https://www.ledpadel.com/" style="text-decoration:none;">
+                                <img src="https://ABSOLUTE_URL/Logo-Led-Padel.png" width="63" height="28" alt="LedPadel" />
+                              </a>
+                            </td>
+                            <td width="10">&nbsp;</td>
+                            <td align="center" valign="middle">
+                              <a href="https://www.planetpower.es/" style="text-decoration:none;">
+                                <img src="https://ABSOLUTE_URL/Logo-Planet-Power.png" width="63" height="28" alt="Planet Power" />
+                              </a>
+                            </td>
+                          </tr>
+                        </table>
+                      </div>
+                    </td>
+                  </tr>
+
+                  <tr><td style="font-size:10px; height:10px; line-height:10px;">&nbsp;</td></tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <!-- HERO IMAGE + CAPTION -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#F7F7F7">
+      <tr>
+        <td align="center">
+          <table class="row" width="700" cellpadding="0" cellspacing="0" border="0" style="max-width:700px;">
+            <tr>
+              <td bgcolor="#FFFFFF" align="center">
+                <!-- ⚠️ CAMBIA URL A ABSOLUTA -->
+                <img src="https://ABSOLUTE_URL/header.png" width="700" alt="Header" style="display:block; width:100%; max-width:700px;" />
+                <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;">
+                  <tr><td style="font-family:Arial, sans-serif; font-size:12px; line-height:18px; color:#666666; padding:10px 0;">
+                    La luminaria está exagerada para poder verse dado que solo tiene 30mm de diámetro. Simulación 3D modelo Ellite 1200.
+                  </td></tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <!-- INTRO -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#F7F7F7">
+      <tr>
+        <td align="center">
+          <table class="row" width="700" cellpadding="0" cellspacing="0" border="0" style="max-width:700px;">
+            <tr>
+              <td bgcolor="#00CC66" align="center">
+                <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;">
+                  <tr><td style="font-size:30px; height:30px; line-height:30px;">&nbsp;</td></tr>
+
+                  <tr>
+                    <td align="center" style="font-family:Arial, sans-serif; color:#FFFFFF; font-size:20px; line-height:30px; font-weight:bold; padding:0 15px 30px;">
+                      LA LUMINARIA ELLITE PADEL NO ES UN FOCO DE PARKING LOW COST.
+                      HA SIDO ESPECIALMENTE DISEÑADA PARA PISTAS DE PADEL, Y CUMPLIR TODAS LAS NORMATIVAS EXISTENTES.
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td align="center">
+                      <table cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td bgcolor="#FFFFFF" style="border-radius:50px;">
+                            <a href="https://ledpadel.com/" style="display:inline-block; padding:14px 28px; font-family:Arial, sans-serif; font-size:12px; font-weight:bold; letter-spacing:1px; color:#191919; text-decoration:none;">
+                              LEER MÁS
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <tr><td style="font-size:30px; height:30px; line-height:30px;">&nbsp;</td></tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <!-- TITLE: CERTIFICACION -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#F7F7F7">
+      <tr>
+        <td align="center">
+          <table class="row" width="700" cellpadding="0" cellspacing="0" border="0" style="max-width:700px;">
+            <tr>
+              <td bgcolor="#FFFFFF" align="center">
+                <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;">
+                  <tr><td style="font-size:60px; height:60px; line-height:60px;">&nbsp;</td></tr>
+
+                  <tr>
+                    <td align="center" style="font-family:Arial, sans-serif; color:#191919; font-size:34px; line-height:44px; font-weight:bold; padding:0 15px 10px;">
+                      CERTIFICACIÓN DE GARANTÍA
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td align="center" style="font-family:Arial, sans-serif; color:#666666; font-size:14px; line-height:22px; padding:0 15px;">
+                      Todos nuestros productos están fabricados acorde a normativas UNE, al CSD N.I.D.E y al R.D. 1890/2008.
+                      La fabricación es NACIONAL bajo normativas ISO 9001 - 14.001 y 45.001 y están certificados por laboratorios
+                      independientes ENAC
+                      <a href="https://www.enac.es/" style="text-decoration:none;"> - www.enac.es - </a>
+                      los datos aportados son reales, emitidos por laboratorios acreditados para realizar los diferentes ensayos.
+                    </td>
+                  </tr>
+
+                  <tr><td style="font-size:10px; height:10px; line-height:10px;">&nbsp;</td></tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <!-- ⚠️ A PARTIR DE AQUÍ: TU CONTENIDO SIGUE IGUAL, PERO CON UNA REGLA:
+         CAMBIA TODOS LOS src="themeforest-.../images/xxx.png"
+         POR src="https://TU_DOMINIO_O_S3/.../xxx.png"
+         (URLs ABSOLUTAS)
+    -->
+
+    <!-- FOOTER CONTACTO + UNSUBSCRIBE -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#F7F7F7">
+      <tr>
+        <td align="center">
+          <table class="row" width="700" cellpadding="0" cellspacing="0" border="0" style="max-width:700px;">
+            <tr>
+              <td bgcolor="#FFFFFF" align="center">
+                <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;">
+                  <tr><td style="font-size:40px; height:40px; line-height:40px;">&nbsp;</td></tr>
+
+                  <tr>
+                    <td align="center" style="font-family:Arial, sans-serif; color:#191919; font-size:28px; line-height:36px; font-weight:bold; padding:0 15px 10px;">
+                      ¡No dude en contactarnos!
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td align="center" style="font-family:Arial, sans-serif; color:#666666; font-size:14px; line-height:22px; padding:0 15px;">
+                      <p style="margin:0;">
+                        <strong>Angel Regalado</strong><br />
+                        <strong>M.</strong> 609707992 &nbsp; <strong>T.</strong> 946682011<br />
+                        <strong>E.</strong>
+                        <a href="mailto:angel.r@planetpower.es" target="_blank">angel.r@planetpower.es</a>
+                        &nbsp; - &nbsp;
+                        <a href="https://www.ledpadel.com" target="_blank">ledpadel.com</a>
+                      </p>
+                    </td>
+                  </tr>
+
+                  <tr><td style="font-size:25px; height:25px; line-height:25px;">&nbsp;</td></tr>
+
+                  <tr>
+                    <td align="center" style="font-family:Arial, sans-serif; color:#999999; font-size:12px; line-height:18px; padding:0 15px 30px;">
+                      Si no deseas recibir más emails, puedes
+                      <a href="{{unsubscribe_url}}" style="color:#999999; text-decoration:underline;">darte de baja aquí</a>.
+                    </td>
+                  </tr>
+
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+  </center>
+</body>
+</html>

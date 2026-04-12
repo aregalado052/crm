@@ -10,7 +10,7 @@
 }
 </style>
 
-
+<input type="hidden" id="leadId" value="{{ lead_id }}">
 
 <div class="min-h-screen bg-white-100 flex items-center justify-center p-4">
   <div class="bg-blue-100 rounded-2xl shadow-xl w-full max-w-2xl p-8">
@@ -134,8 +134,8 @@
 
       <button id="btn-exit"
           type="button"               
-          class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-          {{ _('Salir') }}
+          class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+          {{ _('Volver') }}
       </button>
     </div>
     </form>
@@ -146,6 +146,8 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
+  
   const name = document.getElementById('name');
   const direccion1 = document.getElementById('direccion1');
   const direccion2 = document.getElementById('direccion2');
@@ -249,39 +251,24 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
   });
+  
   document.getElementById('btn-exit').addEventListener('click', function (e) {
     e.preventDefault();
-    const ruta = '/base';
+    e.stopPropagation();
 
-    salir();
-    async function salir() {
-      try {
-        const response = await fetch(ruta, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({})
-        });
+    const leadId = document.getElementById('leadId')?.value || "";
 
-        if (!response.ok) throw new Error("{{ _('Error en la respuesta del servidor.') }}");
-
-        const html = await response.text();
-        document.open();
-        document.write(html);
-        document.close();
-
-      } catch (error) {
-        console.error("Error al enviar datos:", error);
-        Swal.fire({
-          icon: 'error',
-          title: '{{ _("Error") | escapejs }}',
-          text: '{{ _("No se pudo cargar la página. Inténtalo de nuevo más tarde.") | escapejs }}',
-          confirmButtonColor: '#3085d6'
-        });
-      }
+    if (!leadId) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Falta lead_id',
+        text: 'No se puede volver al lead.'
+      });
+      return;
     }
+
+    window.location.href = `/lead_manage?lead_id=${leadId}`;
   });
-  
 });
 
 </script>

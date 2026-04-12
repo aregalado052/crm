@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Baja confirmada</title>
+
+<style>
+body{
+  background:#f4f6f8;
+  font-family:Arial, Helvetica, sans-serif;
+}
+
+.wrapper{
+  max-width:600px;
+  margin:80px auto;
+  background:white;
+  padding:40px;
+  border-radius:12px;
+  text-align:center;
+  box-shadow:0 4px 18px rgba(0,0,0,0.08);
+}
+
+h1{
+  color:#16a34a;
+}
+
+p{
+  color:#555;
+  font-size:16px;
+}
+
+.timer{
+  margin-top:20px;
+  color:#888;
+  font-size:14px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="wrapper">
+
+<h1>✔ Baja confirmada</h1>
+
+<p>
+Has sido dado de baja correctamente de nuestras comunicaciones.
+</p>
+
+<p>
+Si ha sido un error puedes volver a registrarte en cualquier momento.
+</p>
+
+{% if preview %}
+<p style="color:#943030">
+Modo prueba: no se han modificado datos reales.
+</p>
+{% endif %}
+
+<p class="timer">
+Serás redirigido en <span id="count">5</span> segundos...
+</p>
+
+</div>
+
+<script>
+
+let seconds = 5;
+const counter = document.getElementById("count");
+
+const interval = setInterval(() => {
+    seconds--;
+    counter.textContent = seconds;
+
+    if (seconds <= 0) {
+        clearInterval(interval);
+        window.location.href = "https://ledpadel.com";
+    }
+
+}, 1000);
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="x-apple-disable-message-reformatting">
+  <title>{{subject}}</title>
+</head>
+
+<body style="margin:0;padding:0;background-color:#f4f6f8;">
+  <!-- Preheader (texto que se ve en la bandeja antes de abrir) -->
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;mso-hide:all;">
+    {{preheader}}
+  </div>
+
+  <!-- Wrapper -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background-color:#f4f6f8;">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+
+        <!-- Container -->
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background-color:#ffffff;border-radius:12px;overflow:hidden;">
+          
+          <!-- Header -->
+          <tr>
+            <td align="center" style="padding:22px 24px;background-color:#0ea5e9;">
+              <img src="{{logo_url}}" width="160" alt="{{brand_name}}" style="display:block;border:0;outline:none;text-decoration:none;">
+            </td>
+          </tr>
+
+          <!-- Title -->
+          <tr>
+            <td style="padding:26px 28px 8px 28px;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+              <h1 style="margin:0;font-size:24px;line-height:32px;font-weight:700;">
+                {{headline}}
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Intro text -->
+          <tr>
+            <td style="padding:8px 28px 18px 28px;font-family:Arial,Helvetica,sans-serif;color:#334155;">
+              <p style="margin:0;font-size:16px;line-height:24px;">
+                Hola {{first_name}},<br>
+                {{intro_text}}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Hero image -->
+          <tr>
+            <td align="center" style="padding:0 0 0 0;">
+              <img src="{{hero_image_url}}" width="600" alt="" style="display:block;width:100%;max-width:600px;height:auto;border:0;outline:none;text-decoration:none;">
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:22px 28px 8px 28px;font-family:Arial,Helvetica,sans-serif;color:#334155;">
+              <p style="margin:0 0 12px 0;font-size:16px;line-height:24px;">
+                {{body_paragraph_1}}
+              </p>
+
+              <p style="margin:0 0 12px 0;font-size:16px;line-height:24px;">
+                {{body_paragraph_2}}
+              </p>
+
+              <!-- Bullets -->
+              <ul style="margin:0 0 12px 18px;padding:0;font-size:16px;line-height:24px;color:#334155;">
+                <li style="margin:0 0 6px 0;">{{bullet_1}}</li>
+                <li style="margin:0 0 6px 0;">{{bullet_2}}</li>
+                <li style="margin:0 0 6px 0;">{{bullet_3}}</li>
+              </ul>
+            </td>
+          </tr>
+
+          <!-- CTA Button -->
+          <tr>
+            <td align="center" style="padding:18px 28px 28px 28px;">
+              <!-- Button table for Outlook -->
+              <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                <tr>
+                  <td align="center" bgcolor="#16a34a" style="border-radius:10px;">
+                    <a href="{{cta_url}}"
+                      style="display:inline-block;padding:14px 22px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:16px;color:#ffffff;text-decoration:none;font-weight:700;border-radius:10px;">
+                      {{cta_text}}
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:14px 0 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:18px;color:#64748b;">
+                Si el botón no funciona, copia y pega este enlace:<br>
+                <span style="word-break:break-all;color:#0ea5e9;">{{cta_url}}</span>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding:0 28px;">
+              <hr style="border:0;border-top:1px solid #e2e8f0;margin:0;">
+            </td>
+          </tr>
+
+          <!-- Secondary block -->
+          <tr>
+            <td style="padding:18px 28px 22px 28px;font-family:Arial,Helvetica,sans-serif;color:#334155;">
+              <h2 style="margin:0 0 10px 0;font-size:18px;line-height:24px;color:#0f172a;">
+                {{secondary_title}}
+              </h2>
+              <p style="margin:0;font-size:15px;line-height:22px;">
+                {{secondary_text}}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:18px 24px;background-color:#f8fafc;font-family:Arial,Helvetica,sans-serif;color:#64748b;text-align:center;">
+              <p style="margin:0 0 10px 0;font-size:12px;line-height:18px;">
+                {{brand_name}} · {{brand_address}} · {{brand_city}}<br>
+                <a href="{{brand_website}}" style="color:#0ea5e9;text-decoration:none;">{{brand_website}}</a>
+              </p>
+
+              <p style="margin:0;font-size:12px;line-height:18px;">
+                Recibes este email porque estás en nuestra lista de contactos.<br>
+                <a href="{{unsubscribe_url}}" style="color:#0ea5e9;text-decoration:none;">Darse de baja</a>
+                &nbsp;|&nbsp;
+                <a href="{{preferences_url}}" style="color:#0ea5e9;text-decoration:none;">Preferencias</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+        <!-- /Container -->
+
+        <p style="margin:14px 0 0 0;font-family:Arial,Helvetica,sans-serif;color:#94a3b8;font-size:11px;line-height:16px;text-align:center;">
+          © {{year}} {{brand_name}}. Todos los derechos reservados.
+        </p>
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

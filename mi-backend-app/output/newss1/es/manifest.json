@@ -1,0 +1,29 @@
+{
+  "slug": "newss1",
+  "display_name": "newss1",
+  "default_lang": "es",
+  "languages": {
+    "es": {
+      "name": "newss1",
+      "paths": {
+        "html": "emails/templates/newss1/es/template.html",
+        "mjml": "emails/templates/newss1/es/template.mjml",
+        "schema": "emails/templates/newss1/es/schema.json",
+        "original": "emails/templates/newss1/es/original.html"
+      },
+      "attachments": []
+    }
+  },
+  "shared": {
+    "images_dir": "emails/templates/newss1/images/",
+    "images": {},
+    "attachments": []
+  },
+  "images_dir": "emails/templates/newss1/images/",
+  "updated_at": null,
+  "type": "email",
+  "attachments": [],
+  "images_uploaded": [],
+  "name": "newss1",
+  "lang": "es"
+}
