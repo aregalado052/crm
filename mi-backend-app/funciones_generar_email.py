@@ -23,8 +23,16 @@ from PIL import Image
 import io
 from flask import Response as FlaskResponse
 import html as html_lib
+import pymysql
+
+
+from urllib.parse import urlencode
+
+from flask import current_app as application
 
 from pathlib import Path
+from itsdangerous import URLSafeTimedSerializer
+
 
 
 import zipfile
@@ -55,7 +63,18 @@ print("[BOOT] TEMPLATES_ROOT =", TEMPLATES_ROOT)
 
 
 
-from config import (ROOT_PREFIX_S3,AWS_REGION,S3_BUCKET, USE_S3, BASE_URL)
+from config import (ROOT_PREFIX_S3,AWS_REGION,S3_BUCKET, USE_S3, BASE_URL, SECRET_KEY_OFERTAS,BD,URL_OFERTAS_PUBLICAS,
+                    EMAIL_USER,
+                    EMAIL_PASSWORD,
+                    URL_CONTACTO,
+                    URL_OFERTAS,
+                    URL_PROFORMAS,
+                    URL_ACTUALIZAR_CONTACTO,
+                    URL_FORM_CONTACTO,
+                    API_KEY,
+                    ENVIRONMENT,
+                    SEND_EMAIL,
+                    SEND_WELLCOME_EMAIL,)
 
 
 
@@ -104,6 +123,10 @@ def slugify(s: str) -> str:
     s = re.sub(r"[^a-z0-9\-_.]+", "-", s)
     return re.sub(r"-+", "-", s).strip("-") or "template"
 
+def get_db_credentials(secret_name):
+    client = boto3.client("secretsmanager", region_name="eu-north-1")  # ✅ correcto
+    response = client.get_secret_value(SecretId=secret_name)
+    return json.loads(response["SecretString"])
 
 
 
@@ -4275,6 +4298,140 @@ def build_email_footer(
 
         </div>
         """
+
+
+
+def build_oferta_cta(oferta_url: str, idioma: str) -> str:
+    es = idioma in ("Español", "Esp", "es")
+
+    if es:
+        pretext = "Si desea recibir una oferta personalizada, puede solicitarla aquí:"
+        button_text = "Solicitar oferta"
+    else:
+        pretext = "If you would like to receive a personalized quote, you can request it here:"
+        button_text = "Request quote"
+
+    return f"""
+    <p style="font-family:Arial, sans-serif; font-size:15px; color:#333; margin:18px 0 10px 0;">
+      {pretext}
+    </p>
+
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:10px auto 22px auto;">
+      <tr>
+        <td align="center" bgcolor="#5B9BD5"
+            style="border-radius:8px; padding:14px 24px; font-family:Arial, sans-serif;">
+          <a href="{oferta_url}" target="_blank"
+             style="color:#ffffff; font-size:15px; font-weight:bold; text-decoration:none; display:inline-block;">
+            {button_text}
+          </a>
+        </td>
+      </tr>
+    </table>
+    """
+
+
+def generar_url_oferta(
+        url: str,
+        secret_key: str,
+        connection,
+        session_id: str
+    ) -> str:
+    
+
+    serializer = URLSafeTimedSerializer(
+        secret_key,
+        salt="oferta-link-v1"
+    )
+
+    payload = {
+        "bd": BD,
+        "url_form_contacto": url,
+        "session_id": session_id
+    }
+
+    token = serializer.dumps(payload)
+
+    print("[GEN] SECRET_KEY_OFERTAS =", repr(SECRET_KEY_OFERTAS))
+    print("[GEN] PAYLOAD =", payload)
+    print("[GEN] TOKEN =", token)
+
+
+
+    print("[DEBUG] Generando token para oferta con URL:", url, "y session_id:", session_id)
+
+    #url =  "http://127.0.0.1:5000"
+
+    token = serializer.dumps({
+        "bd": BD,
+        "url_form_contacto": url,
+        "session_id": session_id
+    })
+
+    
+    tracking_id = session_id  # o cualquier otro ID que quieras usar para identificar al destinatario
+    
+    
+    try:
+        with connection.cursor() as cursor:
+
+            # 1️⃣ Insert en reset_token
+            cursor.execute("""
+                INSERT INTO reset_token (user_id, token, created_at, expires_at)
+                VALUES (0, %s, NOW(), DATE_ADD(NOW(), INTERVAL 7 DAY))
+            """, (token,))
+
+            # 2️⃣ Update en campaign_recipients
+            cursor.execute("""
+            UPDATE campaign_recipients
+            SET
+                email_user = %s,
+                email_password = %s,
+                url_contacto = %s,
+                url_ofertas = %s,
+                url_proformas = %s,
+                url_actualizar_contacto = %s,
+                url_form_contacto = %s,
+                api_key = %s,
+                environment = %s,
+                send_email = %s,
+                send_wellcome_email = %s
+            WHERE tracking_id = %s
+        """, (
+            EMAIL_USER,
+            EMAIL_PASSWORD,
+            URL_CONTACTO,
+            URL_OFERTAS,
+            URL_PROFORMAS,
+            URL_ACTUALIZAR_CONTACTO,
+            URL_FORM_CONTACTO,
+            API_KEY,
+            ENVIRONMENT,
+            SEND_EMAIL,
+            SEND_WELLCOME_EMAIL,
+            tracking_id
+        ))
+            
+
+          
+
+        connection.commit()
+
+    except pymysql.err.IntegrityError as e:
+        print("[ERROR] IntegrityError:", e)
+        connection.rollback()
+        raise
+
+
+
+
+
+    qs = urlencode({"token": token})
+    final_url = f"{url}/oferta_public?{qs}"
+    print("URL OFERTA:", final_url)
+    return final_url
+
+
+
 def build_final_email_html(
     newsletter_html: str,
     lang: str = "es",
@@ -4282,8 +4439,14 @@ def build_final_email_html(
     privacy_url: str = "https://ledpadel.com/privacy",
     contact_email: str = "newsletter@ledpadel.com",
     company_name: str = "PLANET POWER TOOLS IBERICA, S.L.",
-    company_address: str = "Vizcaya, España"
+    company_address: str = "Vizcaya, España",
+    entity_kind: str = "",
+    oferta_url: str = ""
 ) -> str:
+
+    cta_html = ""
+    if entity_kind == "prospect" and oferta_url:
+        cta_html = build_oferta_cta(oferta_url=oferta_url, idioma=lang)
 
     footer = build_email_footer(
         lang=lang,
@@ -4294,15 +4457,20 @@ def build_final_email_html(
         company_address=company_address
     )
 
+    injection = cta_html + footer
+
     lower_html = newsletter_html.lower()
     closing_body = "</body>"
-    print ("[DEBUG] Inyectando footer. ¿Tiene </body>? ", closing_body in lower_html    )
+
+    print("[DEBUG] Inyectando CTA/footer. ¿Tiene </body>? ", closing_body in lower_html)
+    print("[DEBUG] entity_kind:", entity_kind)
+    print("[DEBUG] ¿Incluye CTA oferta?:", bool(cta_html))
+
     if closing_body in lower_html:
         idx = lower_html.rfind(closing_body)
-        return newsletter_html[:idx] + footer + newsletter_html[idx:]
+        return newsletter_html[:idx] + injection + newsletter_html[idx:]
 
-    return newsletter_html + footer
-
+    return newsletter_html + injection
 
 def load_newsletter_html(path):
     s3 = boto3.client("s3", region_name="eu-north-1")
@@ -4487,7 +4655,8 @@ def rewrite_links_for_tracking(html: str, tracking_id: str, base_url: str) -> st
 
        
         encoded_url = urllib.parse.quote(original_url, safe="")
-        tracked_url = f"{base_url}/email/click?id={tracking_id}&url={encoded_url}"
+        
+        tracked_url = f"{base_url}/email/click?id={tracking_id}&amp;url={encoded_url}"
 
         return f'href="{tracked_url}"'
 
@@ -4499,24 +4668,28 @@ def rewrite_links_for_tracking(html: str, tracking_id: str, base_url: str) -> st
     )
 
 
-def send_campaign_batch_stream(cid):
+def send_campaign_batch_stream(cid, entity_kind=""):
     campaign = Campaign.query.get_or_404(cid)
 
     print(f"Iniciando envío de campaña batch '{campaign.name}' (ID: {campaign.id})")
+    print(f"entity_kind recibido: {entity_kind}")
 
     if campaign.status not in ("draft", "ready"):
         raise Exception("La campaña no se puede enviar en este estado")
 
-    recipients = (
+    query = (
         CampaignRecipient.query
         .filter(
             CampaignRecipient.campaign_id == cid,
             CampaignRecipient.seleccionado == 1,
             CampaignRecipient.send_status == "pending",
         )
-        .order_by(CampaignRecipient.id.asc())
-        .all()
     )
+
+    if entity_kind:
+        query = query.filter(CampaignRecipient.entity_kind == entity_kind)
+
+    recipients = query.order_by(CampaignRecipient.id.asc()).all()
 
     if not recipients:
         raise Exception("No hay destinatarios pendientes para enviar")
@@ -4555,11 +4728,45 @@ def send_campaign_batch_stream(cid):
                 f"(lang={recipient_lang}) usando plantilla {newsletter.template_s3_path}"
             )
 
+            oferta_url = ""
+
+            if entity_kind == "prospect":
+                conn_oferta = None
+                try:
+                    creds = get_db_credentials("secretoBC/Mysql")
+                    dbname = "bc_pruebas" if (BD == "PRUEBAS") else creds["dbname"]
+
+                    conn_oferta = pymysql.connect(
+                        host=creds["host"],
+                        user=creds["username"],
+                        password=creds["password"],
+                        database=dbname,
+                        port=int(creds.get("port", 3306)),
+                        autocommit=False,
+                        cursorclass=pymysql.cursors.Cursor
+                    )
+
+                    print("[DEBUG] Conexión a base de datos para oferta establecida correctamente")
+                    print ("llamndo a generar_url_oferta con session_id:", SECRET_KEY_OFERTAS, recipient.tracking_id)
+
+                    oferta_url = generar_url_oferta(
+                        url=URL_OFERTAS_PUBLICAS,
+                        secret_key=SECRET_KEY_OFERTAS,
+                        connection=conn_oferta,
+                        session_id=str(recipient.tracking_id)
+                    )
+
+                finally:
+                    if conn_oferta:
+                        conn_oferta.close()
+
             final_html = build_final_email_html(
                 newsletter_html=html,
                 lang=recipient_lang,
                 unsubscribe_url=unsubscribe_url,
-                privacy_url=f"{BASE_URL}/privacy"
+                privacy_url=f"{BASE_URL}/privacy",
+                entity_kind=entity_kind,
+                oferta_url=oferta_url
             )
 
             tracking_pixel = f'''
@@ -4569,6 +4776,8 @@ def send_campaign_batch_stream(cid):
                 style="display:none;"
                 alt="">
             '''
+            print("Base URL", BASE_URL)
+            print(f"Injecting tracking pixel for {recipient.email} with tracking ID {recipient.tracking_id}")
 
             if "</body>" in final_html.lower():
                 idx = final_html.lower().rfind("</body>")
@@ -4581,6 +4790,9 @@ def send_campaign_batch_stream(cid):
                 tracking_id=recipient.tracking_id,
                 base_url=BASE_URL
             )
+
+            print("----- HTML FINAL (DEBUG) -----")
+            print(final_html[:3000])  # solo los primeros 3000 caracteres para no saturar logs
 
             send_email_ses(
                 to_email=recipient.email,
@@ -4596,6 +4808,7 @@ def send_campaign_batch_stream(cid):
             sent += 1
 
         except Exception as e:
+            print("[ERROR] envío recipient:", recipient.email, str(e))
             recipient.send_status = "error"
             recipient.error_message = str(e)[:1000]
             failed += 1
@@ -4621,7 +4834,7 @@ def send_campaign_batch_stream(cid):
 
     db.session.commit()
 
-    historico_insertado = guardar_historico_campaign(cid)
+    historico_insertado = guardar_historico_campaign(cid, entity_kind=entity_kind)
     db.session.commit()
 
     yield {
@@ -4630,13 +4843,13 @@ def send_campaign_batch_stream(cid):
         "failed": failed,
         "total": total,
         "historico": historico_insertado
-    }    
-
-def guardar_historico_campaign(cid):
+    }
+def guardar_historico_campaign(cid, entity_kind=""):
     sql = """
         INSERT INTO lead_campaign_history
         (
-            lead_id,
+            entity_kind,
+            entity_id,
             campaign_id,
             recipient_id,
             email,
@@ -4651,7 +4864,8 @@ def guardar_historico_campaign(cid):
             estado
         )
         SELECT
-            cr.lead_id,
+            cr.entity_kind,
+            cr.entity_id,
             c.id,
             cr.id,
             cr.email,
@@ -4671,13 +4885,27 @@ def guardar_historico_campaign(cid):
           AND cr.seleccionado = 1
           AND cr.send_status = 'sent'
           AND cr.sent_at IS NOT NULL
-          AND NOT EXISTS (
-              SELECT 1
-              FROM lead_campaign_history h
-              WHERE h.campaign_id = cr.campaign_id
-                AND h.recipient_id = cr.id
-          )
+          AND cr.entity_id IS NOT NULL
+          AND cr.entity_kind IS NOT NULL
     """
 
-    result = db.session.execute(db.text(sql), {"cid": cid})
+    params = {"cid": cid}
+
+    if entity_kind:
+        sql += " AND cr.entity_kind COLLATE utf8mb4_0900_ai_ci = :entity_kind"
+        params["entity_kind"] = entity_kind
+
+    sql += """
+        AND NOT EXISTS (
+            SELECT 1
+            FROM lead_campaign_history h
+            WHERE h.campaign_id = cr.campaign_id
+                AND h.entity_kind COLLATE utf8mb4_0900_ai_ci =
+                    cr.entity_kind COLLATE utf8mb4_0900_ai_ci
+                AND h.entity_id = cr.entity_id
+        )
+    """
+
+    result = db.session.execute(db.text(sql), params)
+    db.session.commit()
     return result.rowcount

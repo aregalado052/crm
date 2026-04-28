@@ -128,6 +128,8 @@ document.addEventListener("DOMContentLoaded", function () {
             </li>
           </ul>
         </li>
+
+
         <li class="relative">
           <button onclick="toggleMenu('marketingMenu', this)" 
                   class="menu-item block w-full text-left p-4 bg-green-100 text-green-800 hover:bg-green-200 focus:outline-none">
@@ -135,6 +137,8 @@ document.addEventListener("DOMContentLoaded", function () {
           </button>
 
           <ul id="marketingMenu" class="hidden transition-all duration-300">
+
+            <!-- EMAILING -->
             <li class="relative">
               <button onclick="toggleMenu('emailingSubmenu', this)"
                       class="block w-full text-left px-6 py-2 text-green-800 bg-green-100 hover:bg-green-200 focus:outline-none">
@@ -142,49 +146,92 @@ document.addEventListener("DOMContentLoaded", function () {
               </button>
 
               <ul id="emailingSubmenu" class="hidden transition-all duration-300 ml-4">
-                <li class="relative">
-
-
-
-
-
-
+                <li>
                   <a href="{{ url_for('upload_template_email') }}"
-                          class="block w-full text-left px-6 py-2 text-green-800 bg-green-100 hover:bg-green-200 focus:outline-none">
+                    class="block w-full text-left px-6 py-2 text-green-800 bg-green-100 hover:bg-green-200">
                     {{ _('Plantillas eMailing') }}
                   </a>
-
-
-                  
-                  
                 </li>
               </ul>
             </li>
-            <li>
-              <a href="{{ url_for('campanas') }}"
-                class="block px-6 py-2 text-green-800 bg-green-100 hover:bg-green-200">
+
+            <!-- CAMPAÑAS -->
+            <li class="relative">
+              <button onclick="toggleMenu('campanasSubmenu', this)"
+                      class="block w-full text-left px-6 py-2 text-green-800 bg-green-100 hover:bg-green-200 focus:outline-none">
                 {{ _('Campañas') }}
-              </a>
+              </button>
+
+              <ul id="campanasSubmenu" class="hidden transition-all duration-300 ml-4">
+                <li>
+                  <a href="{{ url_for('campanas_leads') }}"
+                    class="block px-6 py-2 text-green-800 bg-green-100 hover:bg-green-200">
+                    {{ _('Leads') }}
+                  </a>
+                </li>
+
+                <li>
+                  <a href="{{ url_for('campanas_prospects') }}"
+                    class="block px-6 py-2 text-green-800 bg-green-100 hover:bg-green-200">
+                    {{ _('Prospectos') }}
+                  </a>
+                </li>
+              </ul>
             </li>
+
           </ul>
         </li>
 
 
+
+
+
+
+
+
+
+
+
+        
         <li class="relative">
-          <button onclick="toggleMenu('redessocialesMenu', this)" class="menu-item block w-full text-left p-4 bg-green-100 text-green-800 hover:bg-green-200 focus:outline-none">
+          <button onclick="toggleMenu('redessocialesMenu', this)" 
+            class="menu-item block w-full text-left p-4 bg-green-100 text-green-800 hover:bg-green-200 focus:outline-none">
             {{ _('Redes Sociales') }}
           </button>
+
           <ul id="redessocialesMenu" class="hidden transition-all duration-300">
-            
+
             <li>
-              <a href="{{ url_for('redes') }}"
-              class="block px-6 py-2 text-green-800 bg-green-100 hover:bg-green-200">{{ _('Redes Sociales') }}</a>
+              <!-- BOTÓN en vez de enlace -->
+              <button onclick="toggleMenu('prospectosIASubmenu', this)"
+                class="block w-full text-left px-6 py-2 text-green-800 bg-green-100 hover:bg-green-200 focus:outline-none">
+                {{ _('Prospectos IA') }}
+              </button>
+
+              <!-- SUBMENÚ -->
+              <ul id="prospectosIASubmenu" class="hidden transition-all duration-300 ml-4">
+                <li>
+                  <a href="{{ url_for('import_bd_IA') }}"
+                    class="block px-6 py-2 text-green-800 bg-green-100 hover:bg-green-200">
+                    {{ _('Importar BD') }}
+                  </a>
+                </li>
+                <li>
+                  <a href="{{ url_for('consultar_prospectos_IA') }}"
+                    class="block px-6 py-2 text-green-800 bg-green-100 hover:bg-green-200">
+                    {{ _('Consultar Prospectos') }}
+                  </a>
+                </li>
+              </ul>
             </li>
+
           </ul>
         </li>
       </ul>
     </nav>
   </aside>
+
+
 
     
 

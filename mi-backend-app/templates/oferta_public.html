@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="{{ idioma }}" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ texts.title }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen flex items-center justify-center p-6" style="background:#EAF3FB;">
+
+  <div class="bg-white shadow-2xl rounded-2xl w-full max-w-xl p-10 border border-blue-100">
+
+    <div class="flex justify-between items-center mb-6">
+      <img src="https://f.crmplanetpower.es/Logo Planet Power.png" class="h-14 object-contain">
+      <img src="https://f.crmplanetpower.es/Logo LEDPADEL azul y verde.png" class="h-14 object-contain">
+    </div>
+
+    <h2 class="text-2xl font-bold text-center text-[#5B9BD5] mb-6">
+      {{ texts.title }}
+    </h2>
+
+    <form id="oferta-form" class="space-y-4">
+      <input type="hidden" id="token" value="{{ token }}">
+      <input type="hidden" id="sessionId" value="{{ session_id }}">
+
+      <div>
+        <label class="block text-sm font-medium mb-1">{{ texts.name }}</label>
+        <input type="text" id="name" required
+               value="{{ nombre or '' }}"
+               class="w-full px-4 py-2 rounded-lg border border-gray-300 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-[#5B9BD5]">
+      </div>
+
+     <div>
+      <label class="block text-sm font-medium mb-1">{{ texts.country }}</label>
+      <select id="pais" required
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-[#5B9BD5]">
+        <option value="">{{ texts.select }}</option>
+      </select>
+    </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">{{ texts.language }}</label>
+        <select id="idioma" required
+                class="w-full px-4 py-2 rounded-lg border border-gray-300 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-[#5B9BD5]">
+          <option value="">{{ texts.select }}</option>
+          <option value="es" {{ 'selected' if idioma == 'es' else '' }}>{{ texts.spanish }}</option>
+          <option value="en" {{ 'selected' if idioma == 'en' else '' }}>{{ texts.english }}</option>
+        </select>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">{{ texts.perimeter }}</label>
+          <input type="number" id="pistas_perimetrales" min="0"
+                 class="w-full px-4 py-2 rounded-lg border border-gray-300 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-[#5B9BD5]">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">{{ texts.lateral }}</label>
+          <input type="number" id="pistas_laterales" min="0" 
+                 class="w-full px-4 py-2 rounded-lg border border-gray-300 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-[#5B9BD5]">
+        </div>
+      </div>
+
+      <div class="text-center pt-4">
+        <button type="submit"
+                class="bg-[#5B9BD5] text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
+          {{ texts.submit }}
+        </button>
+      </div>
+
+      <p id="message" class="text-center text-sm mt-4"></p>
+    </form>
+  </div>
+
+<script>
+  window.API_BASE = "{{ api_base_url }}";
+  const base = (window.API_BASE || "").replace(/\/$/, "");
+  const url = `${base}/oferta_prospect_submit`;
+
+  const TEXT_REQUIRED = {{ texts.required|tojson }};
+  const TEXT_PROCESSING = {{ texts.processing|tojson }};
+  const TEXT_SUCCESS = {{ texts.success|tojson }};
+  const TEXT_CONNECTION_ERROR = {{ texts.connection_error|tojson }};
+  const TEXT_SELECT = {{ texts.select|tojson }};
+
+  const INITIAL_PAIS = {{ (pais or '')|tojson }};
+
+  const COUNTRIES = [
+    { es: "Emiratos Árabes Unidos", en: "United Arab Emirates" },
+    { es: "Argentina", en: "Argentina" },
+    { es: "Austria", en: "Austria" },
+    { es: "Australia", en: "Australia" },
+    { es: "Bélgica", en: "Belgium" },
+    { es: "Bolivia", en: "Bolivia" },
+    { es: "Bulgaria", en: "Bulgaria" },
+    { es: "Brunei", en: "Brunei" },
+    { es: "Brasil", en: "Brazil" },
+    { es: "Canadá", en: "Canada" },
+    { es: "Suiza", en: "Switzerland" },
+    { es: "Chile", en: "Chile" },
+    { es: "China", en: "China" },
+    { es: "Colombia", en: "Colombia" },
+    { es: "Corea del Sur", en: "South Korea" },
+    { es: "Costa Rica", en: "Costa Rica" },
+    { es: "Chipre", en: "Cyprus" },
+    { es: "República Checa", en: "Czech Republic" },
+    { es: "Cuba", en: "Cuba" },
+    { es: "Alemania", en: "Germany" },
+    { es: "Dinamarca", en: "Denmark" },
+    { es: "Ecuador", en: "Ecuador" },
+    { es: "Egipto", en: "Egypt" },
+    { es: "Argelia", en: "Algeria" },
+    { es: "Estonia", en: "Estonia" },
+    { es: "Grecia", en: "Greece" },
+    { es: "España", en: "Spain" },
+    { es: "Finlandia", en: "Finland" },
+    { es: "Islas Fiji", en: "Fiji" },
+    { es: "Francia", en: "France" },
+    { es: "Reino Unido", en: "United Kingdom" },
+    { es: "Guatemala", en: "Guatemala" },
+    { es: "Honduras", en: "Honduras" },
+    { es: "Hong Kong", en: "Hong Kong" },
+    { es: "Croacia", en: "Croatia" },
+    { es: "Hungría", en: "Hungary" },
+    { es: "Indonesia", en: "Indonesia" },
+    { es: "Irlanda", en: "Ireland" },
+    { es: "Irlanda del Norte", en: "Northern Ireland" },
+    { es: "India", en: "India" },
+    { es: "Islandia", en: "Iceland" },
+    { es: "Israel", en: "Israel" },
+    { es: "Italia", en: "Italy" },
+    { es: "Japón", en: "Japan" },
+    { es: "Kenia", en: "Kenya" },
+    { es: "Lituania", en: "Lithuania" },
+    { es: "Luxemburgo", en: "Luxembourg" },
+    { es: "Letonia", en: "Latvia" },
+    { es: "Marruecos", en: "Morocco" },
+    { es: "Montenegro", en: "Montenegro" },
+    { es: "Malta", en: "Malta" },
+    { es: "México", en: "Mexico" },
+    { es: "Malasia", en: "Malaysia" },
+    { es: "Mozambique", en: "Mozambique" },
+    { es: "Nigeria", en: "Nigeria" },
+    { es: "Países Bajos", en: "Netherlands" },
+    { es: "Panamá", en: "Panama" },
+    { es: "Paraguay", en: "Paraguay" },
+    { es: "Noruega", en: "Norway" },
+    { es: "Nueva Zelanda", en: "New Zealand" },
+    { es: "Filipinas", en: "Philippines" },
+    { es: "Perú", en: "Peru" },
+    { es: "Polonia", en: "Poland" },
+    { es: "Portugal", en: "Portugal" },
+    { es: "Puerto Rico", en: "Puerto Rico" },
+    { es: "Qatar", en: "Qatar" },
+    { es: "República Dominicana", en: "Dominican Republic" },
+    { es: "Rumanía", en: "Romania" },
+    { es: "Serbia", en: "Serbia" },
+    { es: "Rusia", en: "Russia" },
+    { es: "Arabia Saudita", en: "Saudi Arabia" },
+    { es: "Islas Salomón", en: "Solomon Islands" },
+    { es: "Suecia", en: "Sweden" },
+    { es: "Singapur", en: "Singapore" },
+    { es: "Eslovenia", en: "Slovenia" },
+    { es: "Eslovaquia", en: "Slovakia" },
+    { es: "Senegal", en: "Senegal" },
+    { es: "Suazilandia", en: "Eswatini" },
+    { es: "Tailandia", en: "Thailand" },
+    { es: "Túnez", en: "Tunisia" },
+    { es: "Turquía", en: "Turkey" },
+    { es: "Tanzania", en: "Tanzania" },
+    { es: "Ucrania", en: "Ukraine" },
+    { es: "Uganda", en: "Uganda" },
+    { es: "Uruguay", en: "Uruguay" },
+    { es: "Estados Unidos", en: "United States" },
+    { es: "Vanuatu", en: "Vanuatu" },
+    { es: "Samoa", en: "Samoa" },
+    { es: "Sudáfrica", en: "South Africa" }
+  ];
+
+  function loadCountryOptions() {
+    const idiomaSelect = document.getElementById("idioma");
+    const paisSelect = document.getElementById("pais");
+    const lang = idiomaSelect.value === "en" ? "en" : "es";
+
+    const currentValue = paisSelect.value || INITIAL_PAIS;
+
+    paisSelect.innerHTML = `<option value="">${TEXT_SELECT}</option>`;
+
+    COUNTRIES.forEach(country => {
+      const option = document.createElement("option");
+      option.value = country[lang];
+      option.textContent = country[lang];
+
+      if (country.es === currentValue || country.en === currentValue || country[lang] === currentValue) {
+        option.selected = true;
+      }
+
+      paisSelect.appendChild(option);
+    });
+  }
+      document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById("oferta-form");
+    const msg = document.getElementById("message");
+    const idiomaSelect = document.getElementById("idioma");
+
+    loadCountryOptions();
+    idiomaSelect.addEventListener("change", loadCountryOptions);
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const payload = {
+        token: document.getElementById("token")?.value || "",
+        session_id: document.getElementById("sessionId")?.value || "",
+        name: document.getElementById("name")?.value.trim(),
+        pais: document.getElementById("pais")?.value.trim(),
+        idioma: document.getElementById("idioma")?.value,
+        pistas_perimetrales: document.getElementById("pistas_perimetrales")?.value,
+        pistas_laterales: document.getElementById("pistas_laterales")?.value,
+        mailorigen: "web@planetpower.es",
+        origen: "oferta_campaña_prospecto"
+            };
+
+      if (!payload.name || !payload.pais || !payload.idioma) {
+        msg.textContent = TEXT_REQUIRED;
+        msg.className = "text-red-600 text-center mt-4";
+        return;
+      }
+
+      // 👉 VALIDACIÓN NUEVA
+      const perimetrales = parseInt(payload.pistas_perimetrales) || 0;
+      const laterales = parseInt(payload.pistas_laterales) || 0;
+
+      if (perimetrales + laterales < 1) {
+        msg.textContent = payload.idioma === "en"
+          ? "You must request at least 1 court."
+          : "Debes indicar al menos 1 pista.";
+        msg.className = "text-red-600 text-center mt-4";
+        return;
+      }
+
+      msg.textContent = TEXT_PROCESSING;
+      msg.className = "text-gray-600 text-center mt-4";
+
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (!result.ok) {
+          msg.textContent = result.message || "Error.";
+          msg.className = "text-red-600 text-center mt-4";
+          return;
+        }
+
+        msg.textContent = result.message || TEXT_SUCCESS;
+        msg.className = "text-green-600 text-center mt-4";
+
+      } catch (e) {
+        msg.textContent = TEXT_CONNECTION_ERROR;
+        msg.className = "text-red-600 text-center mt-4";
+      }
+    });
+  });
+
+</script>
+</body>
+</html>

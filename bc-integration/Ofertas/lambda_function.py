@@ -23,6 +23,11 @@ from datetime import date
 from types import SimpleNamespace
 from bs4 import BeautifulSoup
 from itsdangerous import URLSafeTimedSerializer
+from urllib.parse import urlencode
+
+
+
+
 
 
 import pycurl
@@ -41,6 +46,7 @@ USE_S3 = os.getenv("USE_S3", "").lower() == "true"
 ROOT_PREFIX_S3 = os.getenv("ROOT_PREFIX_S3", "")
 SECRET_KEY_PROFORMAS = os.getenv("SECRET_KEY_PROFORMAS", "")
 MYSQL_DB_SECRET_NAME = os.getenv("MYSQL_DB_SECRET_NAME", "")
+SECRET_KEY_OFERTAS= os.getenv("SECRET_KEY_OFERTAS", "")
 
 
 
@@ -103,9 +109,66 @@ def _json_response(status, body):
         "body": json.dumps(body, ensure_ascii=False),
     }
 
+
+def response(status, body):
+    return {
+        "statusCode": status,
+        "headers": {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
+        },
+        "body": json.dumps(body)
+    }
+
+
+def get_recipient_config(tracking_id, connection):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT 
+                    email_user AS EMAIL_USER,
+                    email_password AS EMAIL_PASSWORD,
+                    url_contacto AS URL_CONTACTO,
+                    url_ofertas AS URL_OFERTAS,
+                    url_proformas AS URL_PROFORMAS,
+                    url_actualizar_contacto AS URL_ACTUALIZAR_CONTACTO,
+                    url_form_contacto AS URL_FORM_CONTACTO,
+                    api_key AS API_KEY,
+                    environment AS ENVIRONMENT,
+                    send_email AS SEND_EMAIL,
+                    send_wellcome_email AS SEND_WELLCOME_EMAIL,
+                    tracking_id
+                FROM campaign_recipients
+                WHERE tracking_id = %s
+            """, (tracking_id,))
+
+            row = cursor.fetchone()
+
+            if not row:
+                print("[WARN] No se encontró configuración")
+                return None
+
+            # 🔐 Convertir binarios a string (si aplica)
+            if row.get("EMAIL_PASSWORD"):
+                row["EMAIL_PASSWORD"] = row["EMAIL_PASSWORD"].decode("utf-8", errors="ignore")
+
+            if row.get("API_KEY"):
+                row["API_KEY"] = row["API_KEY"].decode("utf-8", errors="ignore")
+
+            # ✅ Convertir booleanos
+            row["SEND_EMAIL"] = bool(row.get("SEND_EMAIL"))
+            row["SEND_WELLCOME_EMAIL"] = bool(row.get("SEND_WELLCOME_EMAIL"))
+
+            return row
+    except Exception as e:
+        print(f"[ERROR] Error al obtener configuración: {e}")
+        return None
+
+
 def oferta_core(payload: dict, pdf_data: bytes | None = None):
     print("oferta_core - payload:", payload)
     try:
+
         session_id = (payload.get("session_id") or "").strip()
         total_excl_iva_raw = str(payload.get("total_excl_iva") or "").strip()
         bd = (payload.get("BD") or "").strip()
@@ -222,11 +285,186 @@ def oferta_core(payload: dict, pdf_data: bytes | None = None):
         return {"ok": False, "error": "Error interno", "detail": str(e)}, 500
        
 
+def marcar_prospecto_como_lead(entity_id, campaign_id, tracking_id, connection):
+    if not entity_id:
+        return 0
+
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            UPDATE prospects_IA
+            SET lead_status = 'lead',
+                lead_converted_at = NOW(),
+                lead_converted_campaign_id = %s,
+                lead_converted_tracking_id = %s
+            WHERE id = %s
+        """, (
+            campaign_id,
+            tracking_id,
+            entity_id
+        ))
+
+        return cursor.rowcount
 
 
 
 
 
+
+def oferta_prospect_submit_core(payload: dict):
+    print("oferta_prospect_submit_core - payload:", payload)
+
+    token = payload.get("token", "")
+    tracking_id = payload.get("tracking_id", "")
+
+    print(f"Token recibido: {token}")
+    print(f"Tracking ID recibido: {tracking_id}")
+
+    if not token:
+        return response(400, {
+            "ok": False,
+            "code": "MISSING_TOKEN",
+            "message": "Falta el token."
+        })
+
+    serializer = URLSafeTimedSerializer(
+        SECRET_KEY_OFERTAS,
+        salt="oferta-link-v1"
+    )
+
+    token_data = serializer.loads(token, max_age=60 * 60 * 24 * 7)
+    print("[VAL] Datos decodificados del token:", token_data)
+
+    BD = token_data.get("bd", "PRODUCCION")
+
+    creds = get_db_credentials()
+    dbname = "bc_pruebas" if BD == "PRUEBAS" else creds["dbname"]
+
+    connection = pymysql.connect(
+        host=creds["host"],
+        user=creds["username"],
+        password=creds["password"],
+        database=dbname,
+        port=int(creds.get("port", 3306)),
+        cursorclass=pymysql.cursors.DictCursor,
+        autocommit=True,
+    )
+
+    try:
+        recipient = get_campaign_recipient_data(tracking_id, connection)
+        conf = get_recipient_config(tracking_id=tracking_id, connection=connection)
+    finally:
+        connection.close()
+
+    if not recipient:
+        return response(404, {"ok": False, "message": "Recipient no encontrado"})
+
+    if not conf:
+        return response(404, {"ok": False, "message": "Configuración no encontrada"})
+
+    pistas_perimetrales = float(payload.get("pistas_perimetrales") or 0)
+    pistas_laterales = float(payload.get("pistas_laterales") or 0)
+
+    api_payload = {
+        "name": payload.get("name"),
+        "email": recipient.get("email"),
+        "idioma": payload.get("idioma"),
+        "pais": payload.get("pais"),
+        "pistas_perimetrales": pistas_perimetrales,
+        "pistas_laterales": pistas_laterales,
+        "mailorigen": "web@planetpower.es",
+        "origen": "oferta_email",
+        "BD": BD,
+        "EMAIL_USER": conf.get("EMAIL_USER", ""),
+        "EMAIL_PASSWORD": conf.get("EMAIL_PASSWORD", ""),
+        "URL_CONTACTO": conf.get("URL_CONTACTO", ""),
+        "URL_OFERTAS": conf.get("URL_OFERTAS", ""),
+        "URL_ACTUALIZAR_CONTACTO": conf.get("URL_ACTUALIZAR_CONTACTO", ""),
+        "URL_FORM_CONTACTO": conf.get("URL_FORM_CONTACTO", ""),
+        "URL_PROFORMAS": conf.get("URL_PROFORMAS", ""),
+        "ENVIRONMENT": conf.get("ENVIRONMENT", ""),
+        "SEND_EMAIL": bool(conf.get("SEND_EMAIL")),
+        "SEND_WELLCOME_EMAIL": bool(conf.get("SEND_WELLCOME_EMAIL")),
+    }
+
+    print("📤 Enviando a API:", api_payload)
+
+    url_contacto = conf.get("URL_CONTACTO")
+    api_key = conf.get("API_KEY")
+
+    if isinstance(api_key, bytes):
+        api_key = api_key.decode("utf-8", errors="ignore")
+
+    
+
+    if not url_contacto:
+        return response(500, {"ok": False, "message": "URL_CONTACTO no definida"})
+
+    
+    
+
+    try:
+        buffer = BytesIO()
+        c = pycurl.Curl()
+
+        c.setopt(pycurl.URL, url_contacto)
+        c.setopt(pycurl.POST, 1)
+        c.setopt(pycurl.POSTFIELDS, json.dumps(api_payload))
+        c.setopt(pycurl.HTTPHEADER, [
+            "Content-Type: application/json",
+            f"x-api-key: {api_key or ''}"
+        ])
+        c.setopt(pycurl.TIMEOUT, 60)
+        c.setopt(pycurl.WRITEDATA, buffer)
+
+        c.perform()
+
+        status_code = c.getinfo(pycurl.RESPONSE_CODE)
+        response_text = buffer.getvalue().decode("utf-8")
+
+        c.close()
+
+        print("📥 Respuesta API:", status_code, response_text)
+
+
+        
+
+        if status_code >= 400:
+
+            return response(status_code, { "ok": False,
+                "message": "Error llamando a URL_CONTACTO",
+                "status_code": status_code,
+                "response": response_text})
+
+        # Si la oferta se creó bien, marcamos el prospecto como lead
+        if recipient and recipient.get("entity_kind") == "prospect":
+            connection = pymysql.connect(
+                host=creds["host"],
+                user=creds["username"],
+                password=creds["password"],
+                database=dbname,
+                port=int(creds.get("port", 3306)),
+                cursorclass=pymysql.cursors.DictCursor,
+                autocommit=True,
+            )
+
+            try:
+                marcar_prospecto_como_lead(
+                    entity_id=recipient.get("entity_id"),
+                    campaign_id=recipient.get("campaign_id"),
+                    tracking_id=recipient.get("tracking_id"),
+                    connection=connection
+                )
+            finally:
+                connection.close()   
+                
+            
+        return response(200, {"ok": True, "response": response_text})
+
+
+
+    except pycurl.error as e:
+        print("❌ Error pycurl:", str(e))
+        return response(500, {"ok": False, "message": str(e)})
 
 
 def proforma_core(payload: dict, pdf_data: bytes | None = None):
@@ -271,7 +509,7 @@ def proforma_core(payload: dict, pdf_data: bytes | None = None):
         print ("BD", BD)  
         
         #print(f"Credenciales obtenidas: {creds}")
-        print(f"Conectando a la base de datos con host: {creds['host']}, usuario: {creds['username']}, base de datos: {dbname}")
+        print(f"Conectando a la base de datos con hosten Lambda: {creds['host']}, usuario: {creds['username']}, base de datos: {dbname}")
         
 
         connection = pymysql.connect(
@@ -285,12 +523,19 @@ def proforma_core(payload: dict, pdf_data: bytes | None = None):
         )
         
 
+        print ("Conexión a la base de datos establecida correctamente.", connection)
+
+
+        print("Antes de get_session_data")
+        session_data = get_session_data(session_id, connection)
+        print("Después de get_session_data:", session_data)
+
+        print("Antes de calcular first_word")
+        first_word = session_data['name'].split()[0] if session_data['name'] else "Cliente"
+        print("Después de calcular first_word:", first_word)
+                
 
         
-
-        session_data = get_session_data(session_id, connection)
-
-        first_word = session_data['name'].split()[0] if session_data['name'] else "Cliente"
         print(f"ID de sesión: {session_id}")
         print(f"Datos de sesión: {session_data}")
 
@@ -329,20 +574,48 @@ def proforma_core(payload: dict, pdf_data: bytes | None = None):
    
 
     except Exception as e:
-   
-   
+        print("ERROR:", str(e))
+        print(traceback.format_exc())
         return {"ok": False, "error": "Error interno", "detail": str(e)}, 500
 
 
 
+def build_payload(data: dict) -> dict:
+    return {
+        "token": (data.get("token") or "").strip(),
+        "tracking_id": (data.get("session_id") or data.get("tracking_id") or "").strip(),
+        "name": (data.get("name") or "").strip(),
+        "pais": (data.get("pais") or "").strip(),
+        "idioma": (data.get("idioma") or "").strip(),
+        "pistas_perimetrales": (data.get("pistas_perimetrales") or "").strip(),
+        "pistas_laterales": (data.get("pistas_laterales") or "").strip(),
+        "mailorigen": "web@planetpower.es",
+        "origen": "oferta_campaña_prospecto",
+    }
 
-    return {"ok": True, "accion": "proforma_core"}
+
+
+
+
+
+
 
 def lambda_handler(event, context):
     try:
-
         print("Evento recibido:", json.dumps(event, indent=2))
         method, path = _get_route(event)
+
+        # CORS preflight
+        if method == "OPTIONS":
+            return {
+                "statusCode": 200,
+                "headers": {
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Headers": "Content-Type,Authorization",
+                    "Access-Control-Allow-Methods": "OPTIONS,GET,POST"
+                },
+                "body": ""
+            }
 
         stage = event.get("requestContext", {}).get("stage")
         if stage and path.startswith(f"/{stage}/"):
@@ -354,8 +627,6 @@ def lambda_handler(event, context):
             print("Ruta POST /oferta detectada")
             payload, pdf_bytes = _parse_body_any(event)
 
-            # Si BC te manda session_id y bd en JSON "normal" (como en tus logs),
-            # payload ya lo tendrá. Si alguna vez lo manda por querystring:
             qs = event.get("queryStringParameters") or {}
             payload.setdefault("session_id", qs.get("session_id"))
             payload.setdefault("BD", qs.get("bd") or qs.get("BD"))
@@ -363,26 +634,47 @@ def lambda_handler(event, context):
 
             result, status = oferta_core(payload, pdf_bytes)
             return _json_response(status, result)
-            # Nuevo actualizar
+
         if route_key == "POST /proforma":
             print("Ruta POST /proforma detectada")
             payload, pdf_bytes = _parse_body_any(event)
+
             qs = event.get("queryStringParameters") or {}
             payload.setdefault("session_id", qs.get("session_id"))
             payload.setdefault("BD", qs.get("bd") or qs.get("BD"))
+
             result, status = proforma_core(payload, pdf_bytes)
             return _json_response(status, result)
 
-        return _json_response(404, {"ok": False, "error": "Ruta no encontrada", "routeKey": route_key})
+        if route_key == "POST /oferta_prospect_submit":
+            print("Ruta POST /oferta_prospect_submit detectada")
+
+            raw_payload, _ = _parse_body_any(event)
+
+            qs = event.get("queryStringParameters") or {}
+
+            # mezclar body + querystring
+            data = {**qs, **(raw_payload or {})}
+
+            payload = build_payload(data)
+
+            return oferta_prospect_submit_core(payload)
+
+        return _json_response(404, {
+            "ok": False,
+            "error": "Ruta no encontrada",
+            "routeKey": route_key
+        })
 
     except json.JSONDecodeError:
         return _json_response(400, {"ok": False, "error": "JSON inválido"})
+
     except Exception as e:
-        return _json_response(500, {"ok": False, "error": "Error interno", "detail": str(e)})
-
-
-
-
+        return _json_response(500, {
+            "ok": False,
+            "error": "Error interno",
+            "detail": str(e)
+        })
 
 def get_db_credentials():
 
@@ -393,14 +685,18 @@ def get_db_credentials():
     return json.loads(response["SecretString"])
 
 
-def get_session_data(session_id,connection):
-
-
-    
-    
+def get_session_data(session_id, connection):
     with connection.cursor() as cursor:
-        cursor.execute("SELECT name, email, mailorigen, idioma, SalesHeaderNumber,url_proformas, url_form_contacto, send_email, email_password, send_wellcome_email FROM sessions WHERE session_id = %s", (session_id,))
+        cursor.execute("""
+            SELECT name, email, mailorigen, idioma, SalesHeaderNumber,
+                   url_proformas, url_form_contacto, send_email,
+                   email_password, send_wellcome_email
+            FROM sessions
+            WHERE session_id = %s
+        """, (session_id,))
+        
         row = cursor.fetchone()
+
         if row:
             print(f"Datos de sesión encontrados para session_id {session_id}: {row}")
             return {
@@ -416,7 +712,49 @@ def get_session_data(session_id,connection):
                 "send_wellcome_email": row["send_wellcome_email"],
             }
         else:
+            print(f"No se encontraron datos para session_id {session_id}")
             return None
+
+
+
+def get_campaign_recipient_data(tracking_id, connection):
+    with connection.cursor(pymysql.cursors.DictCursor) as cursor:
+        cursor.execute("""
+            SELECT 
+                cr.id AS recipient_id,
+                cr.email,
+                cr.pais,
+                cr.idioma,
+                cr.origen,
+                cr.tipo_lead,
+                cr.estado,
+                cr.entity_id,
+                cr.entity_kind,
+                cr.campaign_id,
+                cr.send_status,
+                cr.sent_at,
+                cr.opened_at,
+                cr.clicked_at,
+                cr.tracking_id,
+                c.name AS campaign_name,
+                c.sender,
+                c.reply_to,
+                c.subject_es,
+                c.subject_en
+            FROM campaign_recipients cr
+            JOIN campaigns c ON cr.campaign_id = c.id
+            WHERE cr.tracking_id = %s
+        """, (tracking_id,))
+        
+        row = cursor.fetchone()
+
+        if row:
+            print(f"Datos encontrados para tracking_id {tracking_id}: {row}")
+            return row
+
+        print(f"No se encontraron datos para tracking_id {tracking_id}")
+        return None
+    
 
 def generar_url_proforma(quote_number: str, url: str, secret_key: str, connection, session_id: str) -> str:
     serializer = URLSafeTimedSerializer(secret_key, salt="proforma-link-v1")
@@ -427,32 +765,21 @@ def generar_url_proforma(quote_number: str, url: str, secret_key: str, connectio
         "session_id": session_id
     })
 
-    print(f"Generar URL_proforma {url}: {BD}")
-   
     try:
         with connection.cursor() as cursor:
-            
             cursor.execute("""
                 INSERT INTO reset_token (user_id, token, created_at, expires_at)
                 VALUES (0, %s, NOW(), DATE_ADD(NOW(), INTERVAL 7 DAY))
             """, (token,))
-
             connection.commit()
-
-            # 4) Construir URL (local para pruebas)
-           
-
-    except pymysql.err.IntegrityError as e:
+    except pymysql.err.IntegrityError:
         connection.rollback()
-        # Si salta UNIQUE(token) porque has generado el mismo (poco probable), regeneras o manejas error.
         raise
-    
 
-
-    print("URL : ", f"{url}/proforma_form?token={token}")
-
-    return f"{url}/proforma_form?token={token}"
-
+    qs = urlencode({"token": token})
+    final_url = f"{url}/proforma_form?{qs}"
+    print("URL:", final_url)
+    return final_url
 
 def build_proforma_cta(proforma_url: str, idioma: str) -> str:
     es = idioma in ("Español", "Esp")
@@ -1406,6 +1733,36 @@ if __name__ == "__main__":
 
         result, status = oferta_core(payload, pdf_bytes)
         return jsonify(result), status
+    
 
+
+    @app.route("/oferta_prospect_submit", methods=["POST", "OPTIONS"])
+    def oferta_prospect_submit():
+
+       
+        
+        from flask import make_response
+
+        if request.method == "OPTIONS":
+            response = make_response("", 200)
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
+            response.headers["Access-Control-Allow-Methods"] = "OPTIONS,POST"
+            return response
+
+        form_data = request.get_json(silent=True) or request.form or request.args or {}
+
+        payload = build_payload(form_data)
+
+        result = oferta_prospect_submit_core(payload)
+
+        return (
+            result.get("body", ""),
+            result.get("statusCode", 200),
+            result.get("headers", {})
+        )
+
+ 
+        
     app.run(debug=True, port=5001)
 

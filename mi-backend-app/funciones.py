@@ -53,7 +53,56 @@ def generar_contrasena(longitud=9):
     # Ejemplo de uso
 
 
+GENERIC_EMAIL_DOMAINS = {
+    "gmail.com",
+    "hotmail.com",
+    "outlook.com",
+    "live.com",
+    "msn.com",
+    "yahoo.com",
+    "icloud.com",
+    "me.com",
+    "aol.com",
+    "proton.me",
+    "protonmail.com",
+    "gmx.com",
+    "gmx.es",
+    "mail.com",
+    "yandex.com",
+    "yandex.ru",
+    "zoho.com"
+}
 
+
+def split_email(email: str):
+    email = (email or "").strip().lower()
+    if "@" not in email:
+        return "", ""
+    local, domain = email.rsplit("@", 1)
+    return local.strip(), domain.strip()
+
+
+def lead_exists_for_prospect(cur, email: str) -> bool:
+    local, domain = split_email(email)
+    if not domain:
+        return False
+
+    if domain in GENERIC_EMAIL_DOMAINS:
+        cur.execute("""
+            SELECT 1
+            FROM lead_forms lf
+            WHERE LOWER(TRIM(lf.email)) = %s
+            LIMIT 1
+        """, (f"{local}@{domain}",))
+    else:
+        cur.execute("""
+            SELECT 1
+            FROM lead_forms lf
+            WHERE LOWER(TRIM(lf.email)) LIKE %s
+            LIMIT 1
+        """, (f"%@{domain}",))
+
+    return cur.fetchone() is not None
 
 
 def validate_reset_token(token):

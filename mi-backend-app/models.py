@@ -217,13 +217,23 @@ class Newsletter(db.Model):
     created_at = db.Column(db.DateTime, nullable=False)
     updated_at = db.Column(db.DateTime, nullable=False)
 
+
+from sqlalchemy.dialects.mysql import INTEGER
+
 class Campaign(db.Model):
     __tablename__ = "campaigns"
-    id = db.Column(db.Integer, primary_key=True)
+
+    id = db.Column(INTEGER(unsigned=True), primary_key=True, autoincrement=True)
+
     name = db.Column(db.String(150), nullable=False)
     campaign_type = db.Column(db.Enum("emailing", "newsletter"), nullable=False)
 
-    status = db.Column(db.Enum("draft","ready","sending","sent","cancelled"), default="draft", nullable=False)
+    status = db.Column(
+        db.Enum("draft","ready","sending","sent","cancelled"),
+        default="draft",
+        nullable=False
+    )
+
     scheduled_at = db.Column(db.DateTime)
     sent_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, nullable=False)
@@ -236,8 +246,8 @@ class Campaign(db.Model):
 
     idioma = db.Column(db.String(10), nullable=True)
 
-    newsletter_es_id = db.Column(db.Integer, db.ForeignKey("newsletters.id"), nullable=True)
-    newsletter_en_id = db.Column(db.Integer, db.ForeignKey("newsletters.id"), nullable=True)
+    newsletter_es_id = db.Column(INTEGER(unsigned=True), db.ForeignKey("newsletters.id"), nullable=True)
+    newsletter_en_id = db.Column(INTEGER(unsigned=True), db.ForeignKey("newsletters.id"), nullable=True)
 
     newsletter_es = db.relationship("Newsletter", foreign_keys=[newsletter_es_id])
     newsletter_en = db.relationship("Newsletter", foreign_keys=[newsletter_en_id])
@@ -248,12 +258,17 @@ class Campaign(db.Model):
         cascade="all, delete-orphan",
         passive_deletes=True
     )
+
+
+
+
 class CampaignRecipient(db.Model):
     __tablename__ = "campaign_recipients"
-    id = db.Column(db.Integer, primary_key=True)
+
+    id = db.Column(INTEGER(unsigned=True), primary_key=True, autoincrement=True)
 
     email = db.Column(db.String(255), nullable=False)
-    lead_id = db.Column(db.Integer, nullable=True)
+    lead_id = db.Column(INTEGER(unsigned=True), nullable=True)
     segment = db.Column(db.String(80))
 
     pais = db.Column(db.String(100))
@@ -262,6 +277,9 @@ class CampaignRecipient(db.Model):
 
     tipo_lead = db.Column(db.String(50))
     estado = db.Column(db.String(50))
+
+    entity_kind = db.Column(db.String(20))
+    entity_id = db.Column(INTEGER(unsigned=True))
 
     seleccionado = db.Column(db.Boolean, nullable=False, default=True)
 
@@ -287,8 +305,29 @@ class CampaignRecipient(db.Model):
     created_at = db.Column(db.DateTime)
     updated_at = db.Column(db.DateTime)
 
+
+        # NUEVOS CAMPOS
+    email_user = db.Column(db.String(255))
+    email_password = db.Column(db.LargeBinary(512))
+
+    url_contacto = db.Column(db.Text)
+    url_ofertas = db.Column(db.Text)
+    url_proformas = db.Column(db.String(512))
+    url_actualizar_contacto = db.Column(db.String(512))
+    url_form_contacto = db.Column(db.String(512))
+
+    api_key = db.Column(db.LargeBinary(512))
+    environment = db.Column(db.String(201))
+
+    send_email = db.Column(db.Boolean, nullable=False, default=True)
+    send_wellcome_email = db.Column(db.Boolean, nullable=False, default=True)
+
+
+
+
+
     campaign_id = db.Column(
-        db.Integer,
+        INTEGER(unsigned=True),
         db.ForeignKey("campaigns.id", ondelete="CASCADE"),
         nullable=False
     )
@@ -299,9 +338,8 @@ class CampaignRecipient(db.Model):
         db.UniqueConstraint("unsubscribe_token", name="uq_campaign_recipients_unsubscribe_token"),
         db.UniqueConstraint("tracking_id", name="uq_campaign_recipients_tracking_id"),
         db.UniqueConstraint("campaign_id", "email", name="uq_campaign_email"),
+        db.Index('idx_campaign_entity', 'campaign_id', 'entity_kind', 'entity_id'),
     )
-
-
   
 
 class LeadTarget(db.Model):
@@ -386,6 +424,11 @@ class LeadCampaignHistory(db.Model):
 
     send_status = db.Column(db.String(50), nullable=False)
 
+    entity_kind = db.Column(db.String(20), nullable=True)
+    entity_id = db.Column(db.Integer, nullable=True)
+
+    
+
     idioma = db.Column(db.String(10))
     pais = db.Column(db.String(100))
     origen = db.Column(db.String(100))
@@ -393,3 +436,154 @@ class LeadCampaignHistory(db.Model):
     estado = db.Column(db.String(50))
 
     created_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
+
+    __table_args__ = (
+        db.Index("idx_campaign_entity", "campaign_id", "entity_kind", "entity_id"),
+        db.UniqueConstraint("campaign_id", "entity_kind", "entity_id", name="uq_campaign_target"),
+    )
+class ProspectsIA(db.Model):
+    __tablename__ = "prospects_IA"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+
+    fecha = db.Column(db.Date, nullable=False)
+    idioma = db.Column(db.String(100), nullable=False)
+    pais = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(150), nullable=False, unique=True)
+
+    club = db.Column(db.String(100))
+
+    estado = db.Column(
+        db.Enum('operativo', 'renovacion', 'concepto', 'proyecto', name='estado_enum'),
+        nullable=False
+    )
+
+    tipo = db.Column(
+        db.Enum('Sin Calificar', 'Distribuidor', 'Club', name='prospect_tipo_enum'),
+        nullable=False,
+        default='Sin Calificar',
+        server_default='Sin Calificar'
+    )
+
+    propietario = db.Column(db.String(100))
+    num_pistas = db.Column(db.Integer)
+
+    web = db.Column(db.String(255))
+    youtube = db.Column(db.String(100))
+    instagram = db.Column(db.String(100))
+    linkedin_club = db.Column(db.String(100))
+    linkedin_propietario = db.Column(db.String(100))
+    booking_app = db.Column(db.String(100))
+    proveedor_pistas = db.Column(db.String(100))
+
+    unsubscribed = db.Column(db.Boolean, default=False)
+    unsubscribed_at = db.Column(db.DateTime)
+
+
+    lead_status = db.Column(
+        db.Enum('prospect', 'lead'),
+        nullable=False,
+        default='prospect'
+    )
+
+    lead_converted_at = db.Column(db.DateTime, nullable=True)
+
+    lead_converted_campaign_id = db.Column(
+        db.Integer,
+        db.ForeignKey("campaigns.id"),
+        nullable=True
+    )
+
+    lead_converted_tracking_id = db.Column(db.String(64), nullable=True)
+
+    source_id = db.Column(db.Integer, db.ForeignKey("prospect_sources.id"))
+    source = db.relationship("ProspectSource", back_populates="prospects")
+
+    target_items = db.relationship(
+        "ProspectTargetItem",
+        back_populates="prospect",
+        cascade="all, delete-orphan"
+    )
+
+
+
+    
+
+   
+
+
+
+from sqlalchemy.dialects.mysql import BIGINT
+
+class ProspectTarget(db.Model):
+    __tablename__ = "prospect_targets"
+
+    id = db.Column(BIGINT(unsigned=False), primary_key=True, autoincrement=True)
+
+    name = db.Column(db.String(150), nullable=False)
+
+    created_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        server_default=db.text("CURRENT_TIMESTAMP")
+    )
+
+    updated_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        server_default=db.text("CURRENT_TIMESTAMP"),
+        onupdate=db.text("CURRENT_TIMESTAMP")
+    )
+
+    # Relación con items
+    items = db.relationship(
+        "ProspectTargetItem",
+        back_populates="target",
+        cascade="all, delete-orphan"
+    )
+
+class ProspectTargetItem(db.Model):
+    __tablename__ = "prospect_target_items"
+
+    target_id = db.Column(
+        BIGINT(unsigned=False),
+        db.ForeignKey("prospect_targets.id", ondelete="CASCADE"),
+        primary_key=True,
+        nullable=False,
+    )
+
+    prospect_id = db.Column(
+        db.Integer,
+        db.ForeignKey("prospects_IA.id", ondelete="CASCADE"),
+        primary_key=True,
+        nullable=False,
+    )
+
+    created_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        server_default=db.text("CURRENT_TIMESTAMP"),
+    )
+
+    # Relaciones
+    target = db.relationship("ProspectTarget", back_populates="items")
+
+    prospect = db.relationship("ProspectsIA", back_populates="target_items")
+
+    __table_args__ = (
+        db.Index("idx_prospect_target_items_prospect_id", "prospect_id"),
+    )
+
+
+    class ProspectSource(db.Model):
+        __tablename__ = "prospect_sources"
+
+        id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+        file_name = db.Column(db.String(255), nullable=False)
+        description = db.Column(db.Text)
+        created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+        prospects = db.relationship(
+            "ProspectsIA",
+            back_populates="source"
+        )

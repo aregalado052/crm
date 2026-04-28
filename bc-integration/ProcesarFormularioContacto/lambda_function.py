@@ -39,8 +39,11 @@ SCOPE = os.getenv("SCOPE", "")
 AWS_REGION = os.getenv("AWS_REGION", "eu-north-1")
 TENANT_ID = os.getenv("TENANT_ID", "")
 COMPANY_ID = os.getenv("COMPANY_ID", "")
-
+SECRET_KEY_OFERTAS= os.getenv("SECRET_KEY_OFERTAS", "")
 SECRET_KEY_PROFORMAS= os.getenv("SECRET_KEY_PROFORMAS", "")
+
+URL_LAMBDA_OFERTAS_PUBLICAS = os.getenv("URL_LAMBDA_OFERTAS_PUBLICAS", "https://rfg45eg4lk.execute-api.eu-north-1.amazonaws.com/prod")
+URL_NGROK_OFERTAS_PUBLICAS = os.getenv("URL_NGROK_OFERTAS_PUBLICAS", "https://2e15-83-39-89-46.ngrok-free.app")
 
 global BD, ENVIRONMENT, URL_OFERTAS, URL_PROFORMAS
 
@@ -66,6 +69,8 @@ def validate_token_and_get_quote(token: str) -> str:
     BD = payload.get("env")
     url_form_contacto = payload.get("url_form_contacto")
     session_id = payload.get("session_id")
+
+    
     
 
     print(f"Token válido. QuoteNumber: {quote_number}, BD: {BD}, URL_FORMCONTACTO: {url_form_contacto}, session_id: {session_id}    ")
@@ -91,7 +96,66 @@ def token_exists_in_db(connection, token: str) -> bool:
         return cur.fetchone() is not None
 
 
+def get_campaign_recipient_data(tracking_id, connection):
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT 
+                cr.email,
+                cr.pais,
+                cr.idioma,
+                cr.origen,
+                cr.tipo_lead,
+                cr.estado,
+                cr.entity_id,
+                cr.entity_kind,
+                cr.send_status,
+                cr.sent_at,
+                cr.opened_at,
+                cr.clicked_at,
+                cr.tracking_id,
+                c.name AS campaign_name,
+                c.sender,
+                c.reply_to,
+                c.subject_es,
+                c.subject_en
+            FROM campaign_recipients cr
+            JOIN campaigns c ON cr.campaign_id = c.id
+            WHERE cr.tracking_id = %s
+        """, (tracking_id,))
+        
+        row = cursor.fetchone()
 
+        if row:
+            print(f"Datos encontrados para tracking_id {tracking_id}: {row}")
+            return row
+        else:
+            print(f"No se encontraron datos para tracking_id {tracking_id}")
+            return None
+
+
+def get_prospect_from_entity_id(entity_id, connection):
+    if not entity_id:
+        return None
+
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT 
+                id,
+                club,
+                pais,
+                idioma
+            FROM prospects_IA
+            WHERE id = %s
+        """, (entity_id,))
+
+        row = cursor.fetchone()
+
+        if row:
+            print(f"[DEBUG] Prospect encontrado para entity_id {entity_id}: {row}")
+            return row
+        else:
+            print(f"[DEBUG] No se encontró prospect para entity_id {entity_id}")
+            return None
 
 def get_db_credentials():
     client = boto3.client("secretsmanager", region_name=AWS_REGION)  # ✅ correcto
@@ -226,6 +290,7 @@ def store_session(connection, name, email, mailorigen, idioma, origen, bd, email
                   url_actualizar_contacto, url_form_contacto, api_key, environment, send_email, send_wellcome_email):
     session_id = str(uuid.uuid4())  # 🔑 clave de sesión única
     
+    print(f"Guardando sesión: Store Session {session_id} - {name}, {email}, {mailorigen}, {idioma}, {origen}, {bd}, {email_user}, {email_password}, {url_contacto}, {url_ofertas}, {url_proformas}, {url_actualizar_contacto}, {url_form_contacto}, {api_key}, {environment}, {send_email}, {send_wellcome_email}")
     
     with connection.cursor() as cursor:
         cursor.execute("""
@@ -272,11 +337,36 @@ def actualizar_contacto_service(data: dict) -> dict:
     URL_OFERTAS = data.get("URL_OFERTAS", "https://tx3fc457zf.execute-api.eu-north-1.amazonaws.com/prod/oferta")
     URL_PROFORMAS = data.get("URL_PROFORMAS", "https://tx3fc457zf.execute-api.eu-north-1.amazonaws.com/prod/proforma")
     URL_ACTUALIZAR_CONTACTO = data.get("URL_ACTUALIZAR_CONTACTO", "https://rfg45eg4lk.execute-api.eu-north-1.amazonaws.com/prod/actualizar_contacto")
-    URL_FORMCONTACTO= data.get("URL_FORMCONTACTO", "https://rfg45eg4lk.execute-api.eu-north-1.amazonaws.com") 
+    URL_FORMCONTACTO= data.get("URL_FORMCONTACTO", "https://rfg45eg4lk.execute-api.eu-north-1.amazonaws.com/prod") 
     ENVIRONMENT = data.get("ENVIRONMENT", "Production") 
     SEND_EMAIL= data.get("SEND_EMAIL", True) 
-    session_id = data.get("session_id", str(uuid.uuid4()))  # Si no viene, generar uno nuevo (aunque idealmente siempre debería venir)
+    session_id = data.get("session_id", "")  # Si no viene, buscarlo en la BD a traves del quote Number
 
+    if not session_id:
+        print("No se recibió session_id en la solicitud. Buscando en la base de datos usando QuoteNo.")
+        creds = get_db_credentials()
+        dbname = "bc_pruebas" if (BD == "PRUEBAS") else creds["dbname"]
+        connection = pymysql.connect(
+            host=creds["host"],
+            user=creds["username"],
+            password=creds["password"],
+            database=dbname,
+            port=int(creds.get("port", 3306)),
+            cursorclass=pymysql.cursors.DictCursor,
+            autocommit=True,
+        )
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT session_id FROM sessions WHERE SalesHeaderNumber = %s", (QuoteNo,))
+            row = cursor.fetchone()
+            if row:
+                session_id = row["session_id"]
+                print(f"Session ID encontrado para QuoteNo {QuoteNo}: {session_id}")
+            else:
+                print(f"No se encontró session_id para QuoteNo {QuoteNo}.")
+                return {"ok": False, "message": "Session ID no encontrado para el QuoteNo proporcionado."}
+
+
+    print (f"Session ID final a usar: {session_id}")
     
     hdrs = { (k or "").lower(): v for k, v in (data.get("headers") or {}).items() }
     API_KEY = hdrs.get("x-api-key")
@@ -442,13 +532,24 @@ def obtener_datos_pais(connection, pais, idioma):
     
 
     LABEL_TO_SLUG = {
-    'Español': 'es',
-    'Esp': 'es',
-    'Ingles': 'en',
-    'Frances': 'fr',
-    'Italiano': 'it',
-}
+        'Español': 'es',
+        'Esp': 'es',
+        'es': 'es',
 
+        'Ingles': 'en',
+        'Inglés': 'en',
+        'English': 'en',
+        'en': 'en',
+
+        'Frances': 'fr',
+        'Francés': 'fr',
+        'French': 'fr',
+        'fr': 'fr',
+
+        'Italiano': 'it',
+        'Italian': 'it',
+        'it': 'it',
+    }
     slug = LABEL_TO_SLUG.get(idioma, 'es')  # fallback 'es'
 
     # Paso 2: slug -> columna
@@ -1456,6 +1557,13 @@ def lambda_handler(event, context):
    
     try:
         method, path = _get_route(event)
+        method, path = _get_route(event)
+
+        print("[DEBUG] method:", repr(method))
+        print("[DEBUG] path:", repr(path))
+        print("[DEBUG] requestContext:", event.get("requestContext"))
+        print("[DEBUG] httpMethod:", event.get("httpMethod"))
+        print("[DEBUG] raw path:", event.get("path"))
 
         # CORS preflight
         if method == "OPTIONS":
@@ -1506,9 +1614,40 @@ def lambda_handler(event, context):
                 "headers": {"Content-Type": ct, "Access-Control-Allow-Origin": "*"},
                 "body": body,
             }
+        
+        if route_key == "GET /oferta_public":
+            token = _get_token_from_event(event)
 
-        return _json_response(404, {"ok": False, "error": "Ruta no encontrada", "routeKey": route_key})
-    
+
+
+            BASE_URL = URL_LAMBDA_OFERTAS_PUBLICAS
+
+        
+            body, status, ct = oferta_public_service(token, BASE_URL)
+           
+
+            if ct.startswith("text/html"):
+                return _html_response(status, body)
+
+            # si es error JSON
+            return {
+                "statusCode": status,
+                "headers": {"Content-Type": ct, "Access-Control-Allow-Origin": "*"},
+                "body": body,
+            }
+
+
+        #return _json_response(404, {"ok": False, "error": "Ruta no encontrada", "routeKey": route_key})
+        return _json_response(404, {
+            "ok": False,
+            "error": "Ruta no encontrada",
+            "routeKey": route_key,
+            "method": method,
+            "path": path,
+            "httpMethod": event.get("httpMethod"),
+            "event_path": event.get("path"),
+            "requestContext": event.get("requestContext", {})
+        })
 
     except json.JSONDecodeError:
         return _json_response(400, {"ok": False, "error": "JSON inválido"})
@@ -1555,13 +1694,15 @@ def crear_contacto_core(data):
     URL_OFERTAS = data.get("URL_OFERTAS", "https://tx3fc457zf.execute-api.eu-north-1.amazonaws.com/prod/oferta")
     URL_PROFORMAS = data.get("URL_PROFORMAS", "https://tx3fc457zf.execute-api.eu-north-1.amazonaws.com/prod/proforma")
     URL_ACTUALIZAR_CONTACTO = data.get("URL_ACTUALIZAR_CONTACTO", "https://rfg45eg4lk.execute-api.eu-north-1.amazonaws.com/prod/actualizar_contacto")
-    URL_FORMCONTACTO= data.get("URL_FORMCONTACTO", "https://rfg45eg4lk.execute-api.eu-north-1.amazonaws.com") 
+    URL_FORMCONTACTO= data.get("URL_FORMCONTACTO", "https://rfg45eg4lk.execute-api.eu-north-1.amazonaws.com/prod") 
     ENVIRONMENT = data.get("ENVIRONMENT", "Production") 
     SEND_EMAIL= data.get("SEND_EMAIL", True)
     SEND_WELLCOME_EMAIL = data.get("SEND_WELLCOME_EMAIL", True)
     hdrs = { (k or "").lower(): v for k, v in (data.get("headers") or {}).items() }
     API_KEY = hdrs.get("x-api-key")
     
+    print ("URLFORMCONTACTO", URL_FORMCONTACTO)
+
 
     if not API_KEY:
         API_KEY = "gdZgiMt2FD79LrR2opX9gxitgJQfB9X2OkP7dn3i"
@@ -1866,6 +2007,164 @@ def proforma_form_service(token: str):
     return (html, 200, "text/html; charset=utf-8")
 
 
+def oferta_public_service(token: str, base_url: str):
+    if not token:
+        print("[WARN] Falta el token.")
+        return (
+            
+            json.dumps({"ok": False, "code": "MISSING_TOKEN", "message": "Falta el token."}, ensure_ascii=False),
+            400,
+            "application/json; charset=utf-8",
+        )
+
+   
+
+    nombre = ""
+    pais = ""
+    idioma = ""
+    session_id = ""
+
+    try:
+        serializer = URLSafeTimedSerializer(
+            SECRET_KEY_OFERTAS,
+            salt="oferta-link-v1"
+        )
+
+
+
+        print("[VAL] SECRET_KEY_OFERTAS =", repr(SECRET_KEY_OFERTAS))
+        print("[VAL] TOKEN =", token)
+
+
+
+
+
+        data = serializer.loads(token, max_age=60 * 60 * 24 * 7)
+
+        print ("[VAL] Datos decodificados del token:", data)    
+        tracking_id = data.get("session_id")   # o "session_id" si el token aún usa ese nombre
+
+        BD = data.get("bd", "PRODUCCION")  # o "BD" si el token aún usa ese nombre  
+
+
+
+        creds = get_db_credentials()
+        dbname = "bc_pruebas" if (BD == "PRUEBAS") else creds["dbname"]
+
+        print("BD", BD)
+        print(f"Conectando a la base de datos con host: {creds['host']}, usuario: {creds['username']}, base de datos: {dbname}")
+
+        connection = pymysql.connect(
+            host=creds["host"],
+            user=creds["username"],
+            password=creds["password"],
+            database=dbname,
+            port=int(creds.get("port", 3306)),
+            cursorclass=pymysql.cursors.DictCursor,
+            autocommit=True,
+        )
+
+        print("Conexión a la base de datos establecida correctamente.")
+
+        recipient = get_campaign_recipient_data(tracking_id, connection)
+        
+
+        pais = ""
+        idioma = ""
+        nombre = ""
+
+        if recipient:
+            pais = recipient.get("pais", "") or ""
+            idioma = (recipient.get("idioma", "") or "").strip().lower()
+
+            entity_id = recipient.get("entity_id")
+
+            prospect = get_prospect_from_entity_id(entity_id, connection)
+
+            if prospect:
+                nombre = prospect.get("club", "") or ""
+
+        print("[DEBUG] tracking_id:", tracking_id)
+
+    
+    except Exception as e:
+        print("[ERROR] Token inválido o error interno:", str(e))
+        traceback.print_exc()
+    finally:
+        try:
+            connection.close()
+        except:
+            pass
+
+    lang = "en" if idioma in ("en", "english", "ingles", "inglés") else "es"
+    texts = {
+        "es": {
+            "title": "Solicitud de Oferta",
+            "name": "Nombre",
+            "country": "País",
+            "language": "Idioma",
+            "perimeter": "Pistas Perimetrales",
+            "lateral": "Pistas Laterales",
+            "submit": "Solicitar oferta",
+            "select": "Selecciona",
+            "spanish": "Español",
+            "english": "English",
+            "required": "Todos los campos son obligatorios.",
+            "processing": "Procesando...",
+            "success": "Solicitud enviada correctamente.",
+            "connection_error": "Error de conexión."
+        },
+        "en": {
+            "title": "Quote Request",
+            "name": "Name",
+            "country": "Country",
+            "language": "Language",
+            "perimeter": "Perimeter Courts",
+            "lateral": "Lateral Courts",
+            "submit": "Request quote",
+            "select": "Select",
+            "spanish": "Spanish",
+            "english": "English",
+            "required": "All fields are required.",
+            "processing": "Processing...",
+            "success": "Request sent successfully.",
+            "connection_error": "Connection error."
+        }
+    }[lang]
+
+    
+
+
+
+
+
+    env = Environment(loader=FileSystemLoader("templates"))
+
+    template = env.get_template("oferta_public.html")
+
+    BASE_URL = base_url
+
+
+    print(f"Renderizando plantilla con token={token}, session_id={tracking_id}, nombre={nombre}, pais={pais}, idioma={idioma}, texts={texts}, api_base_url={BASE_URL}")
+
+    html = template.render(
+        token=token,
+        session_id=tracking_id,
+        nombre=nombre,
+        pais=pais,
+        idioma=lang,
+        texts=texts,
+        api_base_url=BASE_URL
+    )
+
+
+    return (html, 200, "text/html; charset=utf-8")
+
+
+
+
+
+
 def proforma_submit_core(payload: dict):
     data = payload or {}
 
@@ -1965,8 +2264,8 @@ def proforma_submit_core(payload: dict):
         return {"ok": False, "message": "Error updating contact", "detail": result}, 500
 
     if idioma in ("Español", "Esp"):
-        return {"ok": True, "message": "Solicitud recibida. Generando proforma..."}, 200
-    return {"ok": True, "message": "Request received. Generating proforma..."}, 200
+        return {"ok": True, "message": "Solicitud recibida. Proforma enviada..."}, 200
+    return {"ok": True, "message": "Request received. Proforma sent..."}, 200
    
 
 
@@ -2039,6 +2338,7 @@ if __name__ == "__main__":
 
         # 1️⃣ Extraer token
         if request.method == "GET":
+            print("Extracting token from query parameters")
             token = (request.args.get("token") or "").strip()
         else:
             if request.is_json:
@@ -2056,9 +2356,37 @@ if __name__ == "__main__":
 
         # Si es error JSON
         return body, status, {"Content-Type": content_type}
+    
+    import traceback
+
+
+
+    @app.route("/oferta_public", methods=["GET"])
+    def oferta_public():
+
+        """Endpoint para actualizar un contacto y crear una factura Proforma en BC."""
+
+        print("Endpoint /api/oferta_public called with method:", request.method)
+
+
+
+        token = request.args.get("token", "")
+
+        #BASE_URL = "https://127.0.0.1:5000"
+        BASE_URL = URL_NGROK_OFERTAS_PUBLICAS
+
         
+        body, status, content_type = oferta_public_service(token, BASE_URL)
 
+        # 3️⃣ Responder según tipo
+        if content_type.startswith("text/html"):
+            return body, status, {"Content-Type": content_type}
 
+        # Si es error JSON
+        return body, status, {"Content-Type": content_type}
+
+        
+        
         
             
 

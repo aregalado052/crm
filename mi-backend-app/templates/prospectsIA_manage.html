@@ -1,0 +1,492 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+  /* 1) Asegura que el caret sea visible y el texto también */
+  #inputInfoTecnica {
+    color: #111 !important;
+    caret-color: auto !important;  /* o 'black' si prefieres forzarlo */
+    pointer-events: auto !important;
+    background-color: #fff; /* por si el fondo transparente lo “camufla” */
+  }
+
+  /* 2) Si algún ancestro usa transform/animation, Safari/Chromium a veces
+        “pierden” el caret. Este hack suele arreglarlo. */
+  #inputInfoTecnica {
+    transform: translateZ(0);         /* crea su propia capa de render */
+    -webkit-transform: translateZ(0);
+  }
+
+  /* 3) Si por CSS global alguien puso el caret invisible, lo contrarresta */
+  textarea { caret-color: auto; }
+
+
+  input, select, textarea {
+    position: relative !important;
+    z-index: 9999 !important;
+    pointer-events: auto !important;
+  }
+
+  .swal2-container {
+    z-index: 99999 !important;
+  }
+
+</style>
+
+
+
+
+<div class="min-h-screen bg-white-100 flex items-center justify-center p-4">
+  <div class="bg-blue-100 rounded-2xl shadow-xl w-full max-w-8xl p-8">
+    <h2 class="text-3xl font-bold text-center text-blue-700 mb-6 flex items-baseline gap-3">Gestionar un Prospecto</h2>
+
+    <form id="prospectosIA" class="space-y-6">
+      <div class="flex gap-3 flex-wrap">
+        <button type="submit"
+            class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-md transition duration-200">
+            Actualizar
+        </button>
+
+        <button 
+          id="btn-campanas"
+          type="button"
+          class="h-12 inline-flex items-center justify-center bg-orange-600 hover:bg-orange-700 text-white font-semibold px-4 rounded-lg shadow-md transition duration-200 whitespace-nowrap">
+          Consultar Campañas
+        </button>
+
+        <a  
+          id="btn-email"
+          href="mailto:{{ prospectIA.email }}"
+          class="h-12 inline-flex items-center justify-center bg-violet-600 hover:bg-violet-700 text-white font-semibold px-4 rounded-lg shadow-md transition duration-200 whitespace-nowrap">
+          Enviar Email
+        </a>
+
+        <button 
+          id="btn-oferta"
+          type="button"
+          class="h-12 inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white font-semibold px-4 rounded-lg shadow-md transition duration-200">
+          Enviar  Oferta  
+        </button>
+
+       
+        
+        <button id="btn-exit"
+          type="button"               
+          class="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600">
+          {{ _('Volver') }}
+        </button>
+
+      
+
+      </div>
+      <!-- Fila de fechas -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        
+
+          <!-- Fecha actual (no editable) -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha actual</label>
+          <!-- campo visible deshabilitado -->
+          <input
+          type="date"
+          id="fecha"
+          class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                  bg-gray-100 text-gray-700 cursor-not-allowed
+                  focus:outline-none"
+          readonly
+          aria-disabled="true"
+          />
+          
+        </div>
+
+        
+
+        <!-- Fecha de la próxima acción -->
+        
+      <div>
+      
+
+      <!-- Dropdown estado -->
+        <label class="block text-sm font-medium text-gray-700 mt-3 mb-1">Estado</label>
+          <select
+            id="estado"
+            name="estado"
+            class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                  focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500"
+            required
+          >
+            <option value="operativo">Operativo</option>
+            <option value="renovacion">En Renovación</option>
+            <option value="proyecto">Proyecto</option>
+            <option value="concepto">Concepto</option>
+          </select>
+        </div>
+
+
+
+      </div>
+        
+
+      <div class="grid grid-cols-[2fr_2fr_1fr_1fr] gap-4 items-end">
+
+        <!-- Nombre -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nombre Club</label>
+          <input
+            type="text" id="inputClub" name="inputClub"
+            class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                  bg-gray-100 text-gray-700 cursor-not-allowed focus:outline-none"
+            readonly />
+        </div>
+
+        <!-- Correo -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+          <input
+            type="email" id="inputEmail" name="inputEmail"
+            class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                  bg-gray-100 text-gray-700 cursor-not-allowed focus:outline-none"
+            readonly />
+        </div>
+
+      
+        
+
+        <!-- Número de Oferta (más pequeño) -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nº de Pistas</label>
+          <input
+            type="text" id="inputNumeroPistas" name="inputNumeroPistas"
+            class="w-full h-12 px-3 text-sm border border-blue-200 rounded-lg shadow-sm
+                  bg-gray-100 text-gray-700  cursor-text
+                  focus:outline-none focus:ring-2 focus:ring-blue-400"
+            style="caret-color: black;"
+            
+          />
+             
+        </div>
+
+      </div>
+
+        <!-- Idioma, Pais y Tipo Lead -->
+        
+      <div class="grid grid-cols-3 gap-4 items-end">
+
+        <!-- Idioma -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Idioma</label>
+          <input 
+            type="text"
+            id="inputIdioma"
+            name="idioma"
+            class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                  bg-gray-100 text-gray-700 
+                   focus:outline-none focus:ring-2 focus:ring-blue-400"
+            style="caret-color: black;"
+            
+          />
+        </div>
+
+        <!-- País -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">País</label>
+          <input 
+            type="text"
+            id="inputPais"
+            name="pais"
+            class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                  bg-gray-100 text-gray-700 cursor-text
+                  focus:outline-none focus:ring-2 focus:ring-blue-400"
+            style="caret-color: black;"
+          />
+        </div>
+
+        <!-- Tipo Lead -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mt-3 mb-1">Tipo Lead</label>
+          <select
+            id="inputTipoLead"
+            name="inputTipoLead"
+            class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                  focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500"
+            required
+          >
+            <option value="Distribuidor">Distribuidor</option>
+            <option value="Club">Club</option>
+            <option value="Sin calificar">Sin calificar</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-end gap-6">
+
+        <!-- Website -->
+        <div class="flex-1 min-w-[220px]">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Website</label>
+          <input 
+            type="text"
+            id="inputWebsite"
+            name="inputWebsite"
+            class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                  bg-gray-100 text-gray-700 cursor-text
+                  focus:outline-none focus:ring-2 focus:ring-blue-400"
+            style="caret-color: black;"
+          />
+        </div>
+
+        <!-- Youtube -->
+        <div class="flex-1 min-w-[220px]">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Youtube</label>
+          <input 
+            type="text"
+            id="inputYoutube"
+            name="inputYoutube"
+            class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                  bg-gray-100 text-gray-700 cursor-text
+                  focus:outline-none focus:ring-2 focus:ring-blue-400"
+            style="caret-color: black;"
+          />
+        </div>
+
+        <!-- Instagram -->
+        <div class="flex-1 min-w-[220px]">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Instagram</label>
+          <input 
+            type="text"
+            id="inputInstagram"
+            name="inputInstagram"
+            class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                  bg-gray-100 text-gray-700 cursor-text
+                  focus:outline-none focus:ring-2 focus:ring-blue-400"
+            style="caret-color: black;"
+          />
+        </div>
+
+        <!-- Linkedin Club -->
+        <div class="flex-1 min-w-[220px]">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Linkedin Club</label>
+          <input 
+            type="text"
+            id="inputLinkedinClub"
+            name="inputLinkedinClub"
+            class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                  bg-gray-100 text-gray-700 cursor-text
+                  focus:outline-none focus:ring-2 focus:ring-blue-400"
+            style="caret-color: black;"
+          />
+        </div>
+
+        <!-- Linkedin Propietario -->
+        <div class="flex-1 min-w-[220px]">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Linkedin Propietario</label>
+          <input 
+            type="text"
+            id="inputLinkedinPropietario"
+            name="inputLinkedinPropietario"
+            class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                  bg-gray-100 text-gray-700 cursor-text
+                  focus:outline-none focus:ring-2 focus:ring-blue-400"
+            style="caret-color: black;"
+          />
+        </div>
+
+      </div>       
+ 
+        <div class="flex flex-wrap items-end gap-6">
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Booking App</label>
+            <input 
+              type="text"
+              id="inputBooking_app"
+              name="inputBooking_app"
+              class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                    bg-gray-100 text-gray-700 cursor-text
+                    focus:outline-none focus:ring-2 focus:ring-blue-400"
+              style="caret-color: black;"
+            />
+          </div>
+
+          <!-- Tipo Linkedin -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Proveedor Pistas</label>
+            <input 
+              type="text"
+              id="inputProveedorPistas"
+              name="inputProveedorPistas"
+              class="w-full h-12 px-4 text-lg border border-blue-200 rounded-lg shadow-sm
+                    bg-gray-100 text-gray-700 cursor-text
+                    focus:outline-none focus:ring-2 focus:ring-blue-400"
+              style="caret-color: black;"
+            />
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const prospectsIAData = {{ (prospectIA or {})|tojson }};
+
+document.addEventListener("DOMContentLoaded", () => {
+  const $ = (id) => document.getElementById(id);
+
+  const setValue = (selectorOrId, val) => {
+    if (val == null) return;
+    let el = document.getElementById(selectorOrId);
+    if (!el) el = document.querySelector(`[name="${selectorOrId}"]`);
+    if (el) el.value = val;
+  };
+
+  const toYMD = (v) => {
+    if (!v) return "";
+    const s = String(v);
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return "";
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  };
+
+  // Relleno de campos
+  setValue("fecha", toYMD(prospectsIAData.fecha));
+  setValue("inputClub", prospectsIAData.club);
+  setValue("inputEmail", prospectsIAData.email);
+  setValue("estado", prospectsIAData.estado);
+  setValue("inputIdioma", prospectsIAData.idioma);
+  setValue("inputPais", prospectsIAData.pais);
+  setValue("inputNumeroPistas", prospectsIAData.num_pistas);
+  setValue("inputPropietario", prospectsIAData.propietario);
+  setValue("inputTipoLead", prospectsIAData.tipo);
+  setValue("inputWeb", prospectsIAData.web);
+  setValue("inputYoutube", prospectsIAData.youtube);
+  setValue("inputInstagram", prospectsIAData.instagram);
+  setValue("inputLinkedinClub", prospectsIAData.linkedin_club);
+  setValue("inputLinkedinPropietario", prospectsIAData.linkedin_propietario);
+  setValue("inputBooking_app", prospectsIAData.booking_app);
+  setValue("inputProveedorPistas", prospectsIAData.proveedor_pistas);
+
+  const estadoEl = $("estado");
+  if (estadoEl) {
+    estadoEl.value = prospectsIAData.estado || "operativo";
+  }
+
+  // Submit
+  const form = $("prospectosIA");
+  if (form) {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const btn = e.submitter || document.querySelector('#prospectosIA button[type="submit"]');
+      const originalText = btn?.textContent;
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Enviando…";
+      }
+
+      try {
+        const clean = (v) => v && v.trim() !== "" ? v.trim() : null;
+
+        const payload = {
+          id: prospectsIAData.id || null,
+
+          fecha: clean($("fecha")?.value),
+          estado: clean($("estado")?.value),
+          idioma: clean($("inputIdioma")?.value),
+          pais: clean($("inputPais")?.value),
+
+          num_pistas: $("inputNumeroPistas")?.value || null,
+
+          tipo: clean($("inputTipoLead")?.value),
+
+          propietario: clean($("inputPropietario")?.value),
+          web: clean($("inputWebsite")?.value),
+
+          youtube: clean($("inputYoutube")?.value),
+          instagram: clean($("inputInstagram")?.value),
+
+          linkedin_club: clean($("inputLinkedinClub")?.value),
+          linkedin_propietario: clean($("inputLinkedinPropietario")?.value),
+
+          booking_app: clean($("inputBooking_app")?.value),
+          proveedor_pistas: clean($("inputProveedorPistas")?.value)
+        };
+
+        const res = await fetch("/prospectsIA_manage", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`);
+        await res.json().catch(() => ({}));
+
+        if (window.Swal && Swal.fire) {
+          await Swal.fire({
+            icon: "success",
+            title: "¡Actualizado correctamente!",
+            text: "El prospecto se ha actualizado.",
+            timer: 2500,
+            showConfirmButton: false,
+          });
+        } else {
+          alert("Actualizado correctamente.");
+        }
+
+        window.location.href = "/consultar_prospectos_IA";
+
+      } catch (err) {
+        console.error(err);
+
+        if (window.Swal && Swal.fire) {
+          await Swal.fire({
+            icon: "error",
+            title: "No se pudo actualizar",
+            text: err.message || "Error desconocido",
+          });
+        } else {
+          alert("No se pudo actualizar: " + (err.message || err));
+        }
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = originalText;
+        }
+      }
+    });
+  }
+
+  // Botón campañas
+  const btnCampanas = $("btn-campanas");
+  if (btnCampanas) {
+    btnCampanas.addEventListener("click", function () {
+      const prospectIAId = prospectsIAData.id;
+      if (!prospectIAId) {
+        Swal.fire({
+          icon: "warning",
+          title: "Falta ID",
+          text: "No se puede consultar campañas sin prospecto."
+        });
+        return;
+      }
+
+      window.location.href = `/consultar_campanas_por_prospectoIA?prospectIA_id=${encodeURIComponent(prospectIAId)}`;
+    });
+  }
+
+  // Botón volver
+  const btnExit = $("btn-exit");
+  if (btnExit) {
+    btnExit.addEventListener("click", function (e) {
+      e.preventDefault();
+      window.location.href = "/consultar_prospectos_IA";
+    });
+  }
+});
+
+</script>
+{% endblock %}

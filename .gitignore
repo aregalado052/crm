@@ -19,6 +19,12 @@
 /SalesQuote_BD/python/
 /.git_backup/
 */layer/
+# Lambda layers
+**/layer/
+
+# Outputs generados
+**/output/
+mi-backend-app/output/
 
 
 # ---------- Node ----------

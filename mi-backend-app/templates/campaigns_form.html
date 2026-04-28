@@ -5,10 +5,14 @@
 <h3 class="text-3xl text-center font-bold text-blue-700 mb-6 flex items-baseline gap-3">{{ 'Editar' if item else 'Nueva' }} campaña</h3>
 
 <form method="POST" class="card p-3" id="campaignForm">
+  <input type="hidden" name="entity_kind" value="{{ entity_kind|default('', true) }}">
   <div class="mb-3">
     
     <label class= "block text-sm font-medium text-gray-700 mb-1" >Nombre</label>
-    <input class="form-control" name="name" value="{{ item.name if item else '' }}" required>
+    <input class="form-control" name="name" value="{{ item.name if item else '' }}" required
+        cursor-text focus:outline-none focus:ring-2 focus:ring-blue-400"
+      style="caret-color: black;"
+    >
   </div>
 
   <div class="row">
@@ -67,6 +71,7 @@
         name="sender"
         value="{{ item.sender if item else '' }}"
         placeholder="info@tudominio.com"
+        style="caret-color: black;"
         required
       >
     </div>
@@ -79,6 +84,8 @@
         name="reply_to"
         value="{{ item.reply_to if item else '' }}"
         placeholder="soporte@tudominio.com"
+        style="caret-color: black;"
+
       >
     </div>
     <div class="col-md-4 mb-3">
@@ -102,6 +109,7 @@
         name="subject_es"
         value="{{ item.subject_es if item else '' }}"
         placeholder="Asunto en español"
+        style="caret-color: black;"
       >
     </div>
 
@@ -120,11 +128,16 @@
   <div class="d-flex gap-2">
 
     <button class="btn btn-primary bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-md transition duration-200">Guardar</button>
-    <a class="btn btn-outline-secondary  bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600" href="{{ url_for('campanas') }}">Volver</a>
+    <a class="btn btn-outline-secondary bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+      href="{{ url_for('campanas_leads') if entity_kind == 'lead' else url_for('campanas_prospects') }}">
+      Volver
+    </a>
   </div>
 </form>
 
 <script>
+
+const ENTITY_KIND = {{ entity_kind|tojson }};
 
 (function () {
   const idiomaSelect = document.querySelector('[name="idioma"]');

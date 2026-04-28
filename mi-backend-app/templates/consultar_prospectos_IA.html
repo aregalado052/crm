@@ -30,66 +30,85 @@
 
   
 
-  <p class="text-3xl font-bold text-blue-700 mb-6 flex items-baseline gap-3">
-    {{ _('Aquí puedes consultar y gestionar tus leads.') }}
+  <div class="flex items-center gap-4 mb-4 flex-wrap">
+    
+    <div class="text-3xl font-bold text-blue-700 flex items-baseline gap-3 flex-wrap">
+      <span>{{ _('Aquí puedes consultar y gestionar tus Prospectos con Origen :') }}</span>
+      <form id="origenFilterForm" method="GET" action="{{ url_for('consultar_prospectos_IA') }}" class="m-0">
+        <input type="hidden" name="estado" value="{{ estado or '' }}">
 
-    {% if estado == 'En curso' %}
-      <span class="inline-flex items-center text-3xl font-bold px-3 py-1 rounded-lg leading-tight
-                  bg-blue-200 text-blue-700 whitespace-nowrap">
-        — {{ estado }}
-      </span>
-    {% elif estado == 'Sin calificar' %}
-      <span class="inline-flex items-center text-3xl font-bold px-3 py-1 rounded-lg leading-tight
-                  bg-violet-200 text-violet-700 whitespace-nowrap">
-        — {{ "Sin Calificar" }}
-      </span>
-    {% elif estado == 'Ganada' %}
-      <span class="inline-flex items-center text-3xl font-bold px-3 py-1 rounded-lg leading-tight
-                  bg-green-200 text-green-700 whitespace-nowrap">
-        — {{ "Ganados" }}
-      </span>
-    {% elif estado == 'Perdida' %}
-      <span class="inline-flex items-center text-3xl font-bold px-3 py-1 rounded-lg leading-tight
-                  bg-red-200 text-red-700 whitespace-nowrap">
-        — {{ "Perdidos" }}
-      </span>
-    {% else %}
-      <span class="inline-flex items-center text-3xl font-bold px-3 py-1 rounded-lg leading-tight
-                  bg-gray-200 text-gray-700 whitespace-nowrap">
-        — {{ _('Todos') }}
-      </span>
-    {% endif %}
-  </p>
+        <select
+          id="origen"
+          name="origen"
+          onchange="document.getElementById('origenFilterForm').submit()"
+          class="border border-gray-300 rounded-lg px-3 py-2 bg-white text-sm min-w-[240px]"
+        >
+          <option value="">{{ _('Todos') }}</option>
+          {% for o in origenes %}
+            <option value="{{ o }}" {{ 'selected' if origen == o else '' }}>
+              {{ o }}
+            </option>
+          {% endfor %}
+        </select>
+      </form>
+      {% if estado == 'operativo' %}
+        <span class="bg-blue-200 text-blue-700 px-3 py-1 rounded-lg text-lg">
+          — Operativos
+        </span>
+      {% elif estado == 'renovacion' %}
+        <span class="bg-violet-200 text-violet-700 px-3 py-1 rounded-lg text-lg">
+          — En Renovación
+        </span>
+      {% elif estado == 'concepto' %}
+        <span class="bg-green-200 text-green-700 px-3 py-1 rounded-lg text-lg">
+          — En Concepto
+        </span>
+      {% elif estado == 'proyecto' %}
+        <span class="bg-red-200 text-red-700 px-3 py-1 rounded-lg text-lg">
+          — En Proyecto
+        </span>
+      {% else %}
+        <span class="bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-lg">
+          — {{ _('Todos los Prospectos') }}
+        </span>
+      {% endif %}
+    </div>
+
+    
+
+  </div>
+
+  <!-- TÍTULO -->
+  
+
 
 
   <div class="flex justify-between items-center mb-4">
     <div class="space-x-4">
 
-      <button id="btn-perdidos" class="bg-red-300 text-white px-4 py-2 rounded hover:bg-red-400">
-        {{ _('Leads Perdidos') }}
+      <button id="btn-operativos" class="bg-red-300 text-white px-4 py-2 rounded hover:bg-red-400">
+        {{ _('Operativos') }}
 
       </button>
 
-      <button id="btn-sin-calificar" class="bg-violet-300 text-white px-4 py-2 rounded hover:bg-violet-400">
-        {{ _('Leads Sin Calificar') }}
+      <button id="btn-renovacion" class="bg-violet-300 text-white px-4 py-2 rounded hover:bg-violet-400">
+        {{ _('En Renovación') }}
         
       </button>
 
 
-      <button id="btn-en-curso" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-        {{ _('Leads En Curso') }}
+      <button id="btn-en-concepto" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+        {{ _('En Concepto') }}
       </button>
 
-      <button id="btn-ganados" 
-        type="button" 
-        class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-        {{ _('Leads Ganados') }}
+      <button id="btn-en-proyecto" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+        {{ _('En Proyecto') }}
       </button>
 
       <button id="btn-todos" 
         type="button" 
         class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
-        {{ _('Todos los Leads') }}
+        {{ _('Todos los Prospectos') }}
       </button>
 
       <button id="btn-generar-target"
@@ -109,137 +128,121 @@
 
 
   <div class="max-h-[400px] overflow-y-auto border border-gray-200 rounded-lg shadow">
-  <table id="mi-tabla" class="min-w-full divide-y divide-gray-300">
-    {% set hide_prob = (estado in ['Perdida', 'Ganada', 'Sin calificar']) %}
+    <table id="mi-tabla" class="min-w-full divide-y divide-gray-300">
     <thead class="bg-gray-300">
       <tr>
-        <th data-type="number" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-left text-sm font-medium text-gray-800">
+        <th data-type="number" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
           {{ _('Nº') }}
         </th>
+
         <th data-type="date" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
-          {{ _('Fecha') }}<br>{{ _('Creación') }}
+          {{ _('Fecha') }}
         </th>
-        <th data-type="date" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
-          {{ _('Fecha') }}<br>{{ _('Proyecto') }}
-        </th>
-        <th data-type="date" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
-          {{ _('Fecha') }}<br>{{ _('Prox. Acción') }}
-        </th>
+
         <th data-type="text" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
-          {{ _('Tipo Lead') }}
+          {{ _('Club') }}
         </th>
+
         <th data-type="text" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
-          {{ _('Nombre') }}
+          {{ _('Email') }}
         </th>
+
+        <th data-type="text" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+          {{ _('Tipo') }}
+        </th>
+
         <th data-type="text" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
           {{ _('País') }}
         </th>
+
         <th data-type="number" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
           {{ _('Campañas') }}
         </th>
         <th data-type="number" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
           {{ _('Aperturas') }}
         </th>
-        
-        <th data-type="number" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
-          {{ _('Nº Total') }}<br>{{ _('Pistas') }}
+
+        <th data-type="text" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+          {{ _('Idioma') }}
         </th>
-        <th data-type="number" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
-          {{ _('Descuento') }}<br>{{ _('Total (&percnt;)') }}
-        </th>
-        <th data-type="number" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
-          {{ _('Importe') }}<br>{{ _('Total (€)') }}
-        </th>
-        {% if not hide_prob %}
-        <th data-type="number" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
-          {{ _('Probabilidad') }}<br>{{ _('Éxito (&percnt;)') }}
-        </th>
-        {% endif %}
-        {% if estado == 'Todos' %}
+
         <th data-type="text" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
           {{ _('Estado') }}
         </th>
-        {% endif %}
+
+        <th data-type="number" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+          {{ _('Nº Pistas') }}
+        </th>
+
+        <th data-type="text" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+          {{ _('Web') }}
+        </th>
       </tr>
     </thead>
+
     <tbody>
-       {% for lead in leads %}
-       <tr
-          class="lead-row group hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-200
-                cursor-pointer [&>td]:cursor-pointer"
-          tabindex="0"
-          role="link"
-          aria-selected="{{ 'true' if loop.first else 'false' }}"
-          aria-label="Abrir lead {{ lead.id }}"
-          data-id="{{ lead.id }}"
-          data-href="{{ url_for('lead_manage', lead_id=lead.id) }}"
-        >
+      {% for prospecto in prospectos %}
+      <tr
+        class="lead-row group hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 cursor-pointer [&>td]:cursor-pointer"
+        tabindex="0"
+        role="link"
+        aria-selected="{{ 'true' if loop.first else 'false' }}"
+        aria-label="Abrir prospecto {{ prospecto['id'] }}"
+        data-id="{{ prospecto['id'] }}"
+        data-href="{{ url_for('prospectsIA_manage', prospectIA_id=prospecto['id']) }}"
+      >
+        <td class="px-4 py-2 text-center">{{ loop.index }}</td>
 
-      
-        <td class="px-4 py-2 text-left">{{ loop.index }}</td>
-        {# ---- FECHA ACTUAL ---- #}
-        {% set fa = lead.fecha_actual %}
+        {% set f = prospecto['fecha'] %}
         <td class="px-4 py-2 text-center"
-            data-ts="{% if fa %}{% if fa is string %}{{ '' if fa=='0000-00-00' else fa }}{% else %}{{ fa.isoformat() }}{% endif %}{% endif %}">
-          {% if fa %}
-            {% if fa is string %}
-              {{ '' if fa=='0000-00-00' else fa[8:10] ~ '-' ~ fa[5:7] ~ '-' ~ fa[0:4] }}
+            data-ts="{% if f %}{% if f is string %}{{ '' if f=='0000-00-00' else f }}{% else %}{{ f.isoformat() }}{% endif %}{% endif %}">
+          {% if f %}
+            {% if f is string %}
+              {{ '' if f == '0000-00-00' else f[8:10] ~ '-' ~ f[5:7] ~ '-' ~ f[0:4] }}
             {% else %}
-              {{ fa.strftime('%d-%m-%Y') }}
+              {{ f.strftime('%d-%m-%Y') }}
             {% endif %}
           {% endif %}
         </td>
 
-        {# ---- FECHA PROYECTO ---- #}
-        {% set fp = lead.fecha_proyecto %}
-        <td class="px-4 py-2 text-center"
-            data-ts="{% if fp %}{% if fp is string %}{{ '' if fp=='0000-00-00' else fp }}{% else %}{{ fp.isoformat() }}{% endif %}{% endif %}">
-          {% if fp %}
-            {% if fp is string %}
-              {{ '' if fp=='0000-00-00' else fp[8:10] ~ '-' ~ fp[5:7] ~ '-' ~ fp[0:4] }}
-            {% else %}
-              {{ fp.strftime('%d-%m-%Y') }}
-            {% endif %}
+        <td class="px-4 py-2 text-center">{{ prospecto['club'] or '' }}</td>
+        <td class="px-4 py-2 text-center">{{ prospecto['email'] or '' }}</td>
+        <td class="px-4 py-2 text-center">{{ prospecto['tipo'] or '' }}</td>
+        <td class="px-4 py-2 text-center">{{ prospecto['pais'] or '' }}</td>
+
+        <td class="px-4 py-2 text-right">{{ prospecto['total_campanas'] }}</td>
+        <td class="px-4 py-2 text-right">{{ prospecto['total_abiertas'] }}</td>
+        <td class="px-4 py-2 text-center">{{ prospecto['idioma'] or '' }}</td>
+
+        <td class="px-4 py-2 text-center">
+          {% if prospecto['estado'] == 'operativo' %}
+            <span class="text-green-700 font-medium">{{ _('Operativo') }}</span>
+          {% elif prospecto['estado'] == 'renovacion' %}
+            <span class="text-orange-600 font-medium">{{ _('Renovación') }}</span>
+          {% elif prospecto['estado'] == 'concepto' %}
+            <span class="text-yellow-600 font-medium">{{ _('Concepto') }}</span>
+          {% elif prospecto['estado'] == 'proyecto' %}
+            <span class="text-blue-600 font-medium">{{ _('Proyecto') }}</span>
+          {% else %}
+            <span class="text-gray-600">{{ prospecto['estado'] or '' }}</span>
           {% endif %}
         </td>
 
-        {# ---- FECHA PRÓXIMA ACCIÓN ---- #}
-        {% set fpa = lead.fecha_proxima_accion %}
-        <td class="px-4 py-2 text-center"
-            data-ts="{% if fpa %}{% if fpa is string %}{{ '' if fpa=='0000-00-00' else fpa }}{% else %}{{ fpa.isoformat() }}{% endif %}{% endif %}">
-          {% if fpa %}
-            {% if fpa is string %}
-              {{ '' if fpa=='0000-00-00' else fpa[8:10] ~ '-' ~ fpa[5:7] ~ '-' ~ fpa[0:4] }}
-            {% else %}
-              {{ fpa.strftime('%d-%m-%Y') }}
+        <td class="px-4 py-2 text-center">{{ prospecto['num_pistas'] or '' }}</td>
+
+        <td class="px-4 py-2 text-center">
+          {% if prospecto['web'] %}
+            {% set url = prospecto['web'] %}
+            {% if not url.startswith('http') %}
+              {% set url = 'https://' + url %}
             {% endif %}
+            <a href="{{ url }}" target="_blank" class="text-blue-600 underline" onclick="event.stopPropagation();">
+              {{ prospecto['web'] }}
+            </a>
           {% endif %}
         </td>
-        <td class="px-4 py-2 text-center">{{ lead.tipo_lead }}</td>
-        <td class="px-4 py-2 text-center">{{ lead.name }}</td>
-        <td class="px-4 py-2 text-center">{{ lead.pais }}</td>
-        <td class="px-4 py-2 text-right">{{ lead.total_campanas }}</td>
-        <td class="px-4 py-2 text-right">{{ lead.total_abiertas }}</td>
-        
-        <td class="px-4 py-2 text-center">{{ lead.pistas_total }}</td>
-        <td class="px-4 py-2 text-right">{{ lead.descuento_total }}</td>
-        <td class="px-4 py-2 text-right">
-          {{ "{:,.2f}".format(lead.cantidad_total).replace(",", "X").replace(".", ",").replace("X", ".") }}
-        </td>
-        {% if not hide_prob %}
-
-        <td class="px-4 py-2 text-center">{{ lead.probabilidad_exito }}</td>
-        {% endif %}
-
-        
-
-        {% if estado == 'Todos' %}
-        <td class="px-4 py-2 text-center">{{ lead.estado }}</td>
-        {% endif %}
-
       </tr>
       {% endfor %}
-      
     </tbody>
   </table>
 </div>
@@ -684,33 +687,40 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-document.getElementById('btn-perdidos').addEventListener('click', async (e) => {
+
+
+
+function goToEstado(estado) {
+  const params = new URLSearchParams(window.location.search);
+
+  if (estado === "Todos") {
+    params.delete("estado");
+  } else {
+    params.set("estado", estado);
+  }
+
+  window.location.search = params.toString();
+}
+
+document.getElementById('btn-operativos').addEventListener('click', async (e) => {
   
-  window.location.href = "{{ url_for('consultar_leads', estado='Perdida') }}";
+  goToEstado('operativo');
 });
 
-
-
-document.getElementById('btn-sin-calificar').addEventListener('click', async () => {
-  
-  window.location.href = "{{ url_for('consultar_leads', estado='Sin calificar') }}";
+document.getElementById('btn-renovacion').addEventListener('click', () => {
+  goToEstado('renovacion');
 });
 
-
-document.getElementById('btn-ganados').addEventListener('click', async () => {
-  
-  window.location.href = "{{ url_for('consultar_leads', estado='Ganada') }}";
+document.getElementById('btn-en-concepto').addEventListener('click', () => {
+  goToEstado('concepto');
 });
 
-document.getElementById('btn-en-curso').addEventListener('click', async () => {
-  
-  window.location.href = "{{ url_for('consultar_leads', estado='En curso') }}";
+document.getElementById('btn-en-proyecto').addEventListener('click', () => {
+  goToEstado('proyecto');
 });
 
-document.getElementById('btn-todos').addEventListener('click', async () => {
-  
-  window.location.href = "{{ url_for('consultar_leads', estado='Todos') }}";
-  
+document.getElementById('btn-todos').addEventListener('click', () => {
+  goToEstado('Todos');
 });
 
 const btn = document.getElementById("btn-generar-target");
@@ -719,31 +729,31 @@ if (btn) {
   btn.addEventListener("click", guardarTargetSeleccionado);
 }
 
-function getLeadIdsParaTarget() {
+function getProspectIdsParaTarget() {
   return Array.from(document.querySelectorAll("#mi-tabla tbody tr"))
     .filter(tr => tr.style.display !== "none")
     .map(tr => Number(tr.dataset.id))
     .filter(Number.isFinite);
 }
 
-async function guardarTargetSeleccionado() {
-  const leadIds = getLeadIdsParaTarget();
 
-  if (!leadIds.length) {
+async function guardarTargetSeleccionado() {
+  const prospectIds = getProspectIdsParaTarget();
+
+  if (!prospectIds.length) {
     Swal.fire({
       icon: "warning",
-      title: "Sin leads",
-      text: "No hay leads disponibles.",
+      title: "Sin prospectos",
+      text: "No hay prospectos disponibles.",
     });
     return;
   }
 
-  // 🔥 Modal para pedir nombre
   const { value: nombreTarget } = await Swal.fire({
     title: "Nombre del target",
     input: "text",
-    inputLabel: `Se guardarán ${leadIds.length} leads`,
-    inputPlaceholder: "Ej: Leads Madrid Abril",
+    inputLabel: `Se guardarán ${prospectIds.length} prospectos`,
+    inputPlaceholder: "Ej: Prospectos España Abril",
     showCancelButton: true,
     confirmButtonText: "Guardar",
     cancelButtonText: "Cancelar",
@@ -757,7 +767,6 @@ async function guardarTargetSeleccionado() {
   if (!nombreTarget) return;
 
   try {
-    // 🔄 loading
     Swal.fire({
       title: "Guardando...",
       allowOutsideClick: false,
@@ -766,14 +775,14 @@ async function guardarTargetSeleccionado() {
       }
     });
 
-    const res = await fetch("/store_lead_targets", {
+    const res = await fetch("/store_prospect_targets", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
         nombre_target: nombreTarget.trim(),
-        lead_ids: leadIds
+        prospect_ids: prospectIds
       })
     });
 
@@ -783,16 +792,15 @@ async function guardarTargetSeleccionado() {
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: data.message || "No se pudo crear el target"
+        text: data.error || "No se pudo crear el target"
       });
       return;
     }
 
-    // ✅ éxito
     Swal.fire({
       icon: "success",
       title: "Target creado",
-      text: `Target "${nombreTarget}" creado con ${leadIds.length} leads`,
+      text: `Target "${nombreTarget}" creado con ${prospectIds.length} prospectos`,
       timer: 2000,
       showConfirmButton: false
     });

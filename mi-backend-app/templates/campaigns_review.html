@@ -149,7 +149,7 @@
       </a>
 
       <a class="btn btn-outline-warning"
-         href="{{ url_for('campaign_targets', cid=campaign.id) }}">
+         href="{{ url_for('campaign_targets', cid=campaign.id, entity_kind=entity_kind) }}">
          <i class="bi bi-people"></i>
          Regenerar target
       </a>
@@ -164,20 +164,26 @@
   
 
     
-   <form id="sendCampaignForm" action="{{ url_for('campaign_send', cid=campaign.id) }}" method="post">
+   <form id="sendCampaignForm"
+         action="{{ url_for('campaign_send', cid=campaign.id, entity_kind=entity_kind) }}"
+         method="post">
+      <input type="hidden" name="entity_kind" value="{{ entity_kind }}">
+
       <button type="submit"
-                        class="btn btn-outline-success"
-                        title="Enviar campaña">
-                  <i class="bi bi-send"></i> Enviar Campaña
+               class="btn btn-outline-success"
+               title="Enviar campaña">
+         <i class="bi bi-send"></i> Enviar Campaña
       </button>
    </form>
 
-   <a href="{{ url_for('campanas') }}"
+
+   {% set back_url = url_for('campanas_leads') if entity_kind == 'lead' else url_for('campanas_prospects') %}
+
+   <a href="{{ back_url }}"
       class="btn btn-outline-danger"
       title="Volver a campañas">
-      <i class="bi bi-arrow-left"></i> Volver
+   <i class="bi bi-arrow-left"></i> Volver
    </a>
-   
 
    <div class="modal fade" id="newsletterModal" tabindex="-1">
       <div class="modal-dialog modal-xl modal-dialog-centered">
@@ -280,7 +286,10 @@ document.getElementById("sendCampaignForm").addEventListener("submit", async fun
 
   const form = e.target;
   const action = form.getAttribute("action");
-  const streamUrl = action.replace(/\/send$/, "/send-stream");
+
+  const url = new URL(action, window.location.origin);
+  url.pathname = url.pathname.replace(/\/send$/, "/send-stream");
+  const streamUrl = url.toString();
 
   const result = await Swal.fire({
     title: "¿Enviar campaña?",
@@ -371,9 +380,7 @@ document.getElementById("sendCampaignForm").addEventListener("submit", async fun
       icon: "error"
     });
   };
-
 });
-
 
 </script>
 

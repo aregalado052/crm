@@ -30,10 +30,15 @@
 <div class="bg-blue-50 border border-blue-200 rounded-xl shadow-md p-6">
 
   
-
   <p class="text-3xl font-bold text-blue-700 mb-6 flex items-baseline gap-3">
-    {{ _('Aquí puedes consultar tus Campañas Enviadas.') }}
-
+    {% if entity_kind == 'lead' %}
+      {{ _('Aquí puedes consultar tus Campañas de Leads enviadas.') }}
+    {% elif entity_kind == 'prospect' %}
+      {{ _('Aquí puedes consultar tus Campañas de Prospectos enviadas.') }}
+    {% else %}
+      {{ _('Aquí puedes consultar tus Campañas enviadas.') }}
+    {% endif %}
+  </p>
 
 
 
@@ -42,11 +47,14 @@
 
       <div class="d-flex flex-wrap align-items-center gap-2">
        
-        <button id="btn-exit"
-          type="button"
-          class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-          onclick="window.location.href='{{ url_for('campanas') }}'">
-          {{ _('Volver') }}
+        {% set back_url = url_for('campanas_leads') if entity_kind == 'lead' else url_for('campanas_prospects') %}
+
+      <button id="btn-exit"
+        type="button"
+        class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+        onclick="window.location.href='{{ back_url }}'">
+        {{ _('Volver') }}
+      </button>
         
       </div>
     
@@ -192,7 +200,7 @@
 
               <!-- Estadísticas -->
               <a class="btn btn-sm btn-outline-info"
-                href="{{ url_for('campaign_stats', cid=row.campaign_id) }}"
+                href="{{ url_for('campaign_stats', cid=row.campaign_id, entity_kind=entity_kind) }}"
                 title="Estadísticas campaña">
                 <i class="bi bi-bar-chart"></i>
               </a>
@@ -339,7 +347,7 @@ function renderTargetModal(campaignId, campaignName, filteredTargets) {
       cancelButtonText: "Cancelar"
     }).then((confirmResult) => {
       if (confirmResult.isConfirmed) {
-        window.location.href = `/campanas/${campaignId}/generar_target/${targetId}`;
+        window.location.href = `/campanas/${campaignId}/generar_target/${target.id}?entity_kind=${ENTITY_KIND}`;
       }
     });
   });
@@ -361,8 +369,9 @@ function generarTarget(campaignId) {
     }
 
     // redirección
-    window.location.href = `/campanas/${campaignId}/generar_target/${targetId}`;
-  }
+   window.location.href = `/campanas/${campaignId}/generar_target/${target.id}?entity_kind=${ENTITY_KIND}`;
+
+   
 document.addEventListener("DOMContentLoaded", function () {
   document.querySelectorAll(".btn-preview-newsletter").forEach(btn => {
     btn.addEventListener("click", function () {

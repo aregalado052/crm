@@ -20,6 +20,7 @@
         class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-900"
         onclick="window.location.href='{{ url_for('campaign_select_all_filtered',
           cid=campaign.id,
+          entity_kind=entity_kind,
           pais=pais,
           idioma=idioma,
           origen=origen,
@@ -29,38 +30,46 @@
         {{ _('Seleccionar todos') }}
       </button>
 
-      <button id="btn-ninguno"
-        type="button"
-        class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-900"
-        onclick="window.location.href='{{ url_for('campaign_unselect_all_filtered',
-          cid=campaign.id,
-          pais=pais,
-          idioma=idioma,
-          origen=origen,
-          estado_envio=estado_envio,
-          estado_lead=estado_lead,
-          tipo_lead=tipo_lead) }}'">
-        {{ _('Deseleccionar') }}
-      </button>
+        <button id="btn-ninguno"
+          type="button"
+          class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-900"
+          onclick="window.location.href='{{ url_for('campaign_unselect_all_filtered',
+            cid=campaign.id,
+            entity_kind=entity_kind,
+            pais=pais,
+            idioma=idioma,
+            origen=origen,
+            estado_envio=estado_envio,
+            estado_lead=estado_lead,
+            tipo_lead=tipo_lead) }}'">
+          {{ _('Deseleccionar') }}
+        </button>
+      
+        <button id="btn-seleccionados"
+          type="button"
+          class="bg-green-400 text-white px-4 py-2 rounded hover:bg-green-900"
+          onclick="window.location.href='{{ url_for('campaign_view_selected',
+            cid=campaign.id,
+            entity_kind=entity_kind,
+            pais=pais,
+            idioma=idioma,
+            origen=origen,
+            estado_envio=estado_envio,
+            estado_lead=estado_lead,
+            tipo_lead=tipo_lead) }}'">
+          {{ _('Ver Seleccionados') }}
+        </button>
+      
 
-      <button id="btn-seleccionados"
-        type="button"
-        class="bg-green-400 text-white px-4 py-2 rounded hover:bg-green-900"
-        onclick="window.location.href='{{ url_for('campaign_view_selected',
-          cid=campaign.id,
-          pais=pais,
-          idioma=idioma,
-          origen=origen,
-          estado_envio=estado_envio,
-          estado_lead=estado_lead,
-          tipo_lead=tipo_lead) }}'">
-        {{ _('Ver Seleccionados') }}
-      </button>
 
+
+
+
+      {% set back_url = url_for('campanas_leads') if entity_kind == 'lead' else url_for('campanas_prospects') %}
       <button id="btn-exit"
         type="button"
         class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-        onclick="window.location.href='{{ url_for('campanas') }}'">
+        onclick="window.location.href='{{ back_url }}'">
         {{ _('Volver') }}
       </button>
 
@@ -128,7 +137,7 @@
     </div>
 
     <div class="col">
-      <a href="{{ url_for('campaign_targets', cid=campaign.id) }}" class="btn btn-secondary">
+      <a href="{{ url_for('campaign_targets', cid=campaign.id, entity_kind=entity_kind ) }}" class="btn btn-secondary">
         Eliminar Filtros
       </a>
     </div>
@@ -163,7 +172,7 @@
       <tr>
         <td>
           <form method="POST"
-                action="{{ url_for('campaign_toggle_target', cid=campaign.id, rid=t.id) }}"
+                action="{{ url_for('campaign_toggle_target', cid=campaign.id, rid=t.id, entity_kind=entity_kind) }}"
                 class="d-inline">
             <input type="hidden" name="seleccionado" value="{{ 0 if t.seleccionado else 1 }}">
             <input type="checkbox"

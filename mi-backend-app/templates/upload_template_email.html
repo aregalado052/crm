@@ -59,63 +59,64 @@
 
 <!-- Modal -->
 <!-- Modal -->
-<div id="importModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+<div id="importModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">
   <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6">
 
     <h2 id="modalTitle" class="text-xl font-bold mb-4">Importar plantilla</h2>
 
     <!-- Nombre -->
-    <input id="templateName" type="text"
-           placeholder="Nombre de la plantilla"
-           class="w-full border rounded-lg p-2 mb-4">
+    <div id="templateNameBlock">
+      <label class="block text-sm mb-2">Nombre</label>
+      <input id="templateName"
+             type="text"
+             placeholder="Nombre de la plantilla"
+             class="w-full border rounded-lg p-2 mb-4"
+             style="caret-color: black;"
+             >
+             
+    </div>
 
     <!-- Tipo -->
-    <label class="block text-sm mb-2">Tipo de plantilla</label>
-    <select id="templateType" class="w-full border rounded-lg p-2 mb-4">
-      <option value="email" selected>Email</option>
-      <option value="newsletter">Newsletter</option>
-    </select>
+    <div id="templateTypeBlock">
+      <label class="block text-sm mb-2">Tipo de plantilla</label>
+      <select id="templateType" class="w-full border rounded-lg p-2 mb-4">
+        <option value="email" selected>Email</option>
+        <option value="newsletter">Newsletter</option>
+      </select>
+    </div>
 
     <!-- Idioma -->
-    <label class="block text-sm mb-2">Idioma</label>
-    <select id="templateLang" class="w-full border rounded-lg p-2 mb-4">
-      <option value="es">Español</option>
-      <option value="en">Inglés</option>
-    </select>
+    <div id="templateLangBlock">
+      <label class="block text-sm mb-2">Idioma</label>
+      <select id="templateLang" class="w-full border rounded-lg p-2 mb-4">
+        <option value="es">Español</option>
+        <option value="en">Inglés</option>
+      </select>
+    </div>
 
-    <!-- HTML -->
-    <textarea id="templateHtml"
-              rows="8"
-              class="w-full border rounded-lg p-2 font-mono text-sm"
-              placeholder="Pega aquí el HTML del email..."></textarea>
+    <!-- HTML manual -->
+    <div id="templateHtmlBlock">
+      <label class="block text-sm mb-2">HTML</label>
+      <textarea id="templateHtml"
+                rows="8"
+                class="w-full border rounded-lg p-2 font-mono text-sm"
+                placeholder="Pega aquí el HTML del email..."></textarea>
+    </div>
 
     <!-- Archivo -->
-    <div class="mt-4">
+    <div class="mt-4" id="fileInputBlock">
       <label id="fileInputLabel" class="block text-sm mb-2">
-        O selecciona un archivo ()
+        O selecciona un archivo
       </label>
 
       <input id="fileInput"
              type="file"
-             accept=".html,.htm,.eml"
              class="w-full border rounded-lg p-2">
+
       <div id="dropZone"
-          class="mt-4 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-gray-500 bg-gray-50 transition">
+           class="mt-4 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-gray-500 bg-gray-50 transition">
         Arrastra aquí un archivo o haz clic en el selector de arriba
       </div>
-    </div>
-
-    <!-- Botones -->
-    <div class="flex justify-end gap-2 mt-6">
-      <button id="btnCloseModal"
-              class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
-        Cancelar
-      </button>
-
-      <button id="btnUploadTemplate"
-              class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-        Guardar plantilla
-      </button>
     </div>
 
     <!-- Preview -->
@@ -124,15 +125,39 @@
       <iframe id="previewIframe" class="w-full h-64 border rounded-lg"></iframe>
     </div>
 
+    <!-- Botones -->
+    <div class="flex justify-end gap-2 mt-6">
+      <button id="btnCloseModal"
+              type="button"
+              class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
+        Volver
+      </button>
+
+      <button id="btnUploadTemplate"
+              type="button"
+              class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+        Guardar plantilla
+      </button>
+    </div>
+
   </div>
 </div>
-
 
 
 {% endblock %}
 
 {% block scripts %}
 <script>
+
+function arrayBufferToBase64(buffer) {
+  let binary = "";
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
 document.addEventListener("DOMContentLoaded", () => {
   const openModalBtn     = document.getElementById("btnOpenImportModal");
   const modal            = document.getElementById("importModal");
@@ -167,12 +192,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const safePreview = !!(previewContainer && previewIframe);
 
-  function arrayBufferToBase64(buf) {
-    let b = "";
-    const bytes = new Uint8Array(buf);
-    for (let i = 0; i < bytes.length; i++) b += String.fromCharCode(bytes[i]);
-    return btoa(b);
+
+  
+  let uploadMode = "crear";
+  let currentSlug = "";
+  let currentLang = "";
+  let currentRefresh = null;
+
+  function $(id) {
+    return document.getElementById(id);
   }
+
+  function resetImportModal() {
+    $("modalTitle").textContent = "Importar plantilla";
+
+    $("templateName").value = "";
+    $("templateName").readOnly = false;
+
+    $("templateType").value = "email";
+    $("templateType").disabled = false;
+
+    $("templateLang").value = "es";
+    $("templateLang").disabled = false;
+
+    $("templateHtml").value = "";
+
+    $("fileInput").value = "";
+    $("fileInput").accept = ".html,.htm,.eml,.zip";
+
+    $("fileInputLabel").textContent = "O selecciona un archivo";
+
+    $("btnUploadTemplate").textContent = "Guardar plantilla";
+
+    $("templateNameBlock").classList.remove("hidden");
+    $("templateTypeBlock").classList.remove("hidden");
+    $("templateLangBlock").classList.remove("hidden");
+    $("templateHtmlBlock").classList.remove("hidden");
+    $("fileInputBlock").classList.remove("hidden");
+  } 
+
+  
 
   function hidePreview() {
     if (!safePreview) return;
@@ -195,29 +254,245 @@ document.addEventListener("DOMContentLoaded", () => {
     return templateType?.value || "email";
   }
 
-  function updateImportUI() {
-    const type = getCurrentTemplateType();
+  function openImportModalCreate() {
+    uploadMode = "crear";
 
-    if (type === "newsletter") {
-      if (modalTitle) modalTitle.textContent = "Importar newsletter";
-      if (fileInput) fileInput.setAttribute("accept", ".html,.htm,.zip");
-      if (fileInputLabel) fileInputLabel.textContent = "Selecciona un archivo (.html o .zip)";
-      if (textArea) textArea.placeholder = "Pega aquí el HTML de la newsletter...";
-      if (dropZone) {
-        dropZone.textContent = "Arrastra aquí un .html o .zip de newsletter, o haz clic para seleccionar";
+    resetImportModal();
+
+    updateImportUI();   // 👈 AQUÍ
+
+    document.getElementById("importModal").classList.remove("hidden");
+  }
+
+
+
+  function openImportModalUpdateNewsletter({ slug, lang, refresh }) {
+    uploadMode = "actualizar_newsletter";
+    currentSlug = slug || "";
+    currentLang = lang || "es";
+    currentRefresh = typeof refresh === "function" ? refresh : null;
+
+    resetImportModal();
+
+
+    $("modalTitle").textContent = "Actualizar Newsletter";
+
+    $("dropZone").textContent = "Arrastra aquí un .html o .zip de newsletter, o haz clic para seleccionar";
+
+    $("templateName").value = currentSlug;
+    $("templateName").readOnly = true;
+
+    $("templateType").value = "newsletter";
+    $("templateType").disabled = true;
+
+    $("templateLang").value = currentLang;
+    $("templateLang").disabled = true;
+
+    $("templateHtmlBlock").classList.add("hidden");
+
+    $("fileInput").accept = ".html,.htm,.zip";
+    $("fileInputLabel").textContent =
+      "Selecciona el archivo para actualizar la newsletter (.html o .zip)";
+
+    $("btnUploadTemplate").textContent = "Actualizar newsletter";
+
+    $("importModal").classList.remove("hidden");
+  }
+
+  function closeImportModal() {
+    $("importModal").classList.add("hidden");
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    $("btnCloseModal").addEventListener("click", (e) => {
+      e.preventDefault();
+      closeImportModal();
+    });
+
+    $("btnUploadTemplate").addEventListener("click", async (e) => {
+      e.preventDefault();
+
+      const name = $("templateName").value.trim();
+      const type = $("templateType").value;
+      const lang = $("templateLang").value;
+      const textHtml = $("templateHtml").value.trim();
+      const file = $("fileInput").files && $("fileInput").files[0];
+
+      try {
+        let payload = {};
+
+        if (uploadMode === "crear") {
+          if (!name) {
+            return Swal.fire({
+              icon: "warning",
+              title: "Falta el nombre",
+              text: "Por favor, indica un nombre."
+            });
+          }
+
+          payload = {
+            name,
+            lang,
+            template_type: type
+          };
+
+          if (file) {
+            const buf = await file.arrayBuffer();
+            const b64 = arrayBufferToBase64(buf);
+
+            if (/\.zip$/i.test(file.name)) {
+              payload.zip_base64 = b64;
+              payload.filename = file.name;
+            } else if (/\.html?$/i.test(file.name)) {
+              payload.html = await file.text();
+              payload.filename = file.name;
+            } else if (/\.eml$/i.test(file.name) && type === "email") {
+              payload.eml_base64 = b64;
+              payload.filename = file.name;
+            } else {
+              throw new Error("Archivo no permitido para este tipo de plantilla");
+            }
+          } else {
+            if (!textHtml) {
+              return Swal.fire({
+                icon: "warning",
+                title: "Contenido vacío",
+                text: "Pega HTML o selecciona un archivo"
+              });
+            }
+            payload.html = textHtml;
+          }
+        }
+
+        if (window.uploadMode === "actualizar_newsletter") {
+
+         
+
+          payload = {
+            name: window.currentSlug,
+            slug: window.currentSlug,
+            lang: window.currentLang,
+            template_type: "newsletter"
+          };
+
+          
+
+          const buf = await file.arrayBuffer();
+          const b64 = arrayBufferToBase64(buf);
+
+          if (/\.zip$/i.test(file.name)) {
+            payload.zip_base64 = b64;
+            payload.filename = file.name;
+          } else if (/\.html?$/i.test(file.name)) {
+            payload.html = await file.text();
+            payload.filename = file.name;
+          } else {
+            throw new Error("Solo .html o .zip");
+          }
+
+          Swal.fire({
+            title: "Actualizando...",
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+          });
+
+          console.log("PAYLOAD FINAL:", payload);
+          
+
+          const res = await fetch("/upload_template_email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+          Swal.fire({
+            icon: "success",
+            title: "Newsletter actualizada ✅",
+            text: data.slug || window.currentSlug,
+            timer: 2000,
+            showConfirmButton: false
+          });
+
+          document.getElementById("importModal").classList.add("hidden");
+
+          if (typeof window.currentRefresh === "function") {
+            window.currentRefresh();
+          }
+
+          return;
+        }
+        Swal.fire({
+          title: uploadMode === "actualizar_newsletter" ? "Actualizando..." : "Guardando...",
+          text: "Por favor espera",
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading()
+        });
+
+        console.log("PAYLOAD FINAL:", payload);
+        
+
+
+        const res = await fetch("/upload_template_email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+        Swal.fire({
+          icon: "success",
+          title: uploadMode === "actualizar_newsletter"
+            ? "Newsletter actualizada ✅"
+            : "Plantilla guardada ✅",
+          text: data.slug || data.template_id || currentSlug || "",
+          timer: 2200,
+          showConfirmButton: false
+        });
+
+        closeImportModal();
+
+        if (uploadMode === "actualizar_newsletter" && typeof currentRefresh === "function") {
+          currentRefresh();
+        }
+
+      } catch (err) {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: err.message || "Error inesperado"
+        });
       }
+    });
+  });
+
+  function updateImportUI() {
+    const type = document.getElementById("templateType")?.value;
+
+   
+
+    if (type === "newsletter" ) {
+      modalTitle.textContent = "Importar newsletter";
+      fileInput.setAttribute("accept", ".html,.htm,.zip");
+      fileInputLabel.textContent = "Selecciona un archivo (.html o .zip)";
+      textArea.placeholder = "Pega aquí el HTML de la newsletter...";
+      dropZone.textContent = "Arrastra aquí un .html o .zip de newsletter, o haz clic para seleccionar";
     } else {
-      if (modalTitle) modalTitle.textContent = "Importar plantilla de email";
-      if (fileInput) fileInput.setAttribute("accept", ".html,.htm,.eml");
-      if (fileInputLabel) fileInputLabel.textContent = "Selecciona un archivo (.eml o .html)";
-      if (textArea) textArea.placeholder = "Pega aquí el HTML del email...";
-      if (dropZone) {
-        dropZone.textContent = "Arrastra aquí un .eml o .html de email, o haz clic para seleccionar";
-      }
+      modalTitle.textContent = "Importar plantilla de email";
+      fileInput.setAttribute("accept", ".html,.htm,.eml");
+      fileInputLabel.textContent = "Selecciona un archivo (.eml o .html)";
+      textArea.placeholder = "Pega aquí el HTML del email...";
+      dropZone.textContent = "Arrastra aquí un .eml o .html de email, o haz clic para seleccionar";
     }
 
     resetFileAndPreview();
   }
+
+
 
   function isAllowedFile(file) {
     if (!file) return false;
@@ -301,7 +576,7 @@ document.addEventListener("DOMContentLoaded", () => {
   openModalBtn.addEventListener("click", (e) => {
     e.preventDefault();
     modal.classList.remove("hidden");
-    updateImportUI();
+    openImportModalCreate();
   });
 
   closeModalBtn?.addEventListener("click", (e) => {
@@ -404,6 +679,9 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       console.log("[FRONT DEBUG] file?", !!file, "payload keys:", Object.keys(payload));
+      console.log("PAYLOAD FINAL:", payload);
+      
+
 
       const res = await fetch("/upload_template_email", {
         method: "POST",
@@ -436,6 +714,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   updateImportUI();
 });
+
+
+
+  
+
+
+ 
+
+
 
 document.getElementById('btn-exit').addEventListener('click', function (e) {
   
@@ -716,13 +1003,26 @@ function openPreviewWindow(url) {
   const btnReload = doc.createElement('button'); btnReload.textContent = '↻ Recargar';
   const btnEdit   = doc.createElement('button'); btnEdit.textContent   = '✍️ Editar texto';
   const btnEditSign  = doc.createElement('button'); btnEditSign.textContent  = '✒️ Editar firma';
+  
+  const btnUpdateNewsletter = doc.createElement("button");
+  btnUpdateNewsletter.id = "btn-update-newsletter";
+  btnUpdateNewsletter.type = "button";
+  btnUpdateNewsletter.textContent = "📰 Actualizar Newsletter";
+  btnUpdateNewsletter.className = "px-3 py-1 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm";
+
+
+
+
+
+
   const btnClose  = doc.createElement('button'); btnClose.textContent  = '❌ Cerrar';
-  [btnReload, btnEditSign, btnEdit, btnClose].forEach(b => b.style.cssText = 'padding:6px 12px;border:0;border-radius:8px;cursor:pointer;color:#fff;background:#3b82f6');
+  [btnReload, btnEditSign, btnEdit,btnUpdateNewsletter, btnClose].forEach(b => b.style.cssText = 'padding:6px 12px;border:0;border-radius:8px;cursor:pointer;color:#fff;background:#3b82f6');
   btnEditSign.style.background = '#6b7280';
   btnEdit.style.background  = '#10b981';
   btnClose.style.background = '#e74c3c';
   btnClose.style.marginLeft = 'auto';
-  toolbar.append(btnReload, btnEditSign, btnEdit, btnClose);
+  
+  toolbar.append(btnReload, btnEditSign, btnEdit, btnUpdateNewsletter, btnClose);
 
   const iframe = doc.createElement('iframe');
   iframe.style.cssText = 'border:0;width:100%;height:calc(100vh - 46px)';
@@ -743,6 +1043,115 @@ function openPreviewWindow(url) {
   btnClose .addEventListener('click', () => w.close());
   btnEdit  .addEventListener('click', () => openEditorWindow(slug, lang, refresh));
 
+  let uploadMode = "guardar_nueva";
+  let currentSlug = "";
+  let currentLang = "";
+
+  btnUpdateNewsletter.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+   
+
+    console.log("CLICK update desde popup");
+
+    if (w.opener && typeof w.opener.openImportModalUpdateNewsletter === "function") {
+      w.opener.openImportModalUpdateNewsletter({
+        slug,
+        lang,
+        refresh
+      });
+
+      w.opener.focus();
+      w.close();
+      return;
+    }
+
+    if (typeof openImportModalUpdateNewsletter === "function") {
+      openImportModalUpdateNewsletter({ slug, lang, refresh });
+      return;
+    }
+
+    w.alert("No se pudo abrir el modal");
+  });
+  document.getElementById("btnUploadTemplate").addEventListener("click", async (e) => {
+    e.preventDefault();
+
+    const file = document.getElementById("fileInput").files?.[0];
+
+    if (!file) {
+      return Swal.fire({
+        icon: "warning",
+        title: "Falta archivo",
+        text: "Selecciona un archivo .html o .zip"
+      });
+    }
+
+    try {
+      let payload = {};
+
+      if (window.uploadMode === "actualizar_newsletter") {
+
+        payload = {
+          name: window.currentSlug,
+          slug: window.currentSlug,
+          lang: window.currentLang,
+          template_type: "newsletter"
+        };
+
+        const buf = await file.arrayBuffer();
+        const b64 = arrayBufferToBase64(buf);
+
+        if (/\.zip$/i.test(file.name)) {
+          payload.zip_base64 = b64;
+          payload.filename = file.name;
+        } else if (/\.html?$/i.test(file.name)) {
+          payload.html = await file.text();
+          payload.filename = file.name;
+        } else {
+          throw new Error("Solo .html o .zip");
+        }
+
+        Swal.fire({
+          title: "Actualizando...",
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading()
+        });
+
+        const res = await fetch("/upload_template_email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+        Swal.fire({
+          icon: "success",
+          title: "Newsletter actualizada ✅",
+          text: data.slug || window.currentSlug,
+          timer: 2000,
+          showConfirmButton: false
+        });
+
+        document.getElementById("importModal").classList.add("hidden");
+
+        if (typeof window.currentRefresh === "function") {
+          window.currentRefresh();
+        }
+
+        return;
+      }
+
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: err.message
+      });
+    }
+  });
   // -------- Ventana del editor (CSP-safe) --------
   function openEditorWindow(slug, lang, onSaved) {
     const w2 = window.open('', 'textEditorWindow', 'width=760,height=600,resizable=yes,scrollbars=yes');
@@ -988,10 +1397,57 @@ function openPreviewWindow(url) {
     loadSignature();
   }
 
+  window.openImportModalUpdateNewsletter = function ({ slug, lang, refresh }) {
+    window.uploadMode = "actualizar_newsletter";
+    window.currentSlug = slug || "";
+    window.currentLang = lang || "es";
+    window.currentRefresh = typeof refresh === "function" ? refresh : null;
+
+    if (typeof resetImportModal === "function") {
+      resetImportModal();
+    }
+
+    // Cerrar preview antes de abrir import
+    document.getElementById("previewModal")?.classList.add("hidden");
+
+    document.getElementById("modalTitle").textContent = "Actualizar Newsletter";
+
+    document.getElementById("dropZone").textContent = "Arrastra aquí un .html o .zip de newsletter, o haz clic para seleccionar";
+
+    document.getElementById("templateName").value = window.currentSlug;
+    document.getElementById("templateName").readOnly = true;
+
+    document.getElementById("templateType").value = "newsletter";
+    document.getElementById("templateType").disabled = true;
+
+    document.getElementById("templateLang").value = window.currentLang;
+    document.getElementById("templateLang").disabled = true;
+
+    document.getElementById("templateHtmlBlock").classList.add("hidden");
+
+    const fileInput = document.getElementById("fileInput");
+    fileInput.value = "";
+    fileInput.accept = ".html,.htm,.zip";
+
+    document.getElementById("fileInputLabel").textContent =
+      "Selecciona el archivo para actualizar la newsletter (.html o .zip)";
+
+    document.getElementById("btnUploadTemplate").textContent = "Actualizar newsletter";
+
+    document.getElementById("importModal").classList.remove("hidden");
+  };
 
 
 
-}
+
+
+};
+
+
+
+
+
+
 
 
 
