@@ -1,1 +1,1 @@
-web: gunicorn application:application --bind 0.0.0.0:8000 --timeout 120 --pid /var/pids/web.pid
+web: gunicorn --bind 0.0.0.0:8000 --timeout 120 --workers 1 --threads 15 application:application --pid /var/pids/web.pid

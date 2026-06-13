@@ -5,53 +5,36 @@
   <title>Solicitud Factura Proforma</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800;900&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Roboto', sans-serif; }
-    h2, label, button, .display { font-family: 'Poppins', sans-serif; }
-    .lp-input {
-      background:#1a2a4a; border:1px solid #2a3a5a; color:#EBF1F2;
-      transition:border-color .2s, box-shadow .2s;
-    }
-    .lp-input::placeholder { color:#6b82a8; }
-    .lp-input:focus {
-      outline:none; background:#1f3252;
-      border-color:#135EF2; box-shadow:0 0 0 3px rgba(19,94,242,.25);
-    }
-    .lp-btn {
-      background:#135EF2; border:none; text-shadow:none;
-      -webkit-font-smoothing:antialiased;
-      transition:background-color .2s, box-shadow .2s, transform .1s;
-    }
-    .lp-btn:hover {
-      background:#6fa0ff;
-      box-shadow:0 0 9px rgba(111,160,255,.35);
-    }
-    .lp-btn:active { transform:scale(.98); }
-  </style>
 </head>
 
-<body class="min-h-screen flex items-center justify-center p-6" style="background:#000814;">
 
-    <div class="shadow-2xl rounded-2xl w-full max-w-2xl p-10 border"
-         style="background:#011640; border-color:#1a2a4a; border-radius:16px;">
+<body class="min-h-screen flex items-center justify-center p-6"
+      style="background:#EAF3FB;">
+
+
+    
+
+    <div class="bg-white shadow-2xl rounded-2xl w-full max-w-2xl p-10 border border-blue-100">
+
+        
 
      <!-- Logos -->
-        <div class="flex justify-between items-center mb-8">
-            <img src="https://ledpadel.com/wp-content/uploads/2026/06/logo-PLANET.png"
-                class="h-auto object-contain" style="max-width:100px;">
-            <img src="https://ledpadel.com/wp-content/uploads/2026/04/logo_lPadelBlanco.png"
-                class="h-auto object-contain" style="max-width:100px;">
+        <div class="flex justify-between items-center mb-6">
+            <img src="https://f.crmplanetpower.es/Logo Planet Power.png"
+                class="h-14 object-contain">
+
+        
+
+            <img src="https://f.crmplanetpower.es/Logo LEDPADEL azul y verde.png"
+                class="h-14 object-contain">
     </div>
 
-    <h2 class="text-2xl font-extrabold text-center mb-2" style="color:#FFFFFF;">
-      {{ titulo }}
+    <h2 class="text-2xl font-bold text-center text-[#5B9BD5] mb-6">
+      Datos para emitir la factura proforma
     </h2>
 
-    <p class="text-center mb-8" style="color:#8aaed4;">
-       Oferta: <strong>{{ quote_number }}</strong>
+    <p class="text-center text-gray-600 mb-6">
+      Oferta: <strong>{{ quote_number }}</strong>
     </p>
 
     <form id="proforma-form" class="space-y-4">
@@ -63,65 +46,85 @@
 
 
       <div>
-        <label class="block text-sm font-semibold mb-1" style="color:#EBF1F2;">Nombre / Razón Social</label>
+        <label class="block text-sm font-medium mb-1">Nombre / Razón Social</label>
         <input type="text" id="name" required
-               class="lp-input w-full px-4 py-2 rounded-lg">
+               class="w-full px-4 py-2 rounded-lg border border-gray-300
+                        bg-gray-50 focus:bg-white
+                        focus:ring-2 focus:ring-[#5B9BD5]
+                        focus:border-[#5B9BD5]">
       </div>
 
       <!-- Identificación dinámica -->
       <div id="identificacion-block">
-        <label id="identificacion-label" class="block text-sm font-semibold mb-1" style="color:#EBF1F2;">Identificación</label>
+        <label id="identificacion-label" class="block text-sm font-medium text-gray-700 mb-1">Identificación</label>
         <input
           type="text"
           id="identificacion"
           name="identificacion"
           required
-          class="lp-input w-full px-4 py-2 rounded-lg"
+          class="w-full px-4 py-2 rounded-lg border border-gray-300
+                        bg-gray-50 focus:bg-white
+                        focus:ring-2 focus:ring-[#5B9BD5]
+                        focus:border-[#5B9BD5]"
         >
-        <p id="identificacion-hint" class="text-xs mt-1" style="color:#8aaed4;"></p>
+        <p id="identificacion-hint" class="text-xs text-gray-500 mt-1"></p>
       </div>
 
       <!-- Campo extra opcional -->
       <div id="registro-block" class="hidden">
-        <label class="block text-sm font-semibold mb-1" style="color:#EBF1F2;">Nº Registro</label>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Nº Registro</label>
         <input
           type="text"
           id="nRegistro"
           name="nRegistro"
-          class="lp-input w-full px-4 py-2 rounded-lg"
+          class="w-full px-4 py-2 rounded-lg border border-gray-300
+                        bg-gray-50 focus:bg-white
+                        focus:ring-2 focus:ring-[#5B9BD5]
+                        focus:border-[#5B9BD5]"
         >
       </div>
 
       <div>
-        <label class="block text-sm font-semibold mb-1" style="color:#EBF1F2;">Dirección 1</label>
+        <label class="block text-sm font-medium mb-1">Dirección 1</label>
         <input type="text" id="direccion1" required
-               class="lp-input w-full px-4 py-2 rounded-lg">
+               class="w-full px-4 py-2 rounded-lg border border-gray-300
+                        bg-gray-50 focus:bg-white
+                        focus:ring-2 focus:ring-[#5B9BD5]
+                        focus:border-[#5B9BD5]">
       </div>
 
       <div>
-        <label class="block text-sm font-semibold mb-1" style="color:#EBF1F2;">Dirección 2</label>
+        <label class="block text-sm font-medium mb-1">Dirección 2</label>
         <input type="text" id="direccion2"
-               class="lp-input w-full px-4 py-2 rounded-lg">
+               class="w-full px-4 py-2 rounded-lg border border-gray-300
+                        bg-gray-50 focus:bg-white
+                        focus:ring-2 focus:ring-[#5B9BD5]
+                        focus:border-[#5B9BD5]">
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm font-semibold mb-1" style="color:#EBF1F2;">Código Postal</label>
+          <label class="block text-sm font-medium mb-1">Código Postal</label>
           <input type="text" id="codigoPostal" required
-                 class="lp-input w-full px-4 py-2 rounded-lg">
+                 class="w-full px-4 py-2 rounded-lg border border-gray-300
+                        bg-gray-50 focus:bg-white
+                        focus:ring-2 focus:ring-[#5B9BD5]
+                        focus:border-[#5B9BD5]">
         </div>
 
         <div>
-          <label class="block text-sm font-semibold mb-1" style="color:#EBF1F2;">Población</label>
+          <label class="block text-sm font-medium mb-1">Población</label>
           <input type="text" id="poblacion" required
-                 class="lp-input w-full px-4 py-2 rounded-lg">
+                 class="w-full px-4 py-2 rounded-lg border border-gray-300
+                        bg-gray-50 focus:bg-white
+                        focus:ring-2 focus:ring-[#5B9BD5]
+                        focus:border-[#5B9BD5]">
         </div>
       </div>
 
       <div class="text-center pt-4">
         <button type="submit"
-                class="lp-btn text-white px-8 py-3 font-normal"
-                style="border-radius:999px;">
+                class="bg-[#5B9BD5] text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
           Enviar solicitud
         </button>
       </div>
@@ -133,8 +136,7 @@
   <script>
   window.API_BASE = "{{ api_base_url }}";
   const base = (window.API_BASE || "").replace(/\/$/, "");
-  const endpoint = "{{ 'renting_submit' if origen == 'renting' else 'proforma_submit' }}";
-  const url = `${base}/${endpoint}`;
+  const url = `${base}/proforma_submit`;
  
   document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById("proforma-form");
@@ -179,7 +181,7 @@
       event.preventDefault();
         setTimeout(() => {
             document.body.innerHTML = `
-            <div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;color:#EBF1F2;background:#000814;">
+            <div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;">
                 <h2>La sesión ha expirado</h2>
             </div>
             `;
@@ -201,8 +203,7 @@
       };
 
       msg.textContent = "Procesando...";
-      msg.className = "text-center text-sm mt-4";
-      msg.style.color = "#8aaed4";
+      msg.className = "text-center text-sm mt-4 text-gray-600";
 
       try {
         const response = await fetch(url, {
@@ -215,19 +216,16 @@
 
         if (!response.ok || !result.ok) {
           msg.textContent = result.message || "Error en la solicitud.";
-          msg.className = "text-center text-sm mt-4";
-          msg.style.color = "#ff6b6b";
+          msg.className = "text-center text-sm mt-4 text-red-600";
           return;
         }
 
         msg.textContent = result.message || "Solicitud enviada correctamente.";
-        msg.className = "text-center text-sm mt-4";
-        msg.style.color = "#4ade80";
+        msg.className = "text-center text-sm mt-4 text-green-600";
 
       } catch (err) {
         msg.textContent = "Error de conexión.";
-        msg.className = "text-center text-sm mt-4";
-        msg.style.color = "#ff6b6b";
+        msg.className = "text-center text-sm mt-4 text-red-600";
       }
     });
   });

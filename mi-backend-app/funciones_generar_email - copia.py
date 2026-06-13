@@ -4228,204 +4228,77 @@ def _guess_content_type_from_name(filename: str) -> str:
     ct, _ = mimetypes.guess_type(filename)
     return ct or "application/octet-stream"
 
-from datetime import datetime
-
 def build_email_footer(
     unsubscribe_url: str,
-    
+    privacy_url: str,
     lang: str = "es",
-    contact_email: str = "info@ledpadel.es",
-    company_name: str = "LED PADEL — Planet Power",
-    company_address: str = "Dirección postal completa",
-    preferences_url: str = "#",
-    view_online_url: str = "#",
+    contact_email: str = "newsletter@ledpadel.com",
+    company_name: str = "PLANET POWER TOOLS IBERICA, S.L.",
+    company_address: str = "Vizcaya, España"
 ) -> str:
 
-    
- 
-    is_en = lang == "en"
-    year = datetime.now().year
- 
-    tagline = (
-        "Professional LED lighting<br>for padel courts"
-        if is_en else
-        "Iluminación LED profesional<br>para pistas de pádel"
-    )
- 
-    contact_label = "Contact" if is_en else "Contacto"
-    legal_text = (
-        "You’re receiving this email because you subscribed to LED PADEL updates."
-        if is_en else
-        "Recibes este email porque te suscribiste a las novedades de LED PADEL."
-    )
- 
-    unsubscribe_label = "Unsubscribe" if is_en else "Darse de baja"
-    preferences_label = "Email preferences" if is_en else "Preferencias de email"
-    view_online_label = "View in browser" if is_en else "Ver en navegador"
-    privacy_label = "Privacy policy" if is_en else "Política de privacidad"
-    rights_label = "All rights reserved" if is_en else "Todos los derechos reservados"
-    privacy_url = "https://ledpadel.com/en/privacy-policy/" if is_en else "https://ledpadel.com/es/politica-de-privacidad/"
- 
-    site_url = "https://ledpadel.com/en/" if is_en else "https://ledpadel.com/es/"
-    contact_phone_raw = "+34946682011"
-    contact_phone_display = "(+34) 946 68 20 11"
- 
-    return f"""
-<body style="margin:0;padding:0;background-color:#000814;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
-<!-- Email wrapper -->
-<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#000814;">
-<tr><td align="center" style="padding:24px 12px;">
-  <!-- Email container -->
-  <table class="email-container" role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width:600px;background-color:#0d1b2e;overflow:hidden;">
-        <tr>
-        </tr>
-        <tr>
-        </tr>
-        <tr>
-        </tr>
-        <tr>
-    </tr>
-    <tr>
-    </tr>
-    <tr>
-    </tr>
-    <tr>
-    </tr>
-    <tr>
-      <td style="background-color:#0d1b2e;padding:0;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-          <tr>
-          </tr>
-          <!-- Highlight box -->
-          <tr>
-           
-          </tr>
-          <!-- Second paragraph -->
-          <tr>
-           
-          </tr>
-        </table>
-      </td>
-    </tr>
-    <!-- ═══════════════════════════════════════ -->
-    <!-- CTA FINAL: ¿HABLAMOS DE TU PROYECTO? -->
-    <!-- ═══════════════════════════════════════ -->
-    <tr>
-      <td align="center" style="padding:0;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#011640; background-image:url('https://ledpadel.com/wp-content/uploads/2026/04/bg-footer-1.jpg'); background-size:cover; background-position:center center; background-repeat:no-repeat;">
-          <tr>
-          </tr>
-        </table>
-      </td>
-    </tr>
-    <!-- ═══════════════════════════════════════ -->
-    <!-- SEPARADOR -->
-    <!-- ═══════════════════════════════════════ -->
-    <tr>
-      <td style="background-color:#135EF2;height:2px;font-size:0;line-height:0;">&nbsp;</td>
-    </tr>
-    <tr>
-    </tr>
-<tr>
-</tr>
+    print ("[DEBUG] Construyendo footer para lang=", unsubscribe_url, privacy_url, lang, contact_email, company_name, company_address)
 
- 
+    if lang == "en":
 
-<tr>
-
-  <td class="pad-mobile" style="background-color:#011640;padding:32px;">
-
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-
-      <tr>
-
-        <td class="stack-column mobile-center mobile-center-cell" width="55%" valign="top" style="padding-right:20px;">
-
-          <img src="https://ledpadel.com/wp-content/uploads/2026/04/logo-LED-PADEL-blanco.png" width="120" alt="LED Padel" style="height:auto;max-width:120px;margin-bottom:4px;">
-
-          <p style="margin:0 0 6px;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;font-size:13px;line-height:1.6;color:#8aaed4;">
-
-            {tagline}
-
+        return f"""
+        <div style="margin-top:30px; padding-top:20px; border-top:1px solid #dddddd; font-family:Arial,Helvetica,sans-serif; font-size:12px; line-height:1.6; color:#666666; text-align:center;">
+          
+          <p style="margin:0 0 10px 0;">
+            You are receiving this email because you have visited our site or subscribed to our newsletter.
           </p>
 
-        </td>
-
- 
-
-        <td class="stack-column mobile-center" width="45%" valign="top">
-
-          <p style="margin:0 0 6px;font-family:Poppins,Arial,sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#135EF2;text-align:right;">
-
-            {contact_label}
-
+          <p style="margin:0 0 10px 0;">
+            Make sure our messages reach your Inbox (and not your spam folder).
+            Please add <a href="mailto:{contact_email}" style="color:#2563eb;text-decoration:none;">{contact_email}</a> to your contacts.
           </p>
 
-          <p style="margin:0 0 4px;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;font-size:13px;text-align:right;">
-
-            <a href="mailto:{contact_email}" style="color:#ffffff;text-decoration:none;">{contact_email}</a>
-
+          <p style="margin:0 0 10px 0;">
+            <strong>{company_name}</strong><br>
+            {company_address}
           </p>
 
-          <p style="margin:0 0 4px;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;font-size:13px;text-align:right;">
-
-            <a href="tel:{contact_phone_raw}" style="color:#8aaed4;text-decoration:none;">{contact_phone_display}</a>
-
+          <p style="margin:15px 0 0 0;">
+            <a href="{unsubscribe_url}" style="color:#2563eb;text-decoration:none;">Unsubscribe</a>
+            &nbsp; | &nbsp;
+            <a href="{privacy_url}" style="color:#2563eb;text-decoration:none;">Privacy Policy</a>
+            &nbsp; | &nbsp;
+            ©2026 {company_name}
           </p>
 
-          <p style="margin:6px 0 0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;font-size:13px;text-align:right;">
+        </div>
+        """
 
-            <a href="{site_url}" style="color:#8aaed4;text-decoration:none;">www.ledpadel.com</a>
+    else:
 
+        return f"""
+        <div style="margin-top:30px; padding-top:20px; border-top:1px solid #dddddd; font-family:Arial,Helvetica,sans-serif; font-size:12px; line-height:1.6; color:#666666; text-align:center;">
+          
+          <p style="margin:0 0 10px 0;">
+            Recibes este correo porque visitaste nuestro sitio web o solicitaste recibir nuestra newsletter.
           </p>
 
-        </td>
+          <p style="margin:0 0 10px 0;">
+            Asegúrate de que nuestros correos lleguen a tu bandeja de entrada (y no a spam).
+            Añade <a href="mailto:{contact_email}" style="color:#2563eb;text-decoration:none;">{contact_email}</a> a tus contactos.
+          </p>
 
-      </tr>
+          <p style="margin:0 0 10px 0;">
+            <strong>{company_name}</strong><br>
+            {company_address}
+          </p>
 
-    </table>
+          <p style="margin:15px 0 0 0;">
+            <a href="{unsubscribe_url}" style="color:#2563eb;text-decoration:none;">Darse de baja</a>
+            &nbsp; | &nbsp;
+            <a href="{privacy_url}" style="color:#2563eb;text-decoration:none;">Política de privacidad</a>
+            &nbsp; | &nbsp;
+            ©2026 {company_name}
+          </p>
 
-  </td>
+        </div>
+        """
 
-</tr>
-
- 
-
-<tr>
-
-  <td style="background-color:#000814;padding:24px 32px;text-align:center;">
-
-    <p style="margin:0 0 12px;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;font-size:11px;line-height:1.6;color:#8aaed4;">
-
-      {legal_text}
-
-    </p>
-
- 
-
-    <p style="margin:0 0 12px;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;font-size:11px;line-height:1.6;color:#8aaed4;">
-
-      <a href="{unsubscribe_url}" style="color:#6fa0ff;text-decoration:underline;">{unsubscribe_label}</a>
-
-      
-      &nbsp;·&nbsp;
-      <a href="{privacy_url}" style="color:#6fa0ff;text-decoration:underline;">{privacy_label}</a>
-    </p>
-    <p style="margin:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;font-size:10px;color:#6fa0ff;">
-      © {year} {company_name} — {rights_label}<br>
-      {company_address}
-    </p>
-  </td>
-</tr>
-  </table>
-  <!-- End email container -->
-</td></tr>
-</table>
-<!-- End email wrapper -->
-</body>
-"""
- 
- 
 
 
 def build_oferta_cta(oferta_url: str, idioma: str) -> str:
@@ -4559,77 +4432,17 @@ def generar_url_oferta(
 
 
 
-EMAIL_RESPONSIVE_CSS = """
-<style>
-  /* Reset */
-  body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
-  table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
-  img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; display: block; }
-  body { margin: 0 !important; padding: 0 !important; width: 100% !important; background-color: #000814; }
-  /* Links */
-  a { color: #135EF2; text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  /* Responsive */
-  @media only screen and (max-width: 620px) {
-    .email-container { width: 100% !important; max-width: 100% !important; }
-    .fluid { width: 100% !important; max-width: 100% !important; height: auto !important; }
-    .stack-column, .stack-column-center { display: block !important; width: 100% !important; max-width: 100% !important; }
-    .stack-column-center { text-align: center !important; }
-    .center-on-mobile { text-align: center !important; }
-    .hide-on-mobile { display: none !important; max-height: 0 !important; overflow: hidden !important; }
-    .btn-full { width: 100% !important; }
-    .cta-center-mobile { text-align: center !important; }
-    /* CTA final: tabla y celda a ancho completo, padding lateral reducido para que no se salga */
-    .cta-final-table { width: 100% !important; }
-    .cta-final-cell { width: 100% !important; display: block !important; }
-    .cta-final-link {
-      display: block !important;
-      width: auto !important;
-      padding: 14px 16px !important;
-      letter-spacing: 0.5px !important;
-      box-sizing: border-box !important;
-      text-align: center !important;
-      white-space: normal !important;
-    }
-    .pad-mobile { padding-left: 20px !important; padding-right: 20px !important; }
-    .feature-icon { margin: 0 auto 12px !important; }
-    .feature-cell { padding: 16px 5px !important; }
-    .news-title-center { text-align: center !important; }
-    /* Centrado en móvil para header y contacto */
-    .mobile-center,
-    .mobile-center p,
-    .mobile-center a { text-align: center !important; }
-    .mobile-center img { margin-left: auto !important; margin-right: auto !important; display: block !important; }
-    .mobile-center-cell { padding-right: 0 !important; padding-bottom: 20px !important; }
-  }
-</style>
-"""
-
-
-
 def build_final_email_html(
     newsletter_html: str,
     lang: str = "es",
     unsubscribe_url: str = "https://ledpadel.com/unsubscribe",
-    
+    privacy_url: str = "https://ledpadel.com/privacy",
     contact_email: str = "newsletter@ledpadel.com",
     company_name: str = "PLANET POWER TOOLS IBERICA, S.L.",
     company_address: str = "Vizcaya, España",
     entity_kind: str = "",
     oferta_url: str = ""
 ) -> str:
-
-    lower_html = newsletter_html.lower()
-
-    # 1. Inyectar CSS responsive en <head>
-    if "</head>" in lower_html and "stack-column" not in lower_html:
-        idx_head = lower_html.rfind("</head>")
-        newsletter_html = (
-            newsletter_html[:idx_head]
-            + EMAIL_RESPONSIVE_CSS
-            + newsletter_html[idx_head:]
-        )
-        lower_html = newsletter_html.lower()
 
     cta_html = ""
     if entity_kind == "prospect" and oferta_url:
@@ -4638,7 +4451,7 @@ def build_final_email_html(
     footer = build_email_footer(
         lang=lang,
         unsubscribe_url=unsubscribe_url,
-        
+        privacy_url=privacy_url,
         contact_email=contact_email,
         company_name=company_name,
         company_address=company_address
@@ -4646,14 +4459,18 @@ def build_final_email_html(
 
     injection = cta_html + footer
 
+    lower_html = newsletter_html.lower()
     closing_body = "</body>"
+
+    print("[DEBUG] Inyectando CTA/footer. ¿Tiene </body>? ", closing_body in lower_html)
+    print("[DEBUG] entity_kind:", entity_kind)
+    print("[DEBUG] ¿Incluye CTA oferta?:", bool(cta_html))
 
     if closing_body in lower_html:
         idx = lower_html.rfind(closing_body)
         return newsletter_html[:idx] + injection + newsletter_html[idx:]
 
     return newsletter_html + injection
-
 
 def load_newsletter_html(path):
     s3 = boto3.client("s3", region_name="eu-north-1")
@@ -4747,7 +4564,7 @@ def send_campaign_batch(cid):
                 newsletter_html=html,
                 lang=recipient_lang,
                 unsubscribe_url=unsubscribe_url,
-                
+                privacy_url=f"{BASE_URL}/privacy"
             )
 
             
@@ -4947,7 +4764,7 @@ def send_campaign_batch_stream(cid, entity_kind=""):
                 newsletter_html=html,
                 lang=recipient_lang,
                 unsubscribe_url=unsubscribe_url,
-                
+                privacy_url=f"{BASE_URL}/privacy",
                 entity_kind=entity_kind,
                 oferta_url=oferta_url
             )

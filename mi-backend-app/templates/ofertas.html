@@ -147,35 +147,73 @@
             />
         </div>
     </div>
-    <div class="flex items-center gap-3">
-        <label class="inline-flex items-center">
-          <input
-            type="checkbox"
-            id="incluirTransporte"
-            name="incluir_transporte"
-            class="h-4 w-4 text-blue-600 border-blue-300 rounded focus:ring-blue-500"
-          >
-          <span class="ml-2 text-sm font-medium text-gray-700">
-            Incluir transporte
-          </span>
-        </label>
+    <div class="flex items-center gap-6">
 
-        <!-- Importe transporte (se muestra solo si se marca el tick) -->
-        <div
-          id="importeTransporteWrapper"
-          class="hidden items-center gap-2"
+
+
+  <!-- TRANSPORTE -->
+      <label class="inline-flex items-center">
+        <input
+          type="checkbox"
+          id="incluirTransporte"
+          name="incluir_transporte"
+          class="h-4 w-4 text-blue-600 border-blue-300 rounded focus:ring-blue-500"
         >
-          <input
-            type="number"
-            min="0"
-            id="importeTransporte"
-            name="importe_transporte"
-            placeholder="0.00"
-            class="w-40 px-3 py-2 border border-blue-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500"
-          >
-          <span class="text-sm text-gray-600">€</span>
-        </div>
+        <span class="ml-2 text-sm font-medium text-gray-700">
+          Incluir transporte
+        </span>
+      </label>
+
+      <!-- Campo transporte -->
+      <div
+        id="importeTransporteWrapper"
+        class="hidden items-center gap-2"
+      >
+        <input
+          type="number"
+          min="0"
+          id="importeTransporte"
+          name="importe_transporte"
+          placeholder="0.00"
+          class="w-40 px-3 py-2 border border-blue-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500"
+        >
+        <span class="text-sm text-gray-600">€</span>
       </div>
+
+      <!-- DESCUENTO -->
+      <label class="inline-flex items-center">
+        <input
+          type="checkbox"
+          id="incluirDescuento"
+          name="incluir_descuento"
+          class="h-4 w-4 text-blue-600 border-blue-300 rounded focus:ring-blue-500"
+        >
+        <span class="ml-2 text-sm font-medium text-gray-700">
+          Descuento fijo (0% - 50%)
+        </span>
+      </label>
+
+      <!-- Campo descuento -->
+      <div
+        id="descuentoWrapper"
+        class="hidden items-center gap-2"
+      >
+
+
+        <input
+          type="number"
+          min="0"
+          max="50"
+          value="0"
+          id="descuentoFijo"
+          name="descuento_fijo"
+          placeholder="0"
+          class="w-32 px-3 py-2 border border-blue-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none focus:border-blue-500"
+        >
+        <span class="text-sm text-gray-600">%</span>
+      </div>
+
+    </div>
 
 
     
@@ -330,6 +368,25 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
+  const incluirDescuento = document.getElementById('incluirDescuento');
+  const wrapperDescuento = document.getElementById('descuentoWrapper');
+  const inputDescuentoFijo = document.getElementById('descuentoFijo');
+
+  incluirDescuento.addEventListener('change', () => {
+    const activo = incluirDescuento.checked;
+
+    wrapperDescuento.classList.toggle('hidden', !activo);
+    wrapperDescuento.classList.toggle('flex', activo);
+
+    // obligatorio solo si está marcado
+    inputDescuento.required = activo;
+
+    // limpiar si se desmarca
+    if (!activo) {
+      inputDescuento.value = '';
+    }
+  });
+
   // === Envío del formulario ===
   const form = document.getElementById('formulario-oferta');
   if (!form) return;
@@ -363,7 +420,8 @@ document.addEventListener('DOMContentLoaded', function () {
       pistas_perimetrales: Number.isNaN(perimetrales) ? 0 : perimetrales,
       pistas_laterales: Number.isNaN(laterales) ? 0 : laterales,
       incluir_transporte: incluirTransporte,
-      importe_transporte: importeTransporte
+      importe_transporte: importeTransporte,
+      descuento_fijo: parseFloat((document.querySelector('[name="descuento_fijo"]')?.value || '0').trim() ) || 0
     };
 
     Swal.fire({

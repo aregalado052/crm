@@ -587,6 +587,7 @@ def ofertas():
             mailorigen = 'soporte@planetpower.es'
             descuento_adicional = Decimal(data.get("descuento_adicional", 0))
             origen = 'CRM'
+            descuentoFijo= Decimal(data.get("descuento_fijo", 0))
  
 
             print("📥 Datos recibidos:")
@@ -603,6 +604,8 @@ def ofertas():
             print(f"Importe Transporte : {importe_transporte}")
             print ("Send_EMAIL", SEND_EMAIL)
             print ("Send_WellCome_EMAIL", SEND_WELLCOME_EMAIL)
+            print(f"Descuento Fijo: {descuentoFijo}")
+ 
 
 
 
@@ -621,6 +624,7 @@ def ofertas():
                 "descuento_adicional": int(descuento_adicional),
                 "incluir_transporte": incluir_transporte,
                 "importe_transporte": importe_transporte,
+                "descuento_fijo": int(descuentoFijo),
                 "origen": origen,
                 "BD": BD,
                 "EMAIL_USER": EMAIL_USER,
@@ -672,6 +676,7 @@ def ofertas():
                 "descuento_adicional": int (descuento_adicional),
                 "incluir_transporte": incluir_transporte,
                 "importe_transporte": importe_transporte,
+                "descuento_fijo": int(descuentoFijo),
                 "origen": origen,
                 "BD": BD,
                 "EMAIL_USER": EMAIL_USER,
@@ -4475,29 +4480,42 @@ def email_open():
 
 @application.route("/email/click")
 def email_click():
-    tracking_id = request.args.get("id", "").strip()
-    target_url = request.args.get("url", "").strip()
+    try:
+        tracking_id = request.args.get("id", "").strip()
+        target_url = request.args.get("url", "").strip()
 
-    print(f"Click recibido. Tracking ID: {tracking_id}, URL: {target_url}")
+        print(f"Tracking ID: {tracking_id}")
+        print(f"Target URL: {target_url}")
 
-    if tracking_id:
         recipient = db.session.query(CampaignRecipient).filter_by(
             tracking_id=tracking_id
         ).first()
 
+        print(f"Recipient encontrado: {recipient}")
+
         if recipient:
+            print(f"Email: {recipient.email}")
+            print(f"Click count actual: {recipient.click_count}")
+
             if not recipient.clicked_at:
                 recipient.clicked_at = datetime.now(timezone.utc)
 
-            print(f"Click registrado para el destinatario: {recipient.email}")
             recipient.click_count = (recipient.click_count or 0) + 1
 
+            print("Antes de commit")
             db.session.commit()
+            print("Commit OK")
 
-    if not target_url:
-        return "URL inválida", 400
+        print("Redirigiendo...")
+        return redirect(target_url, code=302)
 
-    return redirect(target_url, code=302)
+    except Exception as e:
+
+
+        
+        import traceback
+        traceback.print_exc()
+        return str(e), 500
 
 
 @application.route("/campanas/<int:cid>/send-stream")
@@ -4611,7 +4629,7 @@ def campaign_stats(cid):
         total_clicks=total_clicks,
         delivery_rate=delivery_rate,
         open_rate=open_rate,
-        click_rate=click_rate,
+        click_rate=_rate,
         by_status=by_status,
         by_country=by_country,
     )
@@ -5320,7 +5338,7 @@ if  __name__ == "__main__":
     
     
     
-    application.run(host='0.0.0.0', port=8000, debug=False, use_reloader=False)
+    application.run(host='0.0.0.0', port=8000, debug=True, use_reloader=False)
 
 
 

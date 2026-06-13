@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <title>Proforma Invoice Request</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen flex items-center justify-center p-6"
+      style="background:#EAF3FB;">
+
+  <div class="bg-white shadow-2xl rounded-2xl w-full max-w-2xl p-10 border border-blue-100">
+    <div class="bg-white shadow-2xl rounded-2xl w-full max-w-2xl p-10 border border-blue-100">
+
+     <!-- Logos -->
+    <div class="flex justify-between items-center mb-6">
+        <img src="https://f.crmplanetpower.es/Logo Planet Power.png"
+            class="h-14 object-contain">
+
+   
+        <img src="https://f.crmplanetpower.es/Logo LEDPADEL azul y verde.png"
+            class="h-14 object-contain">
+    </div>
+
+    <h2 class="text-2xl font-bold text-center text-[#5B9BD5] mb-6">
+      Details to issue the proforma invoice
+    </h2>
+
+    <p class="text-center text-gray-600 mb-6">
+      Quotation: <strong>{{ quote_number }}</strong>
+    </p>
+
+    <form id="proforma-form" class="space-y-4">
+      <!-- Hidden token -->
+      <input type="hidden" id="token" value="{{ token }}">
+      <!-- Flag coming from backend -->
+      <input type="hidden" id="idMode" value="{{ id_mode }}">
+      <input type="hidden" id="sessionId" value="{{  session_id }}">
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Company Name / Legal Name</label>
+        <input type="text" id="name" required
+               class="w-full px-4 py-2 rounded-lg border border-gray-300
+                        bg-gray-50 focus:bg-white
+                        focus:ring-2 focus:ring-[#5B9BD5]
+                        focus:border-[#5B9BD5]">
+      </div>
+
+      <!-- Dynamic identification -->
+      <div id="identificacion-block">
+        <label id="identificacion-label" class="block text-sm font-medium text-gray-700 mb-1">
+          Identification
+        </label>
+        <input
+          type="text"
+          id="identificacion"
+          name="identificacion"
+          required
+          class="w-full px-4 py-2 rounded-lg border border-gray-300
+                        bg-gray-50 focus:bg-white
+                        focus:ring-2 focus:ring-[#5B9BD5]
+                        focus:border-[#5B9BD5]"
+        >
+        <p id="identificacion-hint" class="text-xs text-gray-500 mt-1"></p>
+      </div>
+
+      <!-- Optional extra field -->
+      <div id="registro-block" class="hidden">
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          Registration Number
+        </label>
+        <input
+          type="text"
+          id="nRegistro"
+          name="nRegistro"
+          class="w-full px-4 py-2 rounded-lg border border-gray-300
+                        bg-gray-50 focus:bg-white
+                        focus:ring-2 focus:ring-[#5B9BD5]
+                        focus:border-[#5B9BD5]"
+        >
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Address Line 1</label>
+        <input type="text" id="direccion1" required
+               class="w-full px-4 py-2 rounded-lg border border-gray-300
+                        bg-gray-50 focus:bg-white
+                        focus:ring-2 focus:ring-[#5B9BD5]
+                        focus:border-[#5B9BD5]">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Address Line 2</label>
+        <input type="text" id="direccion2"
+               class="w-full px-4 py-2 rounded-lg border border-gray-300
+                        bg-gray-50 focus:bg-white
+                        focus:ring-2 focus:ring-[#5B9BD5]
+                        focus:border-[#5B9BD5]">
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Postal Code</label>
+          <input type="text" id="codigoPostal" required
+                 class="w-full px-4 py-2 rounded-lg border border-gray-300
+                        bg-gray-50 focus:bg-white
+                        focus:ring-2 focus:ring-[#5B9BD5]
+                        focus:border-[#5B9BD5]">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">City</label>
+          <input type="text" id="poblacion" required
+                 class="w-full px-4 py-2 rounded-lg border border-gray-300
+                        bg-gray-50 focus:bg-white
+                        focus:ring-2 focus:ring-[#5B9BD5]
+                        focus:border-[#5B9BD5]">
+        </div>
+      </div>
+
+      <div class="text-center pt-4">
+        <button type="submit"
+                class="bg-[#5B9BD5] text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
+          Submit Request
+        </button>
+      </div>
+
+      <p id="message" class="text-center text-sm mt-4"></p>
+    </form>
+  </div>
+
+  <script>
+  window.API_BASE = "{{ api_base_url }}";
+  const base = (window.API_BASE || "").replace(/\/$/, "");
+  const url = `${base}/proforma_submit`;
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById("proforma-form");
+    const msg = document.getElementById("message");
+
+    const mode = (document.getElementById('idMode')?.value || '').toUpperCase();
+    const label = document.getElementById('identificacion-label');
+    const input = document.getElementById('identificacion');
+    const hint  = document.getElementById('identificacion-hint');
+    const regBlock = document.getElementById('registro-block');
+    const regInput = document.getElementById('nRegistro');
+
+    // defaults
+    label.textContent = 'Identification';
+    input.placeholder = '';
+    hint.textContent = '';
+    regBlock.classList.add('hidden');
+    if (regInput) regInput.required = false;
+
+    if (mode === 'VAT') {
+      label.textContent = 'VAT Number (EU)';
+      input.placeholder = 'Example: ESB12345678 / DE123456789';
+      hint.textContent = 'Please enter your VAT number with country prefix (ES, FR, DE...).';
+    } else if (mode === 'NIF') {
+      label.textContent = 'Tax ID (Spain)';
+      input.placeholder = 'Example: B12345678 / 12345678A';
+      hint.textContent = 'Please enter your Spanish Tax ID.';
+    } else if (mode === 'REGISTRO') {
+      label.textContent = 'Registration Number';
+      input.placeholder = 'Example: 12345 / ABC-987';
+      hint.textContent = 'Please enter your registration number.';
+    } else if (mode === 'VAT+REGISTRO') {
+      label.textContent = 'VAT Number (EU)';
+      input.placeholder = 'Example: ESB12345678 / DE123456789';
+      regBlock.classList.remove('hidden');
+      if (regInput) regInput.required = true;
+    }
+
+    if (!form) return;
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+       setTimeout(() => {
+        document.body.innerHTML = `
+          <div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;">
+            <h2>The session has expired</h2>
+          </div>
+        `;
+      },120000);
+
+      const payload = {
+        token: document.getElementById("token")?.value || "",
+        session_id: document.getElementById("sessionId")?.value || "",
+
+        name: document.getElementById("name")?.value.trim() || "",
+        direccion1: document.getElementById("direccion1")?.value.trim() || "",
+        direccion2: document.getElementById("direccion2")?.value.trim() || "",
+        codigoPostal: document.getElementById("codigoPostal")?.value.trim() || "",
+        poblacion: document.getElementById("poblacion")?.value.trim() || "",
+
+        idMode: document.getElementById("idMode")?.value.trim() || "",
+        identificacion: document.getElementById("identificacion")?.value.trim() || "",
+        nRegistro: document.getElementById("nRegistro")?.value.trim() || ""
+      };
+
+      msg.textContent = "Processing...";
+      msg.className = "text-center text-sm mt-4 text-gray-600";
+
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || !result.ok) {
+          msg.textContent = result.message || "Request error.";
+          msg.className = "text-center text-sm mt-4 text-red-600";
+          return;
+        }
+
+        msg.textContent = result.message || "Request submitted successfully.";
+        msg.className = "text-center text-sm mt-4 text-green-600";
+
+      } catch (err) {
+        msg.textContent = "Connection error.";
+        msg.className = "text-center text-sm mt-4 text-red-600";
+      }
+    });
+  });
+  </script>
+</body>
+</html>

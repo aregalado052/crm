@@ -159,6 +159,55 @@ class LeadForm(db.Model):
 
     unsubscribed = db.Column(db.Boolean, default=False, nullable=False)
     unsubscribed_at = db.Column(db.DateTime, nullable=True)
+    proforma_solicitada = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=False,
+        server_default=db.text("0")
+    )
+
+    fecha_solicitud_proforma = db.Column(
+        db.DateTime,
+        nullable=True
+    )
+
+
+    # Renting
+    renting_solicitado = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=False,
+        server_default=db.text("0")
+    )
+
+    fecha_solicitud_renting = db.Column(
+        db.DateTime,
+        nullable=True
+    )
+
+    renting_concedido = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=False,
+        server_default=db.text("0")
+    )
+
+    fecha_concedido_renting = db.Column(
+        db.DateTime,
+        nullable=True
+    )
+
+    renting_denegado = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=False,
+        server_default=db.text("0")
+    )
+
+    fecha_denegado_renting = db.Column(
+        db.DateTime,
+        nullable=True
+    )
 
     created_at = db.Column(
         db.DateTime,

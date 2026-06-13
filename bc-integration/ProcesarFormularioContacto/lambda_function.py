@@ -45,10 +45,12 @@ SECRET_KEY_PROFORMAS= os.getenv("SECRET_KEY_PROFORMAS", "")
 URL_LAMBDA_OFERTAS_PUBLICAS = os.getenv("URL_LAMBDA_OFERTAS_PUBLICAS", "https://rfg45eg4lk.execute-api.eu-north-1.amazonaws.com/prod")
 URL_NGROK_OFERTAS_PUBLICAS = os.getenv("URL_NGROK_OFERTAS_PUBLICAS", "https://2e15-83-39-89-46.ngrok-free.app")
 
-global BD, ENVIRONMENT, URL_OFERTAS, URL_PROFORMAS
+global BD, ENVIRONMENT, URL_OFERTAS, URL_PROFORMAS, EMAIL_USER, EMAIL_PASSWORD, URL_CONTACTO, API_KEY, SEND_EMAIL, SEND_WELLCOME_EMAIL
 
 
-
+ENVIRONMENT = None
+EMAIL_PASSWORD = None
+SEND_EMAIL = None
 
 TOKEN_MAX_AGE = 21 * 24 * 60 * 60  # 7 días
 
@@ -162,35 +164,20 @@ def get_db_credentials():
     response = client.get_secret_value(SecretId=MYSQL_DB_SECRET_NAME)
     return json.loads(response["SecretString"])
 
-def get_session_data(session_id,connection):
-
-
-    
-    
+def get_session_data(session_id, connection):
     with connection.cursor() as cursor:
-        cursor.execute("SELECT name, email, mailorigen, idioma, SalesHeaderNumber,url_proformas, url_form_contacto, send_email, email_password, send_wellcome_email FROM sessions WHERE session_id = %s", (session_id,))
+        cursor.execute(
+            "SELECT * FROM sessions WHERE session_id = %s",
+            (session_id,)
+        )
+
         row = cursor.fetchone()
+
         if row:
             print(f"Datos de sesión encontrados para session_id {session_id}: {row}")
-            return {
-                "name": row["name"],
-                "email": row["email"],
-                "mailorigen": row["mailorigen"],
-                "idioma": row["idioma"],
-                "SalesHeaderNumber": row["SalesHeaderNumber"],
-                "url_proformas": row["url_proformas"],
-                "url_form_contacto": row["url_form_contacto"],
-                "send_email": row["send_email"],
-                "email_password": row["email_password"],
-                "send_wellcome_email": row["send_wellcome_email"],
-                "environment": row.get("environment", "Production"),
-                "send_email": row.get("send_email", True),
-                "email_user": row.get("email_user", ""),
-            }
-        else:
-            return None
+            return row
 
-
+        return None
 
 # --- Obtener token de acceso ---
 def get_token():
@@ -286,24 +273,95 @@ def actualizar_sales_header(connection, session_id, SalesHeaderNumber):
     connection.commit()
    
 
-def store_session(connection, name, email, mailorigen, idioma, origen, bd, email_user, email_password, url_contacto, url_ofertas, url_proformas, 
-                  url_actualizar_contacto, url_form_contacto, api_key, environment, send_email, send_wellcome_email):
-    session_id = str(uuid.uuid4())  # 🔑 clave de sesión única
-    
-    print(f"Guardando sesión: Store Session {session_id} - {name}, {email}, {mailorigen}, {idioma}, {origen}, {bd}, {email_user}, {email_password}, {url_contacto}, {url_ofertas}, {url_proformas}, {url_actualizar_contacto}, {url_form_contacto}, {api_key}, {environment}, {send_email}, {send_wellcome_email}")
-    
+def store_session(
+    connection,
+    name,
+    email,
+    mailorigen,
+    idioma,
+    origen,
+    bd,
+    email_user,
+    email_password,
+    url_contacto,
+    url_ofertas,
+    url_proformas,
+    url_actualizar_contacto,
+    url_form_contacto,
+    api_key,
+    environment,
+    send_email,
+    send_wellcome_email,
+    renting_email,
+    renting_idioma,
+    pais_renting
+):
+    session_id = str(uuid.uuid4())
+
+    print(
+        f"Guardando sesión: {session_id} - "
+        f"renting_email={renting_email}, renting_idioma={renting_idioma}, pais_renting={pais_renting}"
+    )
+
     with connection.cursor() as cursor:
         cursor.execute("""
-    INSERT INTO sessions (session_id, name, email, mailorigen, idioma,origen, bd, email_user, email_password, url_contacto, url_ofertas, url_proformas, url_actualizar_contacto, url_form_contacto, api_key, environment, send_email,send_wellcome_email)
-            VALUES   (%s, %s, %s, %s, %s, %s,
-                %s, %s, %s, %s, %s, %s,
-                %s, %s, %s, %s, %s, %s)
-        """, (session_id, name, email, mailorigen, idioma,origen, bd, email_user, email_password, url_contacto, url_ofertas, url_proformas, url_actualizar_contacto, url_form_contacto, api_key, environment, send_email, send_wellcome_email))
+            INSERT INTO sessions (
+                session_id,
+                name,
+                email,
+                mailorigen,
+                idioma,
+                origen,
+                bd,
+                email_user,
+                email_password,
+                url_contacto,
+                url_ofertas,
+                url_proformas,
+                url_actualizar_contacto,
+                url_form_contacto,
+                api_key,
+                environment,
+                send_email,
+                send_wellcome_email,
+                renting_email,
+                renting_idioma,
+                pais_renting
+            )
+            VALUES (
+                %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s,
+                %s
+            )
+        """, (
+            session_id,
+            name,
+            email,
+            mailorigen,
+            idioma,
+            origen,
+            bd,
+            email_user,
+            email_password,
+            url_contacto,
+            url_ofertas,
+            url_proformas,
+            url_actualizar_contacto,
+            url_form_contacto,
+            api_key,
+            environment,
+            send_email,
+            send_wellcome_email,
+            renting_email,
+            renting_idioma,
+            pais_renting
+        ))
+
     connection.commit()
 
     return session_id
-
-
 
 def actualizar_contacto_service(data: dict) -> dict:
     """
@@ -311,7 +369,7 @@ def actualizar_contacto_service(data: dict) -> dict:
     pero SIN request.get_json() y SIN depender de Flask.
     """
    
-
+    print(f"Datos recibidos en actualizar_contacto_service: {data}")
        
 
     global BD, EMAIL_USER, EMAIL_PASSWORD, URL_CONTACTO, URL_OFERTAS, API_KEY, ENVIRONMENT, SEND_EMAIL,SEND_WELLCOME_EMAIL
@@ -394,7 +452,8 @@ def actualizar_contacto_service(data: dict) -> dict:
     environment=ENVIRONMENT
     send_email=SEND_EMAIL
     send_wellcome_email= ""
-
+    renting_email= ""
+    pais_renting= ""
 
     creds = get_db_credentials()
 
@@ -420,7 +479,7 @@ def actualizar_contacto_service(data: dict) -> dict:
 
     
     #session_id= store_session(connection,name, email, mailorigen, idioma, origen, bd, email_user, email_password, url_contacto, url_ofertas,url_proformas, 
-    #                          url_actualizar_contacto, url_form_contacto, api_key, environment, send_email,send_wellcome_email)
+    #                          url_actualizar_contacto, url_form_contacto, api_key, environment, send_email,send_wellcome_email, renting_email)
 
     #codigo_pais, mercado, zona = obtener_datos_pais (pais, idioma)
 
@@ -527,10 +586,7 @@ def create_quote_lines(token, name, email, customer_template, customer_country_c
 
 
 
-def obtener_datos_pais(connection, pais, idioma):
-
-    
-
+def obtener_datos_pais(connection, pais, idioma, origen):
     LABEL_TO_SLUG = {
         'Español': 'es',
         'Esp': 'es',
@@ -550,20 +606,24 @@ def obtener_datos_pais(connection, pais, idioma):
         'Italian': 'it',
         'it': 'it',
     }
-    slug = LABEL_TO_SLUG.get(idioma, 'es')  # fallback 'es'
 
-    # Paso 2: slug -> columna
+    slug = LABEL_TO_SLUG.get(idioma, 'es')
+
     COL_BY_LANG = {
         'es': 'pais_es',
         'en': 'pais_en',
         'fr': 'pais_fr',
         'it': 'pais_it',
     }
+
     col = COL_BY_LANG[slug]
 
-    print(f"Buscando en columna '{col}' para idioma '{idioma}' (slug '{slug}') el país '{pais}'")
-   
-    
+    if origen == "CRM":
+        col = "pais_es"
+
+    print(f"Buscando en columna '{col}' para idioma '{idioma}' el país '{pais}'")
+
+    # Buscar país
     with connection.cursor() as cursor:
         sql = f"""
             SELECT codigo_pais, zona, mercado
@@ -574,24 +634,89 @@ def obtener_datos_pais(connection, pais, idioma):
         cursor.execute(sql, (pais,))
         result = cursor.fetchone()
 
-    
     print("DEBUG result:", result, type(result))
-    if result:
-    # Si el cursor devuelve dict (DictCursor), sacamos por clave
-        if isinstance(result, dict):
-            codigo_pais = result.get("codigo_pais")
-            zona = result.get("zona")
-            mercado = result.get("mercado")
-        else:
-            # Si devuelve tupla normal
-            codigo_pais, zona, mercado = result
 
-        print(f"Datos obtenidos: {codigo_pais}, {zona}, {mercado}")
-        return codigo_pais, mercado, zona
+    if not result:
+        return None, None, None, None, None, 0
+
+    if isinstance(result, dict):
+        codigo_pais = result.get("codigo_pais")
+        zona = result.get("zona")
+        mercado = result.get("mercado")
     else:
-        return None, None, None
+        codigo_pais, zona, mercado = result
 
+    # Valores por defecto
+    renting_email = None
+    renting_idioma = None
+    pais_renting = 0
 
+    # Buscar empresa de renting para el país
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT
+                ers.email AS subsidiaria_email,
+                ers.idioma AS subsidiaria_idioma,
+                ers.activo AS subsidiaria_activo,
+                er.email AS matriz_email,
+                er.idioma AS matriz_idioma
+            FROM empresas_renting_subsidiarias ers
+            INNER JOIN empresas_renting er
+                ON er.id = ers.empresa_renting_id
+            WHERE ers.codigo_pais = %s
+              AND er.nombre = 'GRENKE'
+            LIMIT 1
+        """, (codigo_pais,))
+
+        renting_result = cursor.fetchone()
+
+    if renting_result:
+
+        # Existe empresa de renting para ese país
+        pais_renting = 1
+
+        if isinstance(renting_result, dict):
+            subsidiaria_email = renting_result.get("subsidiaria_email")
+            subsidiaria_idioma = renting_result.get("subsidiaria_idioma")
+            subsidiaria_activo = renting_result.get("subsidiaria_activo")
+            matriz_email = renting_result.get("matriz_email")
+            matriz_idioma = renting_result.get("matriz_idioma")
+        else:
+            (
+                subsidiaria_email,
+                subsidiaria_idioma,
+                subsidiaria_activo,
+                matriz_email,
+                matriz_idioma
+            ) = renting_result
+
+        # Si la subsidiaria está activa usamos sus datos
+        if subsidiaria_activo == 1:
+            renting_email = subsidiaria_email
+            renting_idioma = subsidiaria_idioma
+        else:
+            # Si existe pero está inactiva usamos la matriz
+            renting_email = matriz_email
+            renting_idioma = matriz_idioma
+
+    print(
+        f"Datos obtenidos: "
+        f"codigo_pais={codigo_pais}, "
+        f"zona={zona}, "
+        f"mercado={mercado}, "
+        f"pais_renting={pais_renting}, "
+        f"renting_email={renting_email}, "
+        f"renting_idioma={renting_idioma}"
+    )
+
+    return (
+        codigo_pais,
+        mercado,
+        zona,
+        renting_email,
+        renting_idioma,
+        pais_renting
+    )
 def obtener_descuento(zona, pistas_perimetrales, pistas_laterales, descuento_adicional=0):
 
     creds = get_db_credentials()
@@ -827,7 +952,7 @@ def obtener_descuento_cantidad_total(connection, session_id):
 
 
 
-def ensamblar_oferta (codigo_pais,zona,idioma, pistas_perimetrales, pistas_laterales, SalesHeaderNumber, session_id, descuento_adicional=0, incluir_transporte=False, importe_transporte=0  ):
+def ensamblar_oferta (codigo_pais,zona,idioma, pistas_perimetrales, pistas_laterales, SalesHeaderNumber, session_id, descuento_adicional=0, incluir_transporte=False, importe_transporte=0, descuento_fijo=0  ):
     """
     Ensambla una oferta basada en los parámetros proporcionados.    
     Args:
@@ -842,9 +967,12 @@ def ensamblar_oferta (codigo_pais,zona,idioma, pistas_perimetrales, pistas_later
     # Basado en los parámetros recibidos, por ejemplo:
 
     print("Ensamblando oferta con los siguientes Idioma:", idioma)
-   
 
-    porcentaje_descuento = math.ceil(round(obtener_descuento(zona,pistas_perimetrales, pistas_laterales,descuento_adicional) , 1))
+    if (descuento_fijo !=0) :
+        porcentaje_descuento = descuento_fijo
+    else :
+
+        porcentaje_descuento = math.ceil(round(obtener_descuento(zona,pistas_perimetrales, pistas_laterales,descuento_adicional) , 1))
 
     guardar_porcentaje_descuento_session (porcentaje_descuento,session_id)
     
@@ -1600,18 +1728,31 @@ def lambda_handler(event, context):
             result, status = proforma_submit_core(payload)
             return _json_response(status, result)
             
+
+        if route_key == "POST /renting_submit":
+            payload = _parse_json_body(event)  # o el parser que ya tienes
+            result, status = renting_submit_core(payload)
+            return _json_response(status, result)
+        
             
         if route_key == "GET /proforma_form":
             token = _get_token_from_event(event)
-            body, status, ct = proforma_form_service(token)
+
+            origen = (
+                event.get("queryStringParameters", {}) or {}
+            ).get("origen", "proforma")
+
+            body, status, ct = proforma_form_service(token, origen)
 
             if ct.startswith("text/html"):
                 return _html_response(status, body)
 
-            # si es error JSON
             return {
                 "statusCode": status,
-                "headers": {"Content-Type": ct, "Access-Control-Allow-Origin": "*"},
+                "headers": {
+                    "Content-Type": ct,
+                    "Access-Control-Allow-Origin": "*"
+                },
                 "body": body,
             }
         
@@ -1687,6 +1828,7 @@ def crear_contacto_core(data):
     tipo_lead = data.get("tipo_lead", "Sin calificar")
     incluir_transporte = data.get("incluir_transporte", False)
     importe_transporte = data.get("importe_transporte", 0)
+    descuento_fijo = data.get("descuento_fijo", 0)
     BD = data.get("BD", "PRODUCCION")  # PRODUCCION o PRUEBAS
     EMAIL_USER = data.get("EMAIL_USER", "web@planetpower.es") 
     EMAIL_PASSWORD = data.get("EMAIL_PASSWORD", 'Ppt946682011') 
@@ -1731,7 +1873,7 @@ def crear_contacto_core(data):
    
 
 
-    print(f"""Datos recibidos : {name}, {email}, {pais}, {idioma}, {pistas_perimetrales}, {pistas_laterales}, {mailorigen}, {descuento_adicional}, {origen},
+    print(f"""Datos recibidos : {name}, {email}, {pais}, {idioma}, {pistas_perimetrales}, {pistas_laterales}, {mailorigen}, {descuento_adicional}, {descuento_fijo}, {origen},
         {BD}, {EMAIL_USER},{URL_CONTACTO}, {URL_OFERTAS},{URL_PROFORMAS},{URL_ACTUALIZAR_CONTACTO},{URL_FORMCONTACTO} {ENVIRONMENT}, {SEND_EMAIL}, {SEND_WELLCOME_EMAIL}""")
 
 
@@ -1748,17 +1890,18 @@ def crear_contacto_core(data):
     send_email=SEND_EMAIL
     send_wellcome_email= SEND_WELLCOME_EMAIL
 
-    session_id= store_session(connection,name, email, mailorigen, idioma, origen, bd, email_user, email_password, url_contacto, url_ofertas,url_proformas, 
-                              url_actualizar_contacto, url_form_contacto, api_key, environment, send_email,send_wellcome_email)
+   
 
-    codigo_pais, mercado, zona = obtener_datos_pais (connection,pais, idioma)
+    codigo_pais, mercado, zona, renting_email, renting_idioma,pais_renting = obtener_datos_pais (connection,pais, idioma,origen)
+    session_id= store_session(connection,name, email, mailorigen, idioma, origen, bd, email_user, email_password, url_contacto, url_ofertas,url_proformas, 
+                              url_actualizar_contacto, url_form_contacto, api_key, environment, send_email,send_wellcome_email,renting_email, renting_idioma,pais_renting)
 
     if idioma == "Español":
         codigo_idioma = "ESP"
     else:
         codigo_idioma = "ENU"
 
-    print(f"Código de país: {codigo_pais}, Mercado: {mercado}, Zona: {zona}")
+    print(f"Código de país: {codigo_pais}, Mercado: {mercado}, Zona: {zona}, Renting Email: {renting_email}, Renting Idioma: {renting_idioma}")
 
     customer_template = "QUOTELEAD E E"
 
@@ -1787,7 +1930,7 @@ def crear_contacto_core(data):
     
 
 
-    lineas =ensamblar_oferta (codigo_pais,zona,idioma, pistas_perimetrales, pistas_laterales, SalesHeaderNumber,session_id, descuento_adicional,incluir_transporte, importe_transporte  )
+    lineas =ensamblar_oferta (codigo_pais,zona,idioma, pistas_perimetrales, pistas_laterales, SalesHeaderNumber,session_id, descuento_adicional,incluir_transporte, importe_transporte, descuento_fijo  )
 
 
     print(f"Líneas de oferta ensambladas: {lineas}")
@@ -1926,7 +2069,7 @@ def tipo_identificacion_por_pais_texto(pais_texto: str, connection) -> str:
 
 
 
-def proforma_form_service(token: str):
+def proforma_form_service(token, origen="proforma"):
     if not token:
         print("[WARN] Falta el token.")
         return (
@@ -1989,9 +2132,21 @@ def proforma_form_service(token: str):
         idioma = datos_oferta["idioma"]
         pais = datos_oferta["pais"]
         id_mode = tipo_identificacion_por_pais_texto(pais, connection)
+        if idioma in ("Español", "Esp"):
+            if origen == "renting":
+                titulo = "Datos para solicitar un plan de renting"
+            else:
+                titulo = "Datos para emitir la factura proforma"
+        else:
+            if origen == "renting":
+                titulo = "Information to request a renting plan"
+            else:
+                titulo = "Information to issue the proforma invoice"
 
     finally:
         connection.close()
+
+    print(f"Renderizando formulario con idioma={idioma},origen={origen}, pais={pais}, id_mode={id_mode}, titulo={titulo}")
 
     # render html
     template = env.get_template("proforma_public_es.html" if idioma in ("Español", "Esp") else "proforma_public_en.html")
@@ -2003,6 +2158,8 @@ def proforma_form_service(token: str):
         idioma=idioma,
         pais=pais,
         id_mode=id_mode,
+        titulo=titulo,
+        origen=origen,
     )
     return (html, 200, "text/html; charset=utf-8")
 
@@ -2161,12 +2318,196 @@ def oferta_public_service(token: str, base_url: str):
     return (html, 200, "text/html; charset=utf-8")
 
 
-
+def validate_token(conn, token: str) -> bool:
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT 1
+            FROM reset_token
+            WHERE token=%s
+              AND user_id=0
+              AND expires_at > NOW()
+            LIMIT 1
+        """, (token,))
+        return cur.fetchone() is not None
 
 
 
 def proforma_submit_core(payload: dict):
     data = payload or {}
+
+    token = (data.get("token") or "").strip()
+    session_id_in = (data.get("session_id") or "").strip()
+    global BD, ENVIRONMENT, URL_OFERTAS, URL_PROFORMAS, EMAIL_USER, EMAIL_PASSWORD, URL_CONTACTO, API_KEY, SEND_EMAIL, SEND_WELLCOME_EMAIL,ENVIRONMENT
+    if not token:
+        return {"ok": False, "message": "Falta el token."}, 400
+
+    # 1) Validar token (firma + max_age)
+    try:
+        quote_number, BD, url_form_contacto, session_id_token = validate_token_and_get_quote(token)
+        session_id = session_id_token or session_id_in
+    except SignatureExpired:
+        return {"ok": False, "message": "El enlace ha caducado."}, 410
+    except BadSignature:
+        return {"ok": False, "message": "Token inválido."}, 400
+
+    # 2) Validar campos mínimos del form
+    required = ["name", "direccion1", "codigoPostal", "poblacion"]
+    for k in required:
+        if not (data.get(k) or "").strip():
+            return {"ok": False, "message": f"Campo obligatorio: {k}"}, 400
+
+    # Consumir token (one-time-use)
+    creds = get_db_credentials()
+    dbname = "bc_pruebas" if (BD == "PRUEBAS") else creds["dbname"]
+
+    connection = pymysql.connect(
+        host=creds["host"],
+        user=creds["username"],
+        password=creds["password"],
+        database=dbname,
+        port=int(creds.get("port", 3306)),
+        cursorclass=pymysql.cursors.DictCursor,
+        autocommit=True,
+    )
+
+    try:
+        #if not consume_token(connection, token):
+        if not validate_token(connection, token):
+            connection.rollback()
+            return {"ok": False, "message": "Enlace no válido o ya utilizado."}, 410
+        connection.commit()
+    finally:
+
+        actualizar_sesion_proforma(connection, session_id, quote_number)
+        
+        
+        session_data = get_session_data(session_id, connection)
+
+        print(f"[DEBUG PROFORMA] Datos de sesión obtenidos: {session_data}")
+        email_user = session_data.get("email_user")
+
+        email_password = session_data.get("email_password")
+        environment = session_data.get("environment")
+        send_email = session_data.get("send_email")
+        renting_email = session_data.get("renting_email")
+        url_contacto = session_data.get("url_contacto")
+        url_ofertas = session_data.get("url_ofertas")
+        url_proformas = session_data.get("url_proformas")
+        url_actualizar_contacto = session_data.get("url_actualizar_contacto")   
+
+
+         
+
+        
+
+        connection.close()
+
+    email = (data.get("email") or "").strip()
+    idioma = (data.get("idioma", "Español") or "").strip()
+    name = (data.get("name") or "").strip()
+    Address = (data.get("direccion1") or "").strip()
+    Address2 = (data.get("direccion2") or "").strip()
+    PostCode = (data.get("codigoPostal") or "").strip()
+    City = (data.get("poblacion") or "").strip()
+
+    id_mode = (data.get("idMode") or "").upper()
+    ident = (data.get("identificacion") or "").strip()
+    n_reg = (data.get("nRegistro") or "").strip()
+
+    VATRegNo = ""
+    ForeignRegNo = ""
+    if id_mode in ("NIF", "VAT"):
+        VATRegNo = ident
+    elif id_mode == "REGISTRO":
+        ForeignRegNo = ident
+    elif id_mode == "VAT+REGISTRO":
+        VATRegNo = ident
+        ForeignRegNo = n_reg
+    else:
+        VATRegNo = ident
+
+    payload2 = {
+        "QuoteNo": quote_number,
+        "Name": name,
+        "Address": Address,
+        "Address2": Address2,
+        "PostCode": PostCode,
+        "City": City,
+        "VATRegNo": VATRegNo,
+        "ForeignRegNo": ForeignRegNo,
+        #"mailorigen": EMAIL_USER,
+        "email": email,
+        "idioma": idioma,
+        "BD": BD,
+        "URL_FORMCONTACTO": url_form_contacto,
+        "EMAIL_USER": email_user,
+        "EMAIL_PASSWORD": email_password,
+        "ENVIRONMENT": environment,
+        "SEND_EMAIL": send_email,
+        "RENTING_EMAIL": renting_email,
+        "session_id": session_id,
+        "URL_CONTACTO": url_contacto,
+        "URL_OFERTAS": url_ofertas,
+        "URL_PROFORMAS": url_proformas,
+        "URL_ACTUALIZAR_CONTACTO": url_actualizar_contacto
+    }
+
+    result = actualizar_contacto_service(payload2)
+
+    if not result.get("ok"):
+        if idioma in ("Español", "Esp"):
+            return {"ok": False, "message": "Error actualizando contacto", "detail": result}, 500
+        return {"ok": False, "message": "Error updating contact", "detail": result}, 500
+
+    if idioma in ("Español", "Esp"):
+        return {"ok": True, "message": "Solicitud recibida. Proforma enviada..."}, 200
+    return {"ok": True, "message": "Request received. Proforma sent..."}, 200
+   
+def actualizar_sesion_renting(connection, session_id: str, email: str = ""):
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            UPDATE sessions
+            SET renting = 1
+            WHERE session_id = %s
+        """, (session_id,))
+
+
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            UPDATE lead_forms
+            SET renting_solicitado = 1,
+                fecha_solicitud_renting = NOW()
+            WHERE email = %s
+        """, (email,))
+
+    connection.commit()
+
+def actualizar_sesion_proforma(connection, session_id: str, quote_number: str):
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            UPDATE sessions
+            SET renting = 0
+            WHERE session_id = %s
+        """, (session_id,))
+
+    
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            UPDATE lead_forms
+            SET proforma_solicitada = 1,
+                fecha_solicitud_proforma = NOW()
+            WHERE quote_number = %s
+        """, (quote_number,))
+
+    connection.commit()
+
+
+
+
+def renting_submit_core(payload: dict):
+    data = payload or {}
+
+    print(f"renting_submit_core recibido con payload: {data}")
 
     token = (data.get("token") or "").strip()
     session_id_in = (data.get("session_id") or "").strip()
@@ -2204,15 +2545,39 @@ def proforma_submit_core(payload: dict):
     )
 
     try:
-        if not consume_token(connection, token):
+        #if not consume_token(connection, token):
+        if not validate_token(connection, token):
             connection.rollback()
             return {"ok": False, "message": "Enlace no válido o ya utilizado."}, 410
         connection.commit()
     finally:
+
+        session_data = get_session_data(session_id, connection)
+        
+
+
+        actualizar_sesion_renting(connection, session_id, email=session_data.get("email"))
+        
+        
+
+        print(f"[DEBUG RENTING] Datos de sesión obtenidos: {session_data}")
+        email_user = session_data.get("email_user")
+        email_password = session_data.get("email_password")
+        environment = session_data.get("environment")
+        send_email = session_data.get("send_email")
+        renting_email = session_data.get("renting_email")
+        url_contacto = session_data.get("url_contacto")
+        url_ofertas = session_data.get("url_ofertas")
+        url_proformas = session_data.get("url_proformas")
+        url_actualizar_contacto = session_data.get("url_actualizar_contacto")   
+        idioma = session_data.get("idioma")
+
+         
+
         connection.close()
 
     email = (data.get("email") or "").strip()
-    idioma = (data.get("idioma", "Español") or "").strip()
+    
     name = (data.get("name") or "").strip()
     Address = (data.get("direccion1") or "").strip()
     Address2 = (data.get("direccion2") or "").strip()
@@ -2244,17 +2609,31 @@ def proforma_submit_core(payload: dict):
         "City": City,
         "VATRegNo": VATRegNo,
         "ForeignRegNo": ForeignRegNo,
-        "mailorigen": EMAIL_USER,
+        #"mailorigen": EMAIL_USER,
         "email": email,
         "idioma": idioma,
         "BD": BD,
         "URL_FORMCONTACTO": url_form_contacto,
-        "EMAIL_USER": EMAIL_USER,
-        "EMAIL_PASSWORD": EMAIL_PASSWORD,
-        "ENVIRONMENT": ENVIRONMENT,
-        "SEND_EMAIL": SEND_EMAIL,
+        "EMAIL_USER": email_user,
+        "EMAIL_PASSWORD": email_password,
+        "ENVIRONMENT": environment,
+        "SEND_EMAIL": send_email,
+        "RENTING_EMAIL": renting_email,
         "session_id": session_id,
+        "URL_CONTACTO": url_contacto,
+        "URL_OFERTAS": url_ofertas,
+        "URL_PROFORMAS": url_proformas,
+        "URL_ACTUALIZAR_CONTACTO": url_actualizar_contacto
+
+
+
+
+    
+    
     }
+
+    print(f"[DEBUG RENTING] Payload para actualizar contacto: {payload2}")
+
 
     result = actualizar_contacto_service(payload2)
 
@@ -2264,9 +2643,12 @@ def proforma_submit_core(payload: dict):
         return {"ok": False, "message": "Error updating contact", "detail": result}, 500
 
     if idioma in ("Español", "Esp"):
-        return {"ok": True, "message": "Solicitud recibida. Proforma enviada..."}, 200
-    return {"ok": True, "message": "Request received. Proforma sent..."}, 200
+        return {"ok": True, "message": "Solicitud recibida. En breve nos pondremos en contacto."}, 200
+    return {"ok": True, "message": "Request received. We will contact you shortly."}, 200
    
+
+
+
 
 
 
@@ -2326,37 +2708,44 @@ if __name__ == "__main__":
         data = request.get_json(silent=True) or {}
         result, status = proforma_submit_core(data)
         return jsonify(result), status
+
+
+    @app.route("/renting_submit", methods=["POST"])
+    def renting_submit():
+
+        """Endpoint para actulizar un contacto y para crear una factura Proforma en BC."""
+        data = request.get_json(silent=True) or {}
+        print(f"Endpoint /renting_submit recibido con data: {data}")
+        result, status = renting_submit_core(data)
+        return jsonify(result), status
        
 
 
 
     @app.route("/proforma_form", methods=["GET", "POST"])
     def proforma_form():
-        """Endpoint para actualizar un contacto y crear una factura Proforma en BC."""
-
         print("Endpoint /api/proforma_form called with method:", request.method)
 
-        # 1️⃣ Extraer token
         if request.method == "GET":
-            print("Extracting token from query parameters")
             token = (request.args.get("token") or "").strip()
+            origen = (request.args.get("origen") or "proforma").strip()
         else:
             if request.is_json:
                 data = request.get_json(silent=True) or {}
                 token = (data.get("token") or "").strip()
+                origen = (data.get("origen") or "proforma").strip()
             else:
                 token = (request.form.get("token") or "").strip()
+                origen = (request.form.get("origen") or "proforma").strip()
 
-        # 2️⃣ Llamar al servicio común
-        body, status, content_type = proforma_form_service(token)
+        body, status, content_type = proforma_form_service(token, origen)
 
-        # 3️⃣ Responder según tipo
         if content_type.startswith("text/html"):
             return body, status, {"Content-Type": content_type}
 
-        # Si es error JSON
-        return body, status, {"Content-Type": content_type}
-    
+        return body, status, {"Content-Type": content_type}    
+
+
     import traceback
 
 

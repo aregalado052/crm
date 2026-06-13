@@ -1,0 +1,6 @@
+Desde crm
+
+git status
+git add .
+git commit -m "xxxxxxxxxxxxxxxxx" --no-verify
+git push -u origin main

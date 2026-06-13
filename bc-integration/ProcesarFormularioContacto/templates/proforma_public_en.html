@@ -2,127 +2,128 @@
 <html lang="en" class="h-full">
 <head>
   <meta charset="UTF-8">
-  <title>Proforma Invoice Request</title>
+  <title>Pro Forma Invoice Request</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800;900&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Roboto', sans-serif; }
+    h2, label, button, .display { font-family: 'Poppins', sans-serif; }
+    .lp-input {
+      background:#1a2a4a; border:1px solid #2a3a5a; color:#EBF1F2;
+      transition:border-color .2s, box-shadow .2s;
+    }
+    .lp-input::placeholder { color:#6b82a8; }
+    .lp-input:focus {
+      outline:none; background:#1f3252;
+      border-color:#135EF2; box-shadow:0 0 0 3px rgba(19,94,242,.25);
+    }
+    .lp-btn {
+      background:#135EF2; border:none; text-shadow:none;
+      -webkit-font-smoothing:antialiased;
+      transition:background-color .2s, box-shadow .2s, transform .1s;
+    }
+    .lp-btn:hover {
+      background:#6fa0ff;
+      box-shadow:0 0 9px rgba(111,160,255,.35);
+    }
+    .lp-btn:active { transform:scale(.98); }
+  </style>
 </head>
 
-<body class="min-h-screen flex items-center justify-center p-6"
-      style="background:#EAF3FB;">
+<body class="min-h-screen flex items-center justify-center p-6" style="background:#000814;">
 
-  <div class="bg-white shadow-2xl rounded-2xl w-full max-w-2xl p-10 border border-blue-100">
-    <div class="bg-white shadow-2xl rounded-2xl w-full max-w-2xl p-10 border border-blue-100">
+    <div class="shadow-2xl rounded-2xl w-full max-w-2xl p-10 border"
+         style="background:#011640; border-color:#1a2a4a; border-radius:16px;">
 
      <!-- Logos -->
-    <div class="flex justify-between items-center mb-6">
-        <img src="https://f.crmplanetpower.es/Logo Planet Power.png"
-            class="h-14 object-contain">
-
-   
-        <img src="https://f.crmplanetpower.es/Logo LEDPADEL azul y verde.png"
-            class="h-14 object-contain">
+        <div class="flex justify-between items-center mb-8">
+            <img src="https://ledpadel.com/wp-content/uploads/2026/06/logo-PLANET.png"
+                class="h-auto object-contain" style="max-width:100px;">
+            <img src="https://ledpadel.com/wp-content/uploads/2026/04/logo_lPadelBlanco.png"
+                class="h-auto object-contain" style="max-width:100px;">
     </div>
 
-    <h2 class="text-2xl font-bold text-center text-[#5B9BD5] mb-6">
-      Details to issue the proforma invoice
+    <h2 class="text-2xl font-extrabold text-center mb-2" style="color:#FFFFFF;">
+      {{ titulo }}
     </h2>
 
-    <p class="text-center text-gray-600 mb-6">
-      Quotation: <strong>{{ quote_number }}</strong>
+    <p class="text-center mb-8" style="color:#8aaed4;">
+      Quote: <strong style="color:#6fa0ff;">{{ quote_number }}</strong>
     </p>
 
     <form id="proforma-form" class="space-y-4">
-      <!-- Hidden token -->
+
+      <!-- Token oculto -->
       <input type="hidden" id="token" value="{{ token }}">
       <!-- Flag coming from backend -->
       <input type="hidden" id="idMode" value="{{ id_mode }}">
       <input type="hidden" id="sessionId" value="{{  session_id }}">
 
+
       <div>
-        <label class="block text-sm font-medium mb-1">Company Name / Legal Name</label>
+        <label class="block text-sm font-semibold mb-1" style="color:#EBF1F2;">Name / Company name</label>
         <input type="text" id="name" required
-               class="w-full px-4 py-2 rounded-lg border border-gray-300
-                        bg-gray-50 focus:bg-white
-                        focus:ring-2 focus:ring-[#5B9BD5]
-                        focus:border-[#5B9BD5]">
+               class="lp-input w-full px-4 py-2 rounded-lg">
       </div>
 
-      <!-- Dynamic identification -->
+      <!-- Identificación dinámica -->
       <div id="identificacion-block">
-        <label id="identificacion-label" class="block text-sm font-medium text-gray-700 mb-1">
-          Identification
-        </label>
+        <label id="identificacion-label" class="block text-sm font-semibold mb-1" style="color:#EBF1F2;">Identification</label>
         <input
           type="text"
           id="identificacion"
           name="identificacion"
           required
-          class="w-full px-4 py-2 rounded-lg border border-gray-300
-                        bg-gray-50 focus:bg-white
-                        focus:ring-2 focus:ring-[#5B9BD5]
-                        focus:border-[#5B9BD5]"
+          class="lp-input w-full px-4 py-2 rounded-lg"
         >
-        <p id="identificacion-hint" class="text-xs text-gray-500 mt-1"></p>
+        <p id="identificacion-hint" class="text-xs mt-1" style="color:#8aaed4;"></p>
       </div>
 
-      <!-- Optional extra field -->
+      <!-- Campo extra opcional -->
       <div id="registro-block" class="hidden">
-        <label class="block text-sm font-medium text-gray-700 mb-1">
-          Registration Number
-        </label>
+        <label class="block text-sm font-semibold mb-1" style="color:#EBF1F2;">Registration No.</label>
         <input
           type="text"
           id="nRegistro"
           name="nRegistro"
-          class="w-full px-4 py-2 rounded-lg border border-gray-300
-                        bg-gray-50 focus:bg-white
-                        focus:ring-2 focus:ring-[#5B9BD5]
-                        focus:border-[#5B9BD5]"
+          class="lp-input w-full px-4 py-2 rounded-lg"
         >
       </div>
 
       <div>
-        <label class="block text-sm font-medium mb-1">Address Line 1</label>
+        <label class="block text-sm font-semibold mb-1" style="color:#EBF1F2;">Address 1</label>
         <input type="text" id="direccion1" required
-               class="w-full px-4 py-2 rounded-lg border border-gray-300
-                        bg-gray-50 focus:bg-white
-                        focus:ring-2 focus:ring-[#5B9BD5]
-                        focus:border-[#5B9BD5]">
+               class="lp-input w-full px-4 py-2 rounded-lg">
       </div>
 
       <div>
-        <label class="block text-sm font-medium mb-1">Address Line 2</label>
+        <label class="block text-sm font-semibold mb-1" style="color:#EBF1F2;">Address 2</label>
         <input type="text" id="direccion2"
-               class="w-full px-4 py-2 rounded-lg border border-gray-300
-                        bg-gray-50 focus:bg-white
-                        focus:ring-2 focus:ring-[#5B9BD5]
-                        focus:border-[#5B9BD5]">
+               class="lp-input w-full px-4 py-2 rounded-lg">
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm font-medium mb-1">Postal Code</label>
+          <label class="block text-sm font-semibold mb-1" style="color:#EBF1F2;">Postal Code</label>
           <input type="text" id="codigoPostal" required
-                 class="w-full px-4 py-2 rounded-lg border border-gray-300
-                        bg-gray-50 focus:bg-white
-                        focus:ring-2 focus:ring-[#5B9BD5]
-                        focus:border-[#5B9BD5]">
+                 class="lp-input w-full px-4 py-2 rounded-lg">
         </div>
 
         <div>
-          <label class="block text-sm font-medium mb-1">City</label>
+          <label class="block text-sm font-semibold mb-1" style="color:#EBF1F2;">City</label>
           <input type="text" id="poblacion" required
-                 class="w-full px-4 py-2 rounded-lg border border-gray-300
-                        bg-gray-50 focus:bg-white
-                        focus:ring-2 focus:ring-[#5B9BD5]
-                        focus:border-[#5B9BD5]">
+                 class="lp-input w-full px-4 py-2 rounded-lg">
         </div>
       </div>
 
       <div class="text-center pt-4">
         <button type="submit"
-                class="bg-[#5B9BD5] text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
-          Submit Request
+                class="lp-btn text-white px-8 py-3 font-normal"
+                style="border-radius:999px;">
+          Submit request
         </button>
       </div>
 
@@ -131,10 +132,12 @@
   </div>
 
   <script>
+  
   window.API_BASE = "{{ api_base_url }}";
   const base = (window.API_BASE || "").replace(/\/$/, "");
-  const url = `${base}/proforma_submit`;
-  
+  const endpoint = "{{ 'renting_submit' if origen == 'renting' else 'proforma_submit' }}";
+  const url = `${base}/${endpoint}`;
+ 
   document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById("proforma-form");
     const msg = document.getElementById("message");
@@ -154,20 +157,20 @@
     if (regInput) regInput.required = false;
 
     if (mode === 'VAT') {
-      label.textContent = 'VAT Number (EU)';
-      input.placeholder = 'Example: ESB12345678 / DE123456789';
-      hint.textContent = 'Please enter your VAT number with country prefix (ES, FR, DE...).';
+      label.textContent = 'VAT (intra-community)';
+      input.placeholder = 'e.g. ESB12345678 / DE123456789';
+      hint.textContent = 'Enter your VAT with country prefix (ES, FR, DE...).';
     } else if (mode === 'NIF') {
-      label.textContent = 'Tax ID (Spain)';
-      input.placeholder = 'Example: B12345678 / 12345678A';
-      hint.textContent = 'Please enter your Spanish Tax ID.';
+      label.textContent = 'NIF/CIF';
+      input.placeholder = 'e.g. B12345678 / 12345678A';
+      hint.textContent = 'Enter NIF/CIF (Spain).';
     } else if (mode === 'REGISTRO') {
-      label.textContent = 'Registration Number';
-      input.placeholder = 'Example: 12345 / ABC-987';
-      hint.textContent = 'Please enter your registration number.';
+      label.textContent = 'Registration No.';
+      input.placeholder = 'e.g. 12345 / ABC-987';
+      hint.textContent = 'Enter the registration number.';
     } else if (mode === 'VAT+REGISTRO') {
-      label.textContent = 'VAT Number (EU)';
-      input.placeholder = 'Example: ESB12345678 / DE123456789';
+      label.textContent = 'VAT (intra-community)';
+      input.placeholder = 'e.g. ESB12345678 / DE123456789';
       regBlock.classList.remove('hidden');
       if (regInput) regInput.required = true;
     }
@@ -176,13 +179,13 @@
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
-       setTimeout(() => {
-        document.body.innerHTML = `
-          <div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;">
-            <h2>The session has expired</h2>
-          </div>
-        `;
-      },120000);
+        setTimeout(() => {
+            document.body.innerHTML = `
+            <div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;color:#EBF1F2;background:#000814;">
+                <h2>The session has expired</h2>
+            </div>
+            `;
+        }, 120000);
 
       const payload = {
         token: document.getElementById("token")?.value || "",
@@ -200,7 +203,8 @@
       };
 
       msg.textContent = "Processing...";
-      msg.className = "text-center text-sm mt-4 text-gray-600";
+      msg.className = "text-center text-sm mt-4";
+      msg.style.color = "#8aaed4";
 
       try {
         const response = await fetch(url, {
@@ -213,16 +217,19 @@
 
         if (!response.ok || !result.ok) {
           msg.textContent = result.message || "Request error.";
-          msg.className = "text-center text-sm mt-4 text-red-600";
+          msg.className = "text-center text-sm mt-4";
+          msg.style.color = "#ff6b6b";
           return;
         }
 
         msg.textContent = result.message || "Request submitted successfully.";
-        msg.className = "text-center text-sm mt-4 text-green-600";
+        msg.className = "text-center text-sm mt-4";
+        msg.style.color = "#4ade80";
 
       } catch (err) {
         msg.textContent = "Connection error.";
-        msg.className = "text-center text-sm mt-4 text-red-600";
+        msg.className = "text-center text-sm mt-4";
+        msg.style.color = "#ff6b6b";
       }
     });
   });

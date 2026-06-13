@@ -25,10 +25,14 @@ from bs4 import BeautifulSoup
 from itsdangerous import URLSafeTimedSerializer
 from urllib.parse import urlencode
 
+from jinja2 import Environment, FileSystemLoader
 
 
+templates_dir = os.path.join(os.path.dirname(__file__), "templates")
 
-
+env = Environment(
+    loader=FileSystemLoader(searchpath=templates_dir)
+)
 
 import pycurl
 from io import BytesIO
@@ -564,10 +568,20 @@ def proforma_core(payload: dict, pdf_data: bytes | None = None):
 
         print(f"✅ PDF subido a Dropbox en: {dropbox_path}")
 
-        send_email_with_proforma_pdf(pdf_data, document_no, session_id,connection)
-        print(f"✅ Correo enviado con el PDF adjunto: {document_no}")
-
+        session_data = get_session_data(session_id, connection)
         connection.close()
+        if session_data and session_data.get("renting"):
+    
+            print("Solicitud de renting")
+            send_renting_email_with_proforma_pdf(pdf_data, document_no, session_data)
+            print(f"✅ Correo enviado a Renting con la Proforma PDF adjunto: {document_no}")
+        else:    
+            print("Solicitud de Proforma")
+
+            send_email_with_proforma_pdf(pdf_data, document_no, session_data)
+            print(f"✅ Correo enviado con la Proforma PDF adjunto: {document_no}")
+
+        
         return {"ok": True, "message": "OK"}, 200
 
 
@@ -690,7 +704,7 @@ def get_session_data(session_id, connection):
         cursor.execute("""
             SELECT name, email, mailorigen, idioma, SalesHeaderNumber,
                    url_proformas, url_form_contacto, send_email,
-                   email_password, send_wellcome_email
+                   email_password, send_wellcome_email, renting, renting_email,renting_idioma, pais_renting
             FROM sessions
             WHERE session_id = %s
         """, (session_id,))
@@ -710,6 +724,10 @@ def get_session_data(session_id, connection):
                 "send_email": row["send_email"],
                 "email_password": row["email_password"],
                 "send_wellcome_email": row["send_wellcome_email"],
+                "renting": row["renting"],
+                "renting_email": row["renting_email"],
+                "renting_idioma": row["renting_idioma"],
+                "pais_renting": row["pais_renting"]
             }
         else:
             print(f"No se encontraron datos para session_id {session_id}")
@@ -781,39 +799,134 @@ def generar_url_proforma(quote_number: str, url: str, secret_key: str, connectio
     print("URL:", final_url)
     return final_url
 
-def build_proforma_cta(proforma_url: str, idioma: str) -> str:
+def build_proforma_cta(proforma_url: str, idioma: str, renting: bool) -> str:
     es = idioma in ("Español", "Esp")
+    print(f"Idioma: {idioma}, es: {es}, renting: {renting}")
+    proforma_url_renting = f"{proforma_url}&origen=renting"
+    proforma_url_proforma = f"{proforma_url}&origen=proforma"
 
     if es:
-        pretext = "Si desea que emitamos una factura proforma, puede solicitarla aquí:"
-        button_text = "Solicitar factura proforma"
+        pretext0 = "Si desea tener la mejor iluminación en sus pistas de pádel por una cómmoda cuota. Ejemplo España-a 72 meses: <b style=\"color:#011640;\">115&euro; CUOTA MESUAL POR PISTA</b> (aprox., pendiente de aprobación). Para más información <a class=\"lp-inline-link\" href=\"https://ledpadel.com/es/renting-iluminacion-pistas-padel/?utm_source=respuesta_formulario&amp;utm_medium=email&amp;utm_campaign=renting_ellite_2026&amp;utm_content=link_paises_es#paises\" target=\"_blank\" style=\"color:#135EF2;text-decoration:underline;font-weight:600;\">haga clic aquí</a>."
+        pretext1 = "Si desea más información, puede contactar conmigo por teléfono, email o WhatsApp."
+        pretext2 = "Si desea que emitamos una factura proforma, puede solicitarla aquí:"
+        button_text_proforma = "Solicite su factura proforma"
+        button_text_renting = "Solicite su plan de renting"
     else:
-        pretext = "If you would like us to issue a proforma invoice, you can request it here:"
-        button_text = "Request proforma invoice"
+        pretext0 = "If you want the best lighting on your padel courts for a comfortable fee. Example Spain-72 months: <b style=\"color:#011640;\">115&euro; MONTHLY FEE PER COURT</b> (approx., pending approval). For more information <a class=\"lp-inline-link\" href=\"https://ledpadel.com/es/renting-iluminacion-pistas-padel/?utm_source=respuesta_formulario&amp;utm_medium=email&amp;utm_campaign=renting_ellite_2026&amp;utm_content=link_paises_es#paises\" target=\"_blank\" style=\"color:#135EF2;text-decoration:underline;font-weight:600;\">click here</a>."
+        pretext1 = "If you have any questions, you can contact me by phone, email, or WhatsApp."
+        pretext2 = "If you would like us to issue a proforma invoice, you can request it here:"
+        button_text_proforma = "Request your proforma invoice"
+        button_text_renting = "Request your renting plan"
 
-    return f"""
-    <p style="font-family:Arial, sans-serif; font-size:15px; color:#333; margin:18px 0 10px 0;">
-      {pretext}
-    </p>
+    html_renting =f""" 
+                <p style="margin:0 0 18px 0;font-family:'Poppins','Segoe UI',Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#2a3a4a;">{pretext0}</p>
+                <div style="margin:0 0 22px 0;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+                        <tr>
+                            <td align="left">
 
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:10px auto 22px auto;">
-      <tr>
-        <td align="center" bgcolor="#5B9BD5"
-            style="border-radius:8px; padding:14px 24px; font-family:Arial, sans-serif;">
-          <a href="{proforma_url}" target="_blank"
-             style="color:#ffffff; font-size:15px; font-weight:bold; text-decoration:none; display:inline-block;">
-            {button_text}
-          </a>
+                            <!--[if mso]>
+                            <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml"
+                                xmlns:w="urn:schemas-microsoft-com:office:word"
+                                href="{proforma_url_renting}"
+                                style="height:50px;v-text-anchor:middle;width:300px;"
+                                arcsize="50%"
+                                strokecolor="#011640"
+                                strokeweight="2px"
+                                fillcolor="#135EF2">
+                                <w:anchorlock/>
+                                <center style="color:#ffffff;font-family:'Poppins',Arial,sans-serif;font-size:16px;font-weight:bold;">
+                                {button_text_renting}
+                                </center>
+                            </v:roundrect>
+                            <![endif]-->
+
+                            <!--[if !mso]><!-->
+                            <a class="lp-cta-es"
+                                href="{proforma_url_renting}"
+                                target="_blank"
+                                style="background-color:#135EF2;border:2px solid #011640;border-radius:40px;color:#ffffff;display:inline-block;font-family:'Poppins','Segoe UI',Arial,Helvetica,sans-serif;font-size:16px;font-weight:600;line-height:46px;text-align:center;text-decoration:none;width:300px;-webkit-text-size-adjust:none;">
+                                {button_text_renting}
+                            </a>
+                            <!--<![endif]-->
+
+                            </td>
+                        </tr>
+                    </table>
+
+                </div>
+            """
+    html_proforma = f"""
+    <p style="margin:0 0 16px 0;font-family:'Poppins','Segoe UI',Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#2a3a4a;">{pretext1}</p>
+
+                    <p style="margin:0 0 16px 0;font-family:'Poppins','Segoe UI',Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#2a3a4a;">{pretext2}</p>
+    
+            <!-- ===== BOT&Oacute;N ES ===== -->
+                    <div style="margin:0 0 22px 0;">
+            <!-- ===== BOTÓN EMAIL · ES → landing renting ES ===== -->
+                       
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+                            <tr>
+                                <td align="left">
+
+                                <!--[if mso]>
+                                <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml"
+                                    xmlns:w="urn:schemas-microsoft-com:office:word"
+                                    href="{proforma_url_proforma}"
+                                    style="height:50px;v-text-anchor:middle;width:300px;"
+                                    arcsize="50%"
+                                    strokecolor="#011640"
+                                    strokeweight="2px"
+                                    fillcolor="#135EF2">
+                                    <w:anchorlock/>
+                                    <center style="color:#ffffff;font-family:'Poppins',Arial,sans-serif;font-size:16px;font-weight:bold;">
+                                    {button_text_proforma}
+                                    </center>
+                                </v:roundrect>
+                                <![endif]-->
+
+                                <!--[if !mso]><!-->
+                                <a class="lp-cta-es"
+                                    href="{proforma_url_proforma}"
+                                    target="_blank"
+                                    style="background-color:#135EF2;border:2px solid #011640;border-radius:40px;color:#ffffff;display:inline-block;font-family:'Poppins','Segoe UI',Arial,Helvetica,sans-serif;font-size:16px;font-weight:600;line-height:46px;text-align:center;text-decoration:none;width:300px;-webkit-text-size-adjust:none;">
+                                    {button_text_proforma}
+                                </a>
+                                <!--<![endif]-->
+
+                                </td>
+                            </tr>
+                        </table>
+
+                    </div>
+
+                
+
+        
+
+
+                </td>    
+            </tr>
+          </table>
         </td>
       </tr>
     </table>
+  </body>
+
+    
     """
 
+    if renting:
+        return html_renting + html_proforma 
+    else:
+        return html_proforma
+
+    
 
 
 
-def send_email_with_proforma_pdf(pdf_data: bytes, filename: str, session_id: str, connection):
-    session_data = get_session_data(session_id, connection)
+def send_email_with_proforma_pdf(pdf_data: bytes, filename: str, session_data: dict):
+    
     # Configuración SMTP (ejemplo con Gmail; sustituye con tus valores)
     smtp_server = "smtp.office365.com"
     smtp_port = 587
@@ -829,8 +942,7 @@ def send_email_with_proforma_pdf(pdf_data: bytes, filename: str, session_id: str
 
 
 
-
-    print ("SEND_EMAIL", SEND_EMAIL)
+    print ("proforma SEND_EMAIL", SEND_EMAIL)
     print("EMAIL_PASSWORD", sender_password )
     if not sender_email or not sender_password:
         raise ValueError("Credenciales de correo no configuradas en variables de entorno")
@@ -841,7 +953,9 @@ def send_email_with_proforma_pdf(pdf_data: bytes, filename: str, session_id: str
     msg["To"] = session_data['email']
 
     cc_addresses = ["angel.r@planetpower.es"]
+    #cc_addresses = ["angel.r@planetpower.es", "marketing@planetpower.es"]
     #cc_addresses = ["alfonso@planetpower.es", "angel.r@planetpower.es"]
+    
     msg["Cc"] = ", ".join(cc_addresses)
 
 
@@ -856,81 +970,176 @@ def send_email_with_proforma_pdf(pdf_data: bytes, filename: str, session_id: str
             "Buenos días, le enviamos la factura proforma solicitada"
                         
         )
-        closing = "Saludos cordiales,"
+        closing = "  Saludos cordiales,"
     else:
         subject = f"Proforma Invoice {session_data['name']} {session_data['SalesHeaderNumber']}"
         body =  (
             "Good day, we are sending you the requested proforma invoice"
         )
-        closing = "Kind regards,"
+        closing = "  Kind regards,"
 
     msg["Subject"] = subject
     msg.set_content(body)
+    with open(
+            os.path.join(templates_dir, "firma.html"),
+            "r",
+            encoding="utf-8"
+        ) as f:
+            firma = f.read()
+
     html_signature = f"""
     <br><br>
     <p>{closing}</p>
-   <html><body><div class="moz-signature">-- <br/>
-<meta content="text/html; charset=utf-8" http-equiv="content-type"/>
-<title>Fwd: nueva firma para email</title>
-<o:p></o:p>
-<div class="moz-forward-container">
-<div class="WordSection1">
-<p class="MsoNormal"><o:p> </o:p></p>
-<p class="MsoNormal"><span style="mso-ligatures:none;mso-fareast-language:ES"><o:p> </o:p></span></p>
-<table border="0" cellpadding="0" cellspacing="0" class="MsoTableGrid" style="width:265.15pt;border-collapse:collapse;border:none" width="354">
-<tbody>
-<tr style="height:36.2pt">
-<td style="width:102.25pt;padding:0cm 5.4pt 0cm
-                5.4pt;height:36.2pt" valign="top" width="136">
-<p class="MsoNormal"><span style="font-size:9.0pt"><img alt="image-1" class="" data-img-id="1" height="42" id="Imagen_x0020_15" src="https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/prueba/images/1.png" style="width:1.1916in;height:.4416in" width="114"/></span><span style="font-size:9.0pt;mso-ligatures:none"><o:p></o:p></span></p>
-<p class="MsoNormal"><span style="font-size:9.0pt"><img alt="Imagen que contiene Logotipo
-                      Descripción generada automáticamente" class="" data-img-id="2" height="47" id="Imagen_x0020_14" src="https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/prueba/images/2.png" style="width:1.1916in;height:.4916in" width="114"/><span style="mso-ligatures:none"><o:p></o:p></span></span></p>
-</td>
-<td style="width:162.9pt;padding:0cm 5.4pt 0cm
-                5.4pt;height:36.2pt" valign="top" width="217">
-<p class="MsoNormal"><b><span style="font-size:10.0pt;color:#5B9BD5;mso-ligatures:none">Alfonso Martínez</span></b><b><span style="font-size:10.0pt;color:#5B9BD5;mso-ligatures:none"><o:p></o:p></span></b></p>
-<p class="MsoNormal"><b><span style="font-size:8.0pt;color:#5B9BD5;mso-ligatures:none">T.</span></b><span style="font-size:8.0pt;mso-ligatures:none"> +34
-                      946682011  <b><span style="color:#5B9BD5">M. </span></b>+34
-                      629422113</span><span style="font-size:8.0pt;mso-ligatures:none"><o:p></o:p></span></p>
-<p class="MsoNormal"><b><span style="font-size:8.0pt;color:#8EAADB;mso-ligatures:none">E. </span></b><span style="font-size:8.0pt;color:#8EAADB;mso-ligatures:none"><a href="mailto:alfonso@planetpower.es" moz-do-not-send="true"><span style="color:#8EAADB">alfonso@planetpower.es</span></a> 
-                      <o:p></o:p></span></p>
-<p class="MsoNormal"><span style="font-size:8.0pt;color:#8EAADB;mso-ligatures:none">                     </span><span lang="EN-US" style="font-size:8.0pt;color:#8EAADB;mso-ligatures:none"><a href="http://www.planetpower.es" moz-do-not-send="true"><span style="color:#8EAADB">planetpower.es</span></a>
-</span><span lang="EN-US" style="font-size:8.0pt;color:#2F5496;mso-ligatures:none">  </span><span lang="EN-US" style="font-size:8.0pt;mso-ligatures:none"><o:p></o:p></span></p>
-<p class="MsoNormal"><span lang="EN-US" style="font-size:8.0pt;color:#8EAADB;mso-ligatures:none">                     <a href="http://www.moduloled.es" moz-do-not-send="true"><span style="color:#8EAADB">moduloled.es</span></a>
-<o:p></o:p></span></p>
-<p class="MsoNormal"><span lang="EN-US" style="font-size:8.0pt;color:#8EAADB;mso-ligatures:none">                     <a href="http://www.ledpadel.com" moz-do-not-send="true"><span style="color:#8EAADB">ledpadel.com</span></a><o:p></o:p></span></p>
-</td>
-</tr>
-</tbody>
-</table>
-<p class="MsoNormal"><span style="mso-ligatures:none;mso-fareast-language:ES"><o:p> </o:p></span></p>
-<p class="MsoNormal"><span style='font-size:5.0pt;font-family:"Arial",sans-serif;color:#003C61;mso-ligatures:none;mso-fareast-language:ES'>La
-              información contenida tanto en este e-mail, como en los
-              documentos adjuntos, es información confidencial y
-              privilegiada para uso exclusivo de la persona o personas a
-              las que va dirigido. No está permitido el acceso a este
-              mensaje a cualquier otra persona distinta a los indicados.
-              Si no es uno de los destinatarios o ha recibido este
-              mensaje por error, cualquier duplicación, reproducción,
-              distribución, así como cualquier uso de la información
-              contenida, está prohibida y puede ser ilegal. LOPD 15/1999
-              Sus datos de carácter personal forman parte de nuestros
-              ficheros con la finalidad de hacer efectiva nuestra
-              relación comercial garantizándole en todo momento la más
-              absoluta confidencialidad. Si lo desea puede ejercitar los
-              derechos A.R.C.O. en <b>Planet Power Tools S.L.</b>,Avd.
-              Sabino Arana 64 - 48640 (Vizcaya) España. Por favor piensa
-              en el medio ambiente antes de imprimir este correo. </span><span style="font-size:5.0pt;mso-ligatures:none;mso-fareast-language:ES"><a href="http://planetpower.es/condiciones/" moz-do-not-send="true"><span style='font-family:"Arial",sans-serif;color:#0563C1'>Condiciones
-                  Generales de Venta y Garantía</span></a></span><span style="mso-ligatures:none"><o:p></o:p></span></p>
-<p class="MsoNormal"><o:p> </o:p></p>
-</div>
-</div>
-</div>
-<div data-inserted="unreferenced-attachments"></div></body>
-</html>
-
+    {firma}
     """
+  
+    msg.add_alternative(f"<html><body><p>{body}</p>{html_signature}</body></html>", subtype='html')
 
+    # Adjuntar el PDF
+    
+    msg.add_attachment(pdf_data, maintype="application", subtype="pdf", filename=filename)
+
+    SEND_EMAIL=True
+    
+    if (SEND_EMAIL) :
+
+        print("🔄 Enviando correo electrónico...")
+        print("🔄 Conectando a SMTP...", smtp_server, smtp_port)
+        socket.setdefaulttimeout(20)
+        try:
+            if smtp_port == 465:
+                # TLS implícito
+                with smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=20) as server:
+                    SMTP_LOGIN = "ofertas@planetpower.es"
+
+
+                    server.login(SMTP_LOGIN, sender_password)
+                  
+                    server.send_message(msg)
+            else:
+                # STARTTLS (587 recomendado)
+                with smtplib.SMTP(smtp_server, smtp_port, timeout=20) as server:
+                    server.set_debuglevel(1)  # <-- CLAVE (ver conversación SMTP)
+                    with smtplib.SMTP(smtp_server, smtp_port, timeout=20) as server:
+                        server.set_debuglevel(1)
+
+                       
+                        server.ehlo()
+
+                       
+                        server.starttls()
+                        
+                        server.ehlo()
+
+                       
+                        SMTP_LOGIN = "ofertas@planetpower.es"
+
+
+                        server.login(SMTP_LOGIN, sender_password)
+
+                       
+                        server.send_message(msg)
+
+                   
+
+            print("Correo enviado correctamente.")
+            print("sender", sender_email)
+            print("smtp", smtp_server, smtp_port)
+            return {"status": "sent"}
+
+        except smtplib.SMTPConnectError as e:
+            # 530 "IP denied" u otros de conexión
+            return {"status": "failed", "reason": f"connect_error: {e}"}
+        except smtplib.SMTPAuthenticationError as e:
+            return {"status": "failed", "reason": f"auth_error: {e}"}
+        except smtplib.SMTPRecipientsRefused as e:
+            return {"status": "failed", "reason": f"rcpt_refused: {e.recipients}"}
+        except smtplib.SMTPSenderRefused as e:
+            return {"status": "failed", "reason": f"sender_refused: {e.sender}"}
+        except smtplib.SMTPServerDisconnected as e:
+            return {"status": "failed", "reason": f"disconnected: {e}"}
+        except Exception as e:
+            return {"status": "failed", "reason": f"unexpected: {e}"}
+
+
+
+def send_renting_email_with_proforma_pdf(pdf_data: bytes, filename: str, session_data: dict):
+    
+    # Configuración SMTP (ejemplo con Gmail; sustituye con tus valores)
+    smtp_server = "smtp.office365.com"
+    smtp_port = 587
+    global SEND_EMAIL, EMAIL_PASSWORD
+    sender_email = session_data['mailorigen']
+    SEND_EMAIL= session_data['send_email']
+    EMAIL_PASSWORD= session_data['email_password']
+    sender_password = EMAIL_PASSWORD
+    print("sender", sender_email)
+        
+    if isinstance(sender_password, (bytes, bytearray)):
+        sender_password = sender_password.decode("utf-8", errors="replace")  # ahora es str
+
+
+
+    print ("RENTING SEND_EMAIL", SEND_EMAIL)
+    print("EMAIL_PASSWORD", sender_password )
+    if not sender_email or not sender_password:
+        raise ValueError("Credenciales de correo no configuradas en variables de entorno")
+
+    # Crear el mensaje
+    msg = EmailMessage()
+    msg["From"] = sender_email
+    msg["To"] = session_data['renting_email']
+
+    cc_addresses = ["angel.r@planetpower.es"]
+    #cc_addresses = ["angel.r@planetpower.es", "marketing@planetpower.es"]
+    #cc_addresses = ["alfonso@planetpower.es", "angel.r@planetpower.es"]
+    
+    msg["Cc"] = ", ".join(cc_addresses)
+
+
+
+
+    
+
+    
+    if session_data['renting_idioma'] in ("Español", "Esp"):
+        subject = f"Solicitud de estudio de renting - {session_data['name']} - {session_data['SalesHeaderNumber']}"
+
+        body = (
+            f"<p>Buenos días,</p>"
+            f"<p>adjuntamos la factura proforma correspondiente a {session_data['name']} para su consideración.</p>"
+            f"<p>Les rogamos contacten directamente con el cliente ({session_data['email']}) para obtener la documentación necesaria "
+            f"y proceder con la evaluación de la solicitud de renting.</p>"
+            f"<p>Agradecemos de antemano su atención.</p>"
+        )
+
+        closing = "Saludos cordiales,"
+    else:
+        subject = f"Renting application review - {session_data['name']} - {session_data['SalesHeaderNumber']}"
+
+        body = (
+            f"<p>Good day,</p>"
+            f"<p>Please find attached the proforma invoice for {session_data['name']} for your consideration.</p>"
+            f"<p>Please contact the customer directly ({session_data['email']}) to obtain any required documentation "
+            f"and proceed with the evaluation of the renting application.</p>"
+            f"<p>Thank you for your attention.</p>"
+        )
+
+        closing = "Kind regards,"
+    msg["Subject"] = subject
+    msg.set_content(body)
+    with open(
+            os.path.join(templates_dir, "firma.html"),
+            "r",
+            encoding="utf-8"
+        ) as f:
+            firma = f.read()
+
+    html_signature = f"""
+    <br><br>
+    <p>{closing}</p>
+    {firma}
+    """
   
     msg.add_alternative(f"<html><body><p>{body}</p>{html_signature}</body></html>", subtype='html')
 
@@ -1004,7 +1213,6 @@ def send_email_with_proforma_pdf(pdf_data: bytes, filename: str, session_id: str
 
 
 
-
 def send_email_with_pdf(pdf_data: bytes, filename: str, session_id: str, url:str, secret_key:str, quote_number:str, connection ):
     session_data = get_session_data(session_id, connection)
     # Configuración SMTP (ejemplo con Gmail; sustituye con tus valores)
@@ -1021,9 +1229,9 @@ def send_email_with_pdf(pdf_data: bytes, filename: str, session_id: str, url:str
         sender_password = sender_password.decode("utf-8", errors="replace")  # ahora es str
 
 
+    #templates_dir = Path(__file__).parent / "templates"
 
-
-    print ("SEND_EMAIL", SEND_EMAIL)
+    print ("send email SEND_EMAIL", SEND_EMAIL)
     print("EMAIL_PASSWORD", sender_password )
     if not sender_email or not sender_password:
         raise ValueError("Credenciales de correo no configuradas en variables de entorno")
@@ -1032,112 +1240,67 @@ def send_email_with_pdf(pdf_data: bytes, filename: str, session_id: str, url:str
     msg = EmailMessage()
     msg["From"] = sender_email
     msg["To"] = session_data['email']
-
     cc_addresses = ["angel.r@planetpower.es"]
+    #cc_addresses = ["angel.r@planetpower.es", "marketing@planetpower.es"]
     #cc_addresses = ["alfonso@planetpower.es", "angel.r@planetpower.es"]
     msg["Cc"] = ", ".join(cc_addresses)
 
 
 
-
+    print("__file__ =", __file__)
+    print("templates_dir =", templates_dir)
     
 
     
     if(( session_data['idioma'] == "Español")or (session_data['idioma'] == "Esp"))  :
         subject = f"Oferta {session_data['name']} {session_data['SalesHeaderNumber']}"
-        body = (
-            "Buenos días, me llamo Alfonso, me puede escribir, contactar por WhatsApp o llamarme en caso de dudas (ver detalles en mi firma)"
-            + "<br><br>"
-            + "Adjunto encontrará la oferta de solicitada."
-        )
-        closing = "Saludos cordiales,"
+        closing = "  Saludos cordiales,"
+
+        with open(
+                os.path.join(templates_dir, "body_oferta_es.html"),
+                "r",
+                encoding="utf-8"
+            ) as f:
+                body = f.read()
     else:
         subject = f"Sales Quote {session_data['name']} {session_data['SalesHeaderNumber']}"
-        body =  (
-            "Good day, my name is Alfonso, you can email me, WhatsApp or call me in case of doubts (see details in my signature)" 
-            + "<br><br>" 
-            + "Attached you will find the requested quotation."
-        )
-        closing = "Kind regards,"
+        closing = "  Kind regards,"
+
+        with open(
+                os.path.join(templates_dir, "body_oferta_en.html"),
+                "r",
+                encoding="utf-8"
+            ) as f:
+                body = f.read()
 
     msg["Subject"] = subject
     msg.set_content(body)
+    
+
+    with open(
+            os.path.join(templates_dir, "firma.html"),
+            "r",
+            encoding="utf-8"
+        ) as f:
+            firma = f.read()
+
     html_signature = f"""
     <br><br>
-    <p>{closing}</p>
-   <html><body><div class="moz-signature">-- <br/>
-<meta content="text/html; charset=utf-8" http-equiv="content-type"/>
-<title>Fwd: nueva firma para email</title>
-<o:p></o:p>
-<div class="moz-forward-container">
-<div class="WordSection1">
-<p class="MsoNormal"><o:p> </o:p></p>
-<p class="MsoNormal"><span style="mso-ligatures:none;mso-fareast-language:ES"><o:p> </o:p></span></p>
-<table border="0" cellpadding="0" cellspacing="0" class="MsoTableGrid" style="width:265.15pt;border-collapse:collapse;border:none" width="354">
-<tbody>
-<tr style="height:36.2pt">
-<td style="width:102.25pt;padding:0cm 5.4pt 0cm
-                5.4pt;height:36.2pt" valign="top" width="136">
-<p class="MsoNormal"><span style="font-size:9.0pt"><img alt="image-1" class="" data-img-id="1" height="42" id="Imagen_x0020_15" src="https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/prueba/images/1.png" style="width:1.1916in;height:.4416in" width="114"/></span><span style="font-size:9.0pt;mso-ligatures:none"><o:p></o:p></span></p>
-<p class="MsoNormal"><span style="font-size:9.0pt"><img alt="Imagen que contiene Logotipo
-                      Descripción generada automáticamente" class="" data-img-id="2" height="47" id="Imagen_x0020_14" src="https://emailingledpadel.s3.eu-north-1.amazonaws.com/emails/templates/prueba/images/2.png" style="width:1.1916in;height:.4916in" width="114"/><span style="mso-ligatures:none"><o:p></o:p></span></span></p>
-</td>
-<td style="width:162.9pt;padding:0cm 5.4pt 0cm
-                5.4pt;height:36.2pt" valign="top" width="217">
-<p class="MsoNormal"><b><span style="font-size:10.0pt;color:#5B9BD5;mso-ligatures:none">Alfonso Martínez</span></b><b><span style="font-size:10.0pt;color:#5B9BD5;mso-ligatures:none"><o:p></o:p></span></b></p>
-<p class="MsoNormal"><b><span style="font-size:8.0pt;color:#5B9BD5;mso-ligatures:none">T.</span></b><span style="font-size:8.0pt;mso-ligatures:none"> +34
-                      946682011  <b><span style="color:#5B9BD5">M. </span></b>+34
-                      629422113</span><span style="font-size:8.0pt;mso-ligatures:none"><o:p></o:p></span></p>
-<p class="MsoNormal"><b><span style="font-size:8.0pt;color:#8EAADB;mso-ligatures:none">E. </span></b><span style="font-size:8.0pt;color:#8EAADB;mso-ligatures:none"><a href="mailto:alfonso@planetpower.es" moz-do-not-send="true"><span style="color:#8EAADB">alfonso@planetpower.es</span></a> 
-                      <o:p></o:p></span></p>
-<p class="MsoNormal"><span style="font-size:8.0pt;color:#8EAADB;mso-ligatures:none">                     </span><span lang="EN-US" style="font-size:8.0pt;color:#8EAADB;mso-ligatures:none"><a href="http://www.planetpower.es" moz-do-not-send="true"><span style="color:#8EAADB">planetpower.es</span></a>
-</span><span lang="EN-US" style="font-size:8.0pt;color:#2F5496;mso-ligatures:none">  </span><span lang="EN-US" style="font-size:8.0pt;mso-ligatures:none"><o:p></o:p></span></p>
-<p class="MsoNormal"><span lang="EN-US" style="font-size:8.0pt;color:#8EAADB;mso-ligatures:none">                     <a href="http://www.moduloled.es" moz-do-not-send="true"><span style="color:#8EAADB">moduloled.es</span></a>
-<o:p></o:p></span></p>
-<p class="MsoNormal"><span lang="EN-US" style="font-size:8.0pt;color:#8EAADB;mso-ligatures:none">                     <a href="http://www.ledpadel.com" moz-do-not-send="true"><span style="color:#8EAADB">ledpadel.com</span></a><o:p></o:p></span></p>
-</td>
-</tr>
-</tbody>
-</table>
-<p class="MsoNormal"><span style="mso-ligatures:none;mso-fareast-language:ES"><o:p> </o:p></span></p>
-<p class="MsoNormal"><span style='font-size:5.0pt;font-family:"Arial",sans-serif;color:#003C61;mso-ligatures:none;mso-fareast-language:ES'>La
-              información contenida tanto en este e-mail, como en los
-              documentos adjuntos, es información confidencial y
-              privilegiada para uso exclusivo de la persona o personas a
-              las que va dirigido. No está permitido el acceso a este
-              mensaje a cualquier otra persona distinta a los indicados.
-              Si no es uno de los destinatarios o ha recibido este
-              mensaje por error, cualquier duplicación, reproducción,
-              distribución, así como cualquier uso de la información
-              contenida, está prohibida y puede ser ilegal. LOPD 15/1999
-              Sus datos de carácter personal forman parte de nuestros
-              ficheros con la finalidad de hacer efectiva nuestra
-              relación comercial garantizándole en todo momento la más
-              absoluta confidencialidad. Si lo desea puede ejercitar los
-              derechos A.R.C.O. en <b>Planet Power Tools S.L.</b>,Avd.
-              Sabino Arana 64 - 48640 (Vizcaya) España. Por favor piensa
-              en el medio ambiente antes de imprimir este correo. </span><span style="font-size:5.0pt;mso-ligatures:none;mso-fareast-language:ES"><a href="http://planetpower.es/condiciones/" moz-do-not-send="true"><span style='font-family:"Arial",sans-serif;color:#0563C1'>Condiciones
-                  Generales de Venta y Garantía</span></a></span><span style="mso-ligatures:none"><o:p></o:p></span></p>
-<p class="MsoNormal"><o:p> </o:p></p>
-</div>
-</div>
-</div>
-<div data-inserted="unreferenced-attachments"></div></body>
-</html>
-
+    
+    <p style="margin:0 0 16px 0;font-family:'Poppins','Segoe UI',Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#2a3a4a;">{closing}</p>
+    {firma}
     """
-
     
 
 
     proforma_url = generar_url_proforma (quote_number,url, secret_key, connection,session_id) # luego lo sustituimos por el real
-    proforma_cta = build_proforma_cta(proforma_url, session_data["idioma"])
+    proforma_cta = build_proforma_cta(proforma_url, session_data["idioma"],session_data["pais_renting"])
 
     html_body = f"""
     <html>
     <body>
    
-        <p>{body}</p>
+        {body}
         {proforma_cta}
         {html_signature}
     </body>
@@ -1236,7 +1399,7 @@ def send_wellcome_email ( session_id: str, connection):
 
 
 
-    print ("SEND_EMAIL", SEND_EMAIL)
+    print ("wellcome SEND_EMAIL", SEND_EMAIL)
     print("EMAIL_PASSWORD", sender_password )
     if not sender_email or not sender_password:
         raise ValueError("Credenciales de correo no configuradas en variables de entorno")
@@ -1247,6 +1410,7 @@ def send_wellcome_email ( session_id: str, connection):
     msg["To"] = session_data['email']
 
     cc_addresses = ["angel.r@planetpower.es"]
+    #cc_addresses = ["angel.r@planetpower.es", "marketing@planetpower.es"]
     #cc_addresses = ["alfonso@planetpower.es", "angel.r@planetpower.es"]
     msg["Cc"] = ", ".join(cc_addresses)
 
@@ -1708,32 +1872,32 @@ if __name__ == "__main__":
     
     @app.route("/oferta", methods=["POST"])
     def recibir_oferta():
-        # 1) payload: viene por querystring o JSON (si algún día lo mandas)
-        payload = request.get_json(silent=True) or {}
-        qs = request.args.to_dict()
+        import traceback
 
-        payload.setdefault("session_id", qs.get("session_id"))
-        payload.setdefault("BD", qs.get("BD") or qs.get("bd"))
-        payload.setdefault("total_excl_iva", qs.get("total_excl_iva"))
+        try:
+            payload = request.get_json(silent=True) or {}
+            qs = request.args.to_dict()
 
-        # 2) pdf_bytes: soporta 3 modos
-        pdf_bytes = None
+            payload.setdefault("session_id", qs.get("session_id"))
+            payload.setdefault("BD", qs.get("BD") or qs.get("bd"))
+            payload.setdefault("total_excl_iva", qs.get("total_excl_iva"))
 
-        # A) RAW PDF en body
-        if (request.content_type or "").startswith("application/pdf"):
-            pdf_bytes = request.data  # <-- AQUÍ ESTÁ LA CLAVE
+            pdf_bytes = None
 
-        # B) multipart/form-data
-        elif "pdf" in request.files:
-            pdf_bytes = request.files["pdf"].read()
+            if (request.content_type or "").startswith("application/pdf"):
+                pdf_bytes = request.data
+            elif "pdf" in request.files:
+                pdf_bytes = request.files["pdf"].read()
+            elif payload.get("pdf_base64"):
+                pdf_bytes = base64.b64decode(payload["pdf_base64"])
 
-        # C) JSON base64
-        elif payload.get("pdf_base64"):
-            pdf_bytes = base64.b64decode(payload["pdf_base64"])
+            result, status = oferta_core(payload, pdf_bytes)
+            return jsonify(result), status
 
-        result, status = oferta_core(payload, pdf_bytes)
-        return jsonify(result), status
-    
+        except Exception:
+            print("ERROR REAL EN /oferta:")
+            traceback.print_exc()
+            raise
 
 
     @app.route("/oferta_prospect_submit", methods=["POST", "OPTIONS"])
