@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="bg-white border border-gray-200 rounded-xl shadow-md p-6">
+
+  <div class="d-flex flex-column gap-3 mb-3">
+
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <button id="btn-exit"
+              type="button"
+              class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+              onclick="window.history.back()">
+        {{ _('Volver') }}
+      </button>
+    </div>
+
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+
+      <thead>
+        <tr>
+          <th>Campaña</th>
+          <th>Origen</th>
+          <th>Idioma</th>
+          <th>Asunto</th>
+          
+          <th>Newsletter</th>
+          <th class="text-center">Fecha</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% if row %}
+
+          {% set idioma_raw = row.recipient_idioma or row.campaign_idioma or '' %}
+          {% set idioma = idioma_raw|lower|trim %}
+          {% set fecha = row.recipient_sent_at or row.campaign_sent_at %}
+
+          <tr>
+
+            <td>
+              <strong>{{ row.campaign_name or '—' }}</strong>
+            </td>
+
+            <td>
+              {{ row.origen or '—' }}
+            </td>
+
+            <td>
+              {{ idioma_raw or '—' }}
+            </td>
+
+            <td>
+              {% if idioma in ['both', 'ambos'] %}
+                <div class="d-flex flex-column gap-1">
+                  <div title="{{ row.subject_es or '' }}">
+                    <strong>ES:</strong>
+                    {{ ((row.subject_es or '—')[:50]) ~ ('…' if row.subject_es and row.subject_es|length > 50 else '') }}
+                  </div>
+
+                  <div title="{{ row.subject_en or '' }}">
+                    <strong>EN:</strong>
+                    {{ ((row.subject_en or '—')[:50]) ~ ('…' if row.subject_en and row.subject_en|length > 50 else '') }}
+                  </div>
+                </div>
+
+              {% elif idioma in ['es', 'español', 'espanol', 'spanish'] %}
+                <span title="{{ row.subject_es or '' }}">
+                  {{ ((row.subject_es or row.subject_en or '—')[:70]) ~
+                    ('…' if (row.subject_es or row.subject_en) and
+                    (row.subject_es or row.subject_en)|length > 70 else '') }}
+                </span>
+
+              {% elif idioma in ['en', 'inglés', 'ingles', 'english'] %}
+                <span title="{{ row.subject_en or '' }}">
+                  {{ ((row.subject_en or row.subject_es or '—')[:70]) ~
+                    ('…' if (row.subject_en or row.subject_es) and
+                    (row.subject_en or row.subject_es)|length > 70 else '') }}
+                </span>
+
+              {% else %}
+                {{ row.subject_es or row.subject_en or '—' }}
+              {% endif %}
+            </td>
+
+            <td>
+              {% if idioma in ['both', 'ambos'] %}
+
+                <div class="d-flex flex-column gap-1">
+
+                  <div class="d-flex align-items-center gap-2">
+                    <span>{{ row.newsletter_es_name or 'Newsletter ES' }}</span>
+
+                    {% if row.newsletter_es_path %}
+                      <button
+                        type="button"
+                        class="btn btn-link p-0 btn-preview-newsletter"
+                        data-url="https://{{ s3_bucket }}.s3.amazonaws.com/{{ row.newsletter_es_path }}"
+                        title="Ver newsletter ES"
+                      >
+                        <span class="me-1 small fw-bold">ES</span>
+                        <i class="bi bi-eye-fill text-primary"></i>
+                      </button>
+                    {% endif %}
+                  </div>
+
+                  <div class="d-flex align-items-center gap-2">
+                    <span>{{ row.newsletter_en_name or 'Newsletter EN' }}</span>
+
+                    {% if row.newsletter_en_path %}
+                      <button
+                        type="button"
+                        class="btn btn-link p-0 btn-preview-newsletter"
+                        data-url="https://{{ s3_bucket }}.s3.amazonaws.com/{{ row.newsletter_en_path }}"
+                        title="Ver newsletter EN"
+                      >
+                        <span class="me-1 small fw-bold">EN</span>
+                        <i class="bi bi-eye-fill text-primary"></i>
+                      </button>
+                    {% endif %}
+                  </div>
+
+                </div>
+
+              {% elif idioma in ['es', 'español', 'espanol', 'spanish'] %}
+
+                {% set newsletter_name = row.newsletter_es_name or row.newsletter_en_name %}
+                {% set newsletter_path = row.newsletter_es_path or row.newsletter_en_path %}
+
+                <div class="d-flex align-items-center gap-2">
+                  <span>{{ newsletter_name or '—' }}</span>
+
+                  {% if newsletter_path %}
+                    <button
+                      type="button"
+                      class="btn btn-link p-0 btn-preview-newsletter"
+                      data-url="https://{{ s3_bucket }}.s3.amazonaws.com/{{ newsletter_path }}"
+                      title="Ver newsletter"
+                    >
+                      <span class="me-1 small fw-bold">ES</span>
+                      <i class="bi bi-eye-fill text-primary"></i>
+                    </button>
+                  {% endif %}
+                </div>
+
+              {% elif idioma in ['en', 'inglés', 'ingles', 'english'] %}
+
+                {% set newsletter_name = row.newsletter_en_name or row.newsletter_es_name %}
+                {% set newsletter_path = row.newsletter_en_path or row.newsletter_es_path %}
+
+                <div class="d-flex align-items-center gap-2">
+                  <span>{{ newsletter_name or '—' }}</span>
+
+                  {% if newsletter_path %}
+                    <button
+                      type="button"
+                      class="btn btn-link p-0 btn-preview-newsletter"
+                      data-url="https://{{ s3_bucket }}.s3.amazonaws.com/{{ newsletter_path }}"
+                      title="Ver newsletter"
+                    >
+                      <span class="me-1 small fw-bold">EN</span>
+                      <i class="bi bi-eye-fill text-primary"></i>
+                    </button>
+                  {% endif %}
+                </div>
+
+              {% else %}
+
+                {% set newsletter_name = row.newsletter_es_name or row.newsletter_en_name %}
+                {% set newsletter_path = row.newsletter_es_path or row.newsletter_en_path %}
+
+                <div class="d-flex align-items-center gap-2">
+                  <span>{{ newsletter_name or '—' }}</span>
+
+                  {% if newsletter_path %}
+                    <button
+                      type="button"
+                      class="btn btn-link p-0 btn-preview-newsletter"
+                      data-url="https://{{ s3_bucket }}.s3.amazonaws.com/{{ newsletter_path }}"
+                      title="Ver newsletter"
+                    >
+                      <i class="bi bi-eye-fill text-primary"></i>
+                    </button>
+                  {% endif %}
+                </div>
+
+              {% endif %}
+            </td>
+
+            <td class="text-center">
+              {% if fecha %}
+                {{ fecha.strftime('%d-%m-%Y %H:%M') }}
+              {% else %}
+                —
+              {% endif %}
+            </td>
+
+          </tr>
+
+        {% else %}
+
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">
+              No se encontró esta campaña para el prospecto.
+            </td>
+          </tr>
+
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll(".btn-preview-newsletter").forEach(btn => {
+    btn.addEventListener("click", function () {
+      const url = this.dataset.url;
+
+      Swal.fire({
+        title: "Preview newsletter",
+        width: "90%",
+        showConfirmButton: false,
+        showCloseButton: true,
+        html: `
+          <div style="height: 75vh; margin-top: 10px;">
+            <iframe
+              src="${url}"
+              style="width:100%; height:100%; border:1px solid #ddd; border-radius:8px;"
+              loading="lazy">
+            </iframe>
+          </div>
+          <div style="margin-top:12px; text-align:right;">
+            <a href="${url}" target="_blank" class="btn btn-primary">
+              Abrir en nueva pestaña
+            </a>
+          </div>
+        `
+      });
+    });
+  });
+});
+</script>
+{% endblock %}

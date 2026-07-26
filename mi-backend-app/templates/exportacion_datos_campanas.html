@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto mt-10 bg-white shadow rounded-lg p-6">
+  <h1 class="text-2xl font-bold text-blue-700 mb-4">
+    Exportación de datos de campañas
+  </h1>
+
+  <p class="text-gray-700 mb-6">
+    Se generará un archivo Excel con campañas, destinatarios, prospectos, leads,
+    ofertas, proformas y renting. El archivo se guardará en Dropbox.
+  </p>
+
+  <form id="formExportarDatos" method="POST" action="{{ url_for('exportar_datos_campanas') }}">
+   
+
+    <div class="bg-yellow-50 border border-yellow-300 text-yellow-800 rounded p-4 mb-6">
+      ¿Seguro que quieres generar la exportación?
+    </div>
+
+    <div class="flex gap-3">
+
+    {% if not ok %}
+      <button type="submit"
+        class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded">
+        Generar Excel
+      </button>
+
+      <a href="{{ url_for('base') }}"
+        class="bg-gray-500 hover:bg-gray-600 text-white px-5 py-2 rounded">
+        Cancelar
+      </a>
+
+    {% else %}
+
+      <a href="{{ url_for('base') }}"
+        class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded">
+        Volver
+      </a>
+
+    {% endif %}
+
+  </div>
+  </form>
+
+  {% if ok %}
+  <div class="mt-6 bg-green-100 border border-green-400 text-green-800 p-4 rounded">
+    Exportación realizada correctamente.<br>
+    Archivo: <strong>{{ archivo }}</strong>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+document.getElementById('formExportarDatos').addEventListener('submit', function () {
+  Swal.fire({
+    title: 'Generando exportación de datos',
+    html: 'Espere unos segundos...',
+    allowOutsideClick: false,
+    allowEscapeKey: false,
+    showConfirmButton: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
+});
+</script>
+
+{% if ok %}
+<script>
+Swal.fire({
+  icon: 'success',
+  title: 'Exportación finalizada',
+  html: 'El archivo <b>{{ archivo }}</b> se ha guardado correctamente en Dropbox.'
+});
+</script>
+{% endif %}
+
+{% endblock %}

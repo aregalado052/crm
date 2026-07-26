@@ -19,8 +19,11 @@ from flask import render_template_string
 from sqlalchemy import func
 from types import SimpleNamespace
 from unidecode import unidecode
+import requests
 
 from itsdangerous import URLSafeTimedSerializer
+
+from openpyxl.styles import Font, PatternFill
 
 
 import pandas as pd
@@ -28,10 +31,10 @@ import pandas as pd
 
 
 from sqlalchemy.orm import aliased
-import os
+
 
 import re
-import json
+
 
 import zipfile
 
@@ -46,17 +49,17 @@ from flask_jwt_extended import (create_access_token, get_jwt_identity,
 from sqlalchemy import and_, asc, case
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import joinedload
-from sqlalchemy import func
 
 
-from sqlalchemy.orm import aliased
+
+
 
 
 from app_init import bcrypt, create_app, db
 from creacion_BD import crear_base_si_no_existe
 from funciones import (create_reset_token,lead_exists_for_prospect,
                        send_new_password, update_user_password,
-                       validate_reset_token, get_dropbox_access_token)
+                       validate_reset_token, get_dropbox_access_token,subir_a_dropbox)
 
 from models import (db, Campaign, Newsletter, User,CampaignRecipient, LeadForm, LeadTarget,LeadTargetItem,LeadCampaignHistory,ProspectsIA,  
                             ProspectTarget, ProspectTargetItem)
@@ -528,41 +531,34 @@ def reset_password():
 
 
 def main_page():
-   
-    print ("main_page")
-   
-    
-    if request.method == 'POST':
-        data = request.json
-        application.logger.info('Datos recibidos: %s', data)
-        print ("if POST")
-    
-   
-    else: 
 
-        print ("enviando dtos del GET main page")
-        
-        access_token = session.get('access_token')  # ✅ Recuperas el token desde la sesión
+    print("main_page")
+
+    if request.method == "POST":
+        data = request.json
+        application.logger.info("Datos recibidos: %s", data)
+        print("if POST")
+
+    else:
+
+        print("enviando datos del GET main page")
+
+        access_token = session.get("access_token")
+
         if not access_token:
             return "Token no encontrado en sesión", 401
 
-        # 🔁 Rediriges a la ruta que realmente renderiza el HTML
-        response = redirect(url_for("consultar_leads", estado="Sin calificar"))
+        response = redirect(
+            url_for(
+                "consultar_leads",
+                estado="Sin calificar",
+                modo="leads"
+            )
+        )
 
-        # 🔐 Guardas el token como cookie segura en la misma response de la redirección
-        #set_access_cookies(response, access_token)
-        
-
-        # 🔐 Guardar el token como cookie segura
         set_access_cookies(response, access_token)
 
         return response
-       
-
-               
-       # Renderea la plantilla
-    
-
 
 
 
@@ -814,9 +810,77 @@ def facturaProforma():
     })
 
 
+@application.route('/consultar_campanas_por_prospectoIA')
+def consultar_campanas_por_prospectoIA():
+    prospectIA_id = request.args.get("prospectIA_id", type=int)
+
+    if not prospectIA_id:
+        return jsonify({"error": "missing_prospectIA_id"}), 400
+
+    NewsletterES = aliased(Newsletter)
+    NewsletterEN = aliased(Newsletter)
+
+    rows = (
+        db.session.query(
+            CampaignRecipient.campaign_id,
+
+            Campaign.name.label("campaign_name"),
+            Campaign.campaign_type.label("campaign_type"),
+            Campaign.idioma.label("campaign_idioma"),
+
+            Campaign.subject_es.label("subject_es"),
+            Campaign.subject_en.label("subject_en"),
+
+            Campaign.sent_at.label("campaign_sent_at"),
+
+            CampaignRecipient.sent_at.label("recipient_sent_at"),
+            CampaignRecipient.origen.label("origen"),
+            CampaignRecipient.idioma.label("recipient_idioma"),
+            CampaignRecipient.send_status.label("send_status"),
+
+            CampaignRecipient.opened_at.label("opened_at"),
+            CampaignRecipient.clicked_at.label("clicked_at"),
+            CampaignRecipient.click_count.label("click_count"),
+
+            NewsletterES.name.label("newsletter_es_name"),
+            NewsletterES.template_s3_path.label("newsletter_es_path"),
+
+            NewsletterEN.name.label("newsletter_en_name"),
+            NewsletterEN.template_s3_path.label("newsletter_en_path"),
+        )
+        .join(
+            Campaign,
+            Campaign.id == CampaignRecipient.campaign_id
+        )
+        .outerjoin(
+            NewsletterES,
+            NewsletterES.id == Campaign.newsletter_es_id
+        )
+        .outerjoin(
+            NewsletterEN,
+            NewsletterEN.id == Campaign.newsletter_en_id
+        )
+        .filter(
+            CampaignRecipient.entity_kind == "prospect",
+            CampaignRecipient.entity_id == prospectIA_id
+        )
+        .order_by(
+            CampaignRecipient.sent_at.desc(),
+            CampaignRecipient.campaign_id.desc()
+        )
+        .all()
+    )
+
+    return render_template(
+        "campanas_por_prospecto.html",
+        rows=rows,
+        prospectIA_id=prospectIA_id,
+        s3_bucket=S3_BUCKET
+    )
+
 @application.route('/consultar_campanas_por_lead')
 def consultar_campanas_por_lead():
-    lead_id = request.args.get("lead_id")
+    lead_id = request.args.get("lead_id", type=int)
 
     if not lead_id:
         return jsonify({"error": "missing_lead_id"}), 400
@@ -826,31 +890,56 @@ def consultar_campanas_por_lead():
 
     rows = (
         db.session.query(
-            LeadCampaignHistory.campaign_id,
-            LeadCampaignHistory.campaign_name,
-            LeadCampaignHistory.origen,
-            Campaign.idioma.label("idioma"),
+            CampaignRecipient.campaign_id,
+
+            Campaign.name.label("campaign_name"),
+            Campaign.campaign_type.label("campaign_type"),
+            Campaign.idioma.label("campaign_idioma"),
 
             Campaign.subject_es.label("subject_es"),
             Campaign.subject_en.label("subject_en"),
+
+            Campaign.sent_at.label("campaign_sent_at"),
+
+            CampaignRecipient.sent_at.label("recipient_sent_at"),
+            CampaignRecipient.origen.label("origen"),
+            CampaignRecipient.idioma.label("recipient_idioma"),
+            CampaignRecipient.send_status.label("send_status"),
+
+            CampaignRecipient.opened_at.label("opened_at"),
+            CampaignRecipient.clicked_at.label("clicked_at"),
+            CampaignRecipient.click_count.label("click_count"),
 
             NewsletterES.name.label("newsletter_es_name"),
             NewsletterES.template_s3_path.label("newsletter_es_path"),
 
             NewsletterEN.name.label("newsletter_en_name"),
             NewsletterEN.template_s3_path.label("newsletter_en_path"),
-
-            LeadCampaignHistory.send_status,
-            LeadCampaignHistory.sent_at
         )
-        .join(Campaign, Campaign.id == LeadCampaignHistory.campaign_id)
-        .outerjoin(NewsletterES, NewsletterES.id == Campaign.newsletter_es_id)
-        .outerjoin(NewsletterEN, NewsletterEN.id == Campaign.newsletter_en_id)
-        .filter(LeadCampaignHistory.lead_id == lead_id)
-        .order_by(LeadCampaignHistory.sent_at.desc())
+        .join(
+            Campaign,
+            Campaign.id == CampaignRecipient.campaign_id
+        )
+        .outerjoin(
+            NewsletterES,
+            NewsletterES.id == Campaign.newsletter_es_id
+        )
+        .outerjoin(
+            NewsletterEN,
+            NewsletterEN.id == Campaign.newsletter_en_id
+        )
+        .filter(
+            CampaignRecipient.entity_kind == "lead",
+            CampaignRecipient.entity_id == lead_id
+        )
+        .order_by(
+            CampaignRecipient.sent_at.desc(),
+            CampaignRecipient.campaign_id.desc()
+        )
         .all()
     )
 
+    
     return render_template(
         "campanas_por_lead.html",
         rows=rows,
@@ -858,6 +947,274 @@ def consultar_campanas_por_lead():
         s3_bucket=S3_BUCKET
     )
 
+
+@application.route('/campanas_detalle_por_lead')
+def campanas_detalle_por_lead():
+    lead_id = request.args.get("lead_id", type=int)
+    campaign_id = request.args.get("campaign_id", type=int)
+
+    if not lead_id:
+        return jsonify({"error": "missing_lead_id"}), 400
+
+    if not campaign_id:
+        return jsonify({"error": "missing_campaign_id"}), 400
+
+    NewsletterES = aliased(Newsletter)
+    NewsletterEN = aliased(Newsletter)
+
+    row = (
+        db.session.query(
+            CampaignRecipient.campaign_id,
+
+            Campaign.name.label("campaign_name"),
+            Campaign.campaign_type.label("campaign_type"),
+            Campaign.idioma.label("campaign_idioma"),
+
+            Campaign.subject_es.label("subject_es"),
+            Campaign.subject_en.label("subject_en"),
+
+            Campaign.sent_at.label("campaign_sent_at"),
+
+            CampaignRecipient.sent_at.label("recipient_sent_at"),
+            CampaignRecipient.origen.label("origen"),
+            CampaignRecipient.idioma.label("recipient_idioma"),
+            CampaignRecipient.send_status.label("send_status"),
+
+            CampaignRecipient.opened_at.label("opened_at"),
+            CampaignRecipient.clicked_at.label("clicked_at"),
+            CampaignRecipient.click_count.label("click_count"),
+
+            NewsletterES.name.label("newsletter_es_name"),
+            NewsletterES.template_s3_path.label("newsletter_es_path"),
+
+            NewsletterEN.name.label("newsletter_en_name"),
+            NewsletterEN.template_s3_path.label("newsletter_en_path"),
+        )
+        .join(
+            Campaign,
+            Campaign.id == CampaignRecipient.campaign_id
+        )
+        .outerjoin(
+            NewsletterES,
+            NewsletterES.id == Campaign.newsletter_es_id
+        )
+        .outerjoin(
+            NewsletterEN,
+            NewsletterEN.id == Campaign.newsletter_en_id
+        )
+        .filter(
+            CampaignRecipient.entity_kind == "lead",
+            CampaignRecipient.entity_id == lead_id,
+            CampaignRecipient.campaign_id == campaign_id
+        )
+        .first()
+    )
+
+    print(
+        "campaign_id:", row.campaign_id,
+        "subject_es:", row.subject_es,
+        "subject_en:", row.subject_en,
+        "newsletter_es_name:", row.newsletter_es_name,
+        "newsletter_en_name:", row.newsletter_en_name,
+        "newsletter_es_path:", row.newsletter_es_path,
+        "newsletter_en_path:", row.newsletter_en_path
+    )
+
+    if not row:
+        return render_template(
+            "campanas_detalle_por_lead.html",
+            row=None,
+            lead_id=lead_id,
+            campaign_id=campaign_id,
+            s3_bucket=S3_BUCKET
+        ), 404
+
+    return render_template(
+        "campanas_detalle_por_lead.html",
+        row=row,
+        lead_id=lead_id,
+        campaign_id=campaign_id,
+        s3_bucket=S3_BUCKET
+    )
+
+
+@application.route('/campanas_detalle_por_prospecto')
+def campanas_detalle_por_prospecto():
+    prospectIA_id = request.args.get("prospectIA_id", type=int)
+    campaign_id = request.args.get("campaign_id", type=int)
+
+    if not prospectIA_id:
+        return jsonify({"error": "missing_prospectIA_id"}), 400
+
+    if not campaign_id:
+        return jsonify({"error": "missing_campaign_id"}), 400
+
+    NewsletterES = aliased(Newsletter)
+    NewsletterEN = aliased(Newsletter)
+
+    row = (
+        db.session.query(
+            CampaignRecipient.campaign_id,
+
+            Campaign.name.label("campaign_name"),
+            Campaign.campaign_type.label("campaign_type"),
+            Campaign.idioma.label("campaign_idioma"),
+
+            Campaign.subject_es.label("subject_es"),
+            Campaign.subject_en.label("subject_en"),
+
+            Campaign.sent_at.label("campaign_sent_at"),
+
+            CampaignRecipient.sent_at.label("recipient_sent_at"),
+            CampaignRecipient.origen.label("origen"),
+            CampaignRecipient.idioma.label("recipient_idioma"),
+            CampaignRecipient.send_status.label("send_status"),
+
+            CampaignRecipient.opened_at.label("opened_at"),
+            CampaignRecipient.clicked_at.label("clicked_at"),
+            CampaignRecipient.click_count.label("click_count"),
+
+            NewsletterES.name.label("newsletter_es_name"),
+            NewsletterES.template_s3_path.label("newsletter_es_path"),
+
+            NewsletterEN.name.label("newsletter_en_name"),
+            NewsletterEN.template_s3_path.label("newsletter_en_path"),
+        )
+        .join(
+            Campaign,
+            Campaign.id == CampaignRecipient.campaign_id
+        )
+        .outerjoin(
+            NewsletterES,
+            NewsletterES.id == Campaign.newsletter_es_id
+        )
+        .outerjoin(
+            NewsletterEN,
+            NewsletterEN.id == Campaign.newsletter_en_id
+        )
+        .filter(
+            CampaignRecipient.entity_kind == "prospect",
+            CampaignRecipient.entity_id == prospectIA_id,
+            CampaignRecipient.campaign_id == campaign_id
+        )
+        .first()
+    )
+
+    if not row:
+        return render_template(
+            "campanas_detalle_por_prospecto.html",
+            row=None,
+            prospectIA_id=prospectIA_id,
+            campaign_id=campaign_id,
+            s3_bucket=S3_BUCKET
+        ), 404
+
+    print(
+        "campaign_id:", row.campaign_id,
+        "subject_es:", row.subject_es,
+        "subject_en:", row.subject_en,
+        "newsletter_es_name:", row.newsletter_es_name,
+        "newsletter_en_name:", row.newsletter_en_name,
+        "newsletter_es_path:", row.newsletter_es_path,
+        "newsletter_en_path:", row.newsletter_en_path
+    )
+
+    return render_template(
+        "campanas_detalle_por_prospecto.html",
+        row=row,
+        prospectIA_id=prospectIA_id,
+        campaign_id=campaign_id,
+        s3_bucket=S3_BUCKET
+    )
+
+
+@application.route("/campana_rebotes")
+def campana_rebotes():
+    campaign_id = request.args.get("campaign_id", type=int)
+    entity_kind = request.args.get("entity_kind", type=str)
+
+    if not campaign_id:
+        return jsonify({
+            "success": False,
+            "error": "missing_campaign_id"
+        }), 400
+
+    if entity_kind not in ("lead", "prospect"):
+        return jsonify({
+            "success": False,
+            "error": "invalid_entity_kind"
+        }), 400
+
+    campaign = db.session.get(Campaign, campaign_id)
+
+    if not campaign:
+        abort(404)
+
+    rows = (
+        db.session.query(
+            CampaignRecipient.id.label("recipient_id"),
+            CampaignRecipient.entity_id,
+            CampaignRecipient.entity_kind,
+
+            CampaignRecipient.email,
+            CampaignRecipient.pais,
+            CampaignRecipient.idioma,
+            CampaignRecipient.origen,
+
+            CampaignRecipient.send_status,
+            CampaignRecipient.sent_at,
+            CampaignRecipient.bounced_at,
+
+            CampaignRecipient.bounce_type,
+            CampaignRecipient.bounce_subtype,
+            CampaignRecipient.bounce_diagnostic,
+
+            CampaignRecipient.error_message,
+            CampaignRecipient.ses_message_id,
+        )
+        .filter(
+            CampaignRecipient.campaign_id == campaign_id,
+            CampaignRecipient.entity_kind == entity_kind,
+            db.or_(
+                CampaignRecipient.send_status == "bounced",
+                CampaignRecipient.bounced_at.isnot(None)
+            )
+        )
+        .order_by(
+            CampaignRecipient.bounced_at.desc(),
+            CampaignRecipient.id.desc()
+        )
+        .all()
+    )
+
+    hard_bounces = sum(
+        1 for row in rows
+        if (row.bounce_type or "").lower() == "permanent"
+    )
+
+    soft_bounces = sum(
+        1 for row in rows
+        if (row.bounce_type or "").lower() == "transient"
+    )
+
+    undetermined_bounces = len(rows) - hard_bounces - soft_bounces
+
+    back_url = url_for(
+        "campaign_stats",
+        cid=campaign_id,
+        entity_kind=entity_kind
+    )
+    return render_template(
+        "campana_rebotes.html",
+        campaign=campaign,
+        entity_kind=entity_kind,
+        rows=rows,
+        total_bounces=len(rows),
+        hard_bounces=hard_bounces,
+        soft_bounces=soft_bounces,
+        undetermined_bounces=undetermined_bounces,
+        back_url=back_url
+    )
 
 @application.route('/contactoFacturaProforma', methods=['GET'])
 def contactoFacturaProforma():
@@ -1192,33 +1549,110 @@ def leads():
             pistas_laterales=pistas_laterales,
         )
 
-@application.route('/consultar_leads', methods=['GET', 'POST'])
+@application.route("/consultar_leads", methods=["GET", "POST"])
 def consultar_leads():
+
     estado = request.args.get("estado")
+    modo = request.args.get("modo", "leads")
+    campaign_id = request.args.get("campaign_id", type=int)
+    campaign_name = request.args.get("campaign_name", "")
+
+    # Evita aceptar modos no previstos
+    modos_permitidos = {
+        "leads",
+        "aperturas",
+        "clicks",
+        "rebotes",
+        "bajas",
+    }
+
+    if modo not in modos_permitidos:
+        modo = "leads"
+
+    titulos = {
+        "leads": "Consultar leads",
+        "aperturas": "Leads que han abierto la campaña: ",
+        "clicks": "Leads que han hecho clic en la campaña: ",
+        "rebotes": "Leads con rebote en la campaña:",
+        "bajas": "Leads dados de baja en la campaña:",
+    }
+
+    titulo = titulos[modo]
+
     creds = get_db_credentials("secretoBC/Mysql")
+    dbname = "bc_pruebas" if BD == "PRUEBAS" else creds["dbname"]
 
-    dbname = "bc_pruebas" if (BD == "PRUEBAS") else creds["dbname"]
-
-    print(f"Conectando a la base de datos con host: {creds['host']}, usuario: {creds['username']}, base de datos: {dbname}")
+    print(
+        f"Conectando a la base de datos con host: {creds['host']}, "
+        f"usuario: {creds['username']}, base de datos: {dbname}"
+    )
 
     conn = pymysql.connect(
-        host=creds['host'],
-        user=creds['username'],
-        password=creds['password'],
+        host=creds["host"],
+        user=creds["username"],
+        password=creds["password"],
         database=dbname,
-        port=int(creds.get('port', 3306))
+        port=int(creds.get("port", 3306)),
     )
 
     from pymysql.cursors import DictCursor
 
-    where_sql = ""
-    params = []
+    # Condiciones para lead_forms
+    condiciones_lead = []
+    params_lead = []
+
     if estado and estado != "Todos":
-        where_sql = "WHERE lf.estado = %s"
-        params.append(estado)
+        condiciones_lead.append("lf.estado = %s")
+        params_lead.append(estado)
+
+    # En el informe de bajas se muestran solo leads dados de baja
+    if modo == "bajas":
+        condiciones_lead.append("lf.unsubscribed = 1")
+
+    where_lead_sql = ""
+
+    if condiciones_lead:
+        where_lead_sql = (
+            "WHERE " + " AND ".join(condiciones_lead)
+        )
+
+    # Condiciones dentro de campaign_recipients
+    condiciones_campaign = [
+        "entity_kind = 'lead'"
+    ]
+    params_campaign = []
+
+    if campaign_id:
+        condiciones_campaign.append("campaign_id = %s")
+        params_campaign.append(campaign_id)
+
+    if modo == "aperturas":
+        condiciones_campaign.append("opened_at IS NOT NULL")
+
+    elif modo == "clicks":
+        condiciones_campaign.append("clicked_at IS NOT NULL")
+
+    elif modo == "rebotes":
+        condiciones_campaign.append("bounced_at IS NOT NULL")
+
+    where_campaign_sql = (
+        "WHERE " + " AND ".join(condiciones_campaign)
+    )
+
+    # En informes de actividad solo queremos leads que tengan coincidencia
+    if modo in ("aperturas", "clicks", "rebotes", "bajas"):
+        tipo_join = "INNER JOIN"
+    else:
+        tipo_join = "LEFT JOIN"
+
+    # Los parámetros aparecen primero en la subconsulta y luego en el WHERE exterior
+    params = params_campaign + params_lead
+
+    rows = []
 
     try:
         with conn.cursor(DictCursor) as cur:
+
             sql = f"""
                 SELECT
                     lf.id,
@@ -1231,23 +1665,90 @@ def consultar_leads():
                     lf.quote_number,
                     lf.cantidad_total,
                     lf.descuento_total,
-                    COALESCE(lf.pistas_laterales,0) + COALESCE(lf.pistas_perimetrales,0) AS pistas_total,
+
+                    COALESCE(lf.pistas_laterales, 0)
+                        + COALESCE(lf.pistas_perimetrales, 0)
+                        AS pistas_total,
+
                     lf.probabilidad_exito,
                     lf.incluir_transporte,
                     lf.importe_transporte,
                     lf.estado,
 
-                    COUNT(cr.id) AS total_campanas,
+                    lf.renting_solicitado,
+                    lf.fecha_solicitud_renting,
+                    lf.proforma_solicitada,
+                    lf.fecha_solicitud_proforma,
 
-                    COALESCE(SUM(CASE WHEN cr.opened_at IS NOT NULL THEN 1 ELSE 0 END), 0) AS total_abiertas
+                    lf.unsubscribed,
+                    lf.email_suppressed,
+                    lf.email_suppressed_reason,
+
+                    COUNT(cr.campaign_id) AS total_campanas,
+
+                    COALESCE(
+                        SUM(
+                            CASE
+                                WHEN cr.opened_at IS NOT NULL THEN 1
+                                ELSE 0
+                            END
+                        ),
+                        0
+                    ) AS total_abiertas,
+
+                    COALESCE(
+                        SUM(
+                            CASE
+                                WHEN cr.clicked_at IS NOT NULL THEN 1
+                                ELSE 0
+                            END
+                        ),
+                        0
+                    ) AS total_campanas_clicadas,
+
+                    COALESCE(
+                        SUM(cr.click_count),
+                        0
+                    ) AS total_clicks,
+
+                    MAX(cr.opened_at) AS ultima_apertura,
+                    MAX(cr.clicked_at) AS ultimo_click,
+                    MAX(cr.bounced_at) AS ultimo_rebote,
+
+                    MAX(cr.bounce_type) AS bounce_type,
+                    MAX(cr.bounce_subtype) AS bounce_subtype,
+                    MAX(cr.bounce_diagnostic) AS bounce_diagnostic
 
                 FROM lead_forms lf
 
-                LEFT JOIN campaign_recipients cr
-                    ON cr.entity_id = lf.id
-                AND cr.entity_kind = 'lead'
+                {tipo_join} (
+                    SELECT
+                        entity_id,
+                        campaign_id,
 
-                {where_sql}
+                        MAX(opened_at) AS opened_at,
+                        MAX(clicked_at) AS clicked_at,
+                        MAX(bounced_at) AS bounced_at,
+
+                        MAX(bounce_type) AS bounce_type,
+                        MAX(bounce_subtype) AS bounce_subtype,
+                        MAX(bounce_diagnostic) AS bounce_diagnostic,
+
+                        MAX(
+                            COALESCE(click_count, 0)
+                        ) AS click_count
+
+                    FROM campaign_recipients
+
+                    {where_campaign_sql}
+
+                    GROUP BY
+                        entity_id,
+                        campaign_id
+                ) cr
+                    ON cr.entity_id = lf.id
+
+                {where_lead_sql}
 
                 GROUP BY
                     lf.id,
@@ -1265,23 +1766,40 @@ def consultar_leads():
                     lf.probabilidad_exito,
                     lf.incluir_transporte,
                     lf.importe_transporte,
-                    lf.estado
+                    lf.estado,
+                    lf.renting_solicitado,
+                    lf.fecha_solicitud_renting,
+                    lf.proforma_solicitada,
+                    lf.fecha_solicitud_proforma,
+                    lf.unsubscribed,
+                    lf.email_suppressed,
+                    lf.email_suppressed_reason
 
-                ORDER BY lf.fecha_actual DESC, lf.id DESC
+                ORDER BY
+                    lf.fecha_actual DESC,
+                    lf.id DESC
             """
+
             cur.execute(sql, params)
             rows = cur.fetchall()
+
     finally:
         conn.close()
 
+    print(f"Modo del informe: {modo}")
+    print(f"Campaña: {campaign_id}")
     print(f"Leads obtenidos: {len(rows)}")
-    print("Leads:", rows)
 
     return render_template(
         "consultar_leads.html",
         leads=rows,
         estado=estado,
+        modo=modo,
+        titulo=titulo,
+        campaign_id=campaign_id,
+        campaign_name=campaign_name,
     )
+
 
 def db_get_lead(lead_id):
     creds = get_db_credentials("secretoBC/Mysql")
@@ -1553,18 +2071,33 @@ def lead_manage():
                 return jsonify({"ok": False, "message": str(e)}), 400
 
         # GET
-        else : 
+        else:
             lead_id = request.args.get("lead_id")
+
+            modo = request.args.get("modo", "leads")
+            campaign_id = request.args.get("campaign_id", type=int)
+            estado_origen = request.args.get("estado", "Sin calificar")
+            campaign_name = request.args.get("campaign_name")
+
             if not lead_id:
                 return jsonify({"error": "missing_lead_id"}), 400
-            lead = db_get_lead(lead_id)  # tu función para obtener el lead
 
+            lead = db_get_lead(lead_id)
 
             if not lead:
-                # Puedes usar abort(404) o una plantilla 404
-                return render_template("lead_not_found.html", lead_id=lead_id), 404  # <-- return
+                return render_template(
+                    "lead_not_found.html",
+                    lead_id=lead_id
+                ), 404
 
-            return render_template("lead_manage.html", lead=lead)  # <-- return SIEMPRE
+            return render_template(
+                "lead_manage.html",
+                lead=lead,
+                modo=modo,
+                campaign_id=campaign_id,
+                estado_origen=estado_origen,
+                campaign_name=campaign_name
+            )
 
     except Exception as e:
         application.logger.exception("Error inesperado en lead_manage")
@@ -1660,6 +2193,12 @@ def prospectsIA_manage():
                 return jsonify({"ok": False, "message": str(e)}), 400
 
         prospectIA_id = request.args.get("prospectIA_id")
+
+        modo = request.args.get("modo", "leads")
+        campaign_id = request.args.get("campaign_id", type=int)
+        estado_origen = request.args.get("estado", "Sin calificar")
+        campaign_name = request.args.get("campaign_name")
+
         if not prospectIA_id:
             flash("Falta prospectIA_id", "error")
             return redirect(url_for("consultar_prospectos_IA"))
@@ -1678,7 +2217,17 @@ def prospectsIA_manage():
 
         print(f"ProspectIA obtenido para id {prospectIA_id}: {prospectIA}")
 
-        return render_template("prospectsIA_manage.html", prospectIA=prospectIA)
+
+        return render_template(
+            "prospectsIA_manage.html",
+            prospectIA=prospectIA,
+            modo=modo,
+            campaign_id=campaign_id,
+            estado_origen=estado_origen,
+            campaign_name=campaign_name
+        )
+
+        # return render_template("prospectsIA_manage.html", prospectIA=prospectIA)
 
     except Exception as e:
         print("Error inesperado en prospectIA_manage")
@@ -3297,7 +3846,7 @@ def campaigns_history():
             func.count(LeadCampaignHistory.id).label("total_targets"),
             func.max(LeadCampaignHistory.sent_at).label("sent_at")
         )
-        .join(Campaign, Campaign.id == LeadCampaignHistory.campaign_id)
+        .outerjoin(Campaign, Campaign.id == LeadCampaignHistory.campaign_id)
         .outerjoin(NewsletterES, NewsletterES.id == Campaign.newsletter_es_id)
         .outerjoin(NewsletterEN, NewsletterEN.id == Campaign.newsletter_en_id)
         .group_by(
@@ -3623,14 +4172,15 @@ def campaign_send_test(cid):
 
         print(f"[DEBUG] Enviando email de prueba a {test_email} con replay_to '{campaign.reply_to}' con subject '{subject}' y sender '{campaign.sender}'")
 
-        send_email_ses(
+        response=send_email_ses(
             to_email=test_email,
             subject=subject,
             html=final_html,
             sender=campaign.sender,
             reply_to=campaign.reply_to
         )
-
+       
+        print("SES response:", response)
         return jsonify({
             "ok": True,
             "message": f"Se ha enviado la prueba a {test_email}"
@@ -3638,6 +4188,200 @@ def campaign_send_test(cid):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+
+def parse_ses_datetime(value):
+    if not value:
+        return datetime.now(timezone.utc).replace(tzinfo=None)
+
+    try:
+        return datetime.fromisoformat(
+            value.replace("Z", "+00:00")
+        ).replace(tzinfo=None)
+    except (TypeError, ValueError):
+        return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+
+
+
+@application.route("/aws/ses/notifications", methods=["POST"])
+def ses_notifications():
+
+    print("********** ENTRA EN SES NOTIFICATIONS **********")
+    print(request.get_data(as_text=True))
+
+    payload = request.get_json(force=True)
+
+    print("ENTRA EN SES NOTIFICATIONS")
+    print(payload)
+
+    if payload.get("Type") == "SubscriptionConfirmation":
+        subscribe_url = payload.get("SubscribeURL")
+
+        if subscribe_url:
+            requests.get(subscribe_url, timeout=10)
+
+        return jsonify({"ok": True})
+
+    if payload.get("Type") != "Notification":
+        return jsonify({"ok": True})
+
+    try:
+        message = json.loads(payload.get("Message", "{}"))
+    except (json.JSONDecodeError, TypeError):
+        return jsonify({"ok": True})
+
+    notification_type = message.get("notificationType")
+    mail = message.get("mail", {})
+    ses_message_id = mail.get("messageId")
+
+    if not ses_message_id:
+        return jsonify({"ok": True})
+
+    recipient = CampaignRecipient.query.filter_by(
+        ses_message_id=ses_message_id
+    ).first()
+
+    if not recipient:
+        print(
+            "No encuentro recipient para ses_message_id:",
+            ses_message_id
+        )
+        return jsonify({"ok": True})
+
+    if notification_type == "Bounce":
+        bounce = message.get("bounce", {})
+
+        bounce_type = bounce.get("bounceType")
+        bounce_subtype = bounce.get("bounceSubType")
+
+        bounce_timestamp = parse_ses_datetime(
+            bounce.get("timestamp")
+        )
+
+        bounced_recipients = bounce.get(
+            "bouncedRecipients",
+            []
+        )
+
+        diagnostic = ""
+
+        if bounced_recipients:
+            diagnostic = (
+                bounced_recipients[0]
+                .get("diagnosticCode", "")
+            )
+
+        # Evita incrementar dos veces si SNS reenvía
+        # la misma notificación.
+        ya_estaba_rebotado = (
+            recipient.send_status == "bounced"
+            or recipient.bounced_at is not None
+        )
+
+        recipient.bounced_at = bounce_timestamp
+        recipient.send_status = "bounced"
+
+        recipient.bounce_type = bounce_type
+        recipient.bounce_subtype = bounce_subtype
+        recipient.bounce_diagnostic = diagnostic or None
+
+        # Mantén también error_message para compatibilidad
+        recipient.error_message = (
+            diagnostic[:500] if diagnostic else None
+        )
+
+        if not ya_estaba_rebotado:
+            contacto = None
+
+            if (
+                recipient.entity_kind == "lead"
+                and recipient.entity_id
+            ):
+                contacto = db.session.get(
+                    LeadForm,
+                    recipient.entity_id
+                )
+
+            elif (
+                recipient.entity_kind == "prospect"
+                and recipient.entity_id
+            ):
+                contacto = db.session.get(
+                    ProspectsIA,
+                    recipient.entity_id
+                )
+
+            if contacto:
+                actualizar_estado_rebote_contacto(
+                    contacto=contacto,
+                    bounce_type=bounce_type,
+                    bounce_subtype=bounce_subtype,
+                    bounce_timestamp=bounce_timestamp,
+                    diagnostic=diagnostic
+                )
+
+    elif notification_type == "Delivery":
+        delivery = message.get("delivery", {})
+
+        recipient.delivered_at = parse_ses_datetime(
+            delivery.get("timestamp")
+        )
+
+        recipient.send_status = "delivered"
+
+    elif notification_type == "Complaint":
+        complaint = message.get("complaint", {})
+
+        recipient.complained_at = parse_ses_datetime(
+            complaint.get("timestamp")
+        )
+
+        # Ojo: este valor debe existir en el Enum
+        recipient.send_status = "complained"
+        recipient.error_message = "Complaint"
+
+        contacto = None
+
+        if (
+            recipient.entity_kind == "lead"
+            and recipient.entity_id
+        ):
+            contacto = db.session.get(
+                LeadForm,
+                recipient.entity_id
+            )
+
+        elif (
+            recipient.entity_kind == "prospect"
+            and recipient.entity_id
+        ):
+            contacto = db.session.get(
+                ProspectsIA,
+                recipient.entity_id
+            )
+
+        if contacto:
+            contacto.email_suppressed = True
+            contacto.email_suppressed_at = (
+                recipient.complained_at
+            )
+            contacto.email_suppressed_reason = (
+                "Spam complaint"
+            )
+
+    db.session.commit()
+
+    print(
+        "SES notification processed for recipient "
+        f"{recipient.id}: "
+        f"type={notification_type}, "
+        f"status={recipient.send_status}"
+    )
+
+    return jsonify({"ok": True})
 
 @application.route("/campanas/<int:cid>/send", methods=["POST"])
 def campaign_send(cid):
@@ -4540,7 +5284,21 @@ def campaign_send_stream(cid):
 
 @application.route("/campanas/<int:cid>/stats")
 def campaign_stats(cid):
-    campaign = Campaign.query.get_or_404(cid)
+    campaign = Campaign.query.get(cid)
+
+    if not campaign:
+        hist = LeadCampaignHistory.query.filter_by(campaign_id=cid).first()
+        if not hist:
+            abort(404)
+
+        campaign = SimpleNamespace(
+            id=cid,
+            name=hist.campaign_name,
+            campaign_name=hist.campaign_name,
+            subject_es=None,
+            subject_en=None,
+            idioma=None
+        )
 
     entity_kind = request.args.get("entity_kind", "").strip()
 
@@ -4552,16 +5310,67 @@ def campaign_stats(cid):
         func.sum(func.if_(CampaignRecipient.opened_at.isnot(None), 1, 0)).label("opened"),
         func.sum(func.if_(CampaignRecipient.clicked_at.isnot(None), 1, 0)).label("clicked"),
         func.sum(func.if_(CampaignRecipient.bounced_at.isnot(None), 1, 0)).label("bounced"),
+        func.sum(func.if_(CampaignRecipient.complained_at.isnot(None), 1, 0)).label("complained"),
         func.sum(func.if_(CampaignRecipient.send_status == "error", 1, 0)).label("errors"),
         func.coalesce(func.sum(CampaignRecipient.click_count), 0).label("total_clicks")
     ).filter(
         CampaignRecipient.campaign_id == cid
     )
+    
 
     if entity_kind:
         stats_query = stats_query.filter(CampaignRecipient.entity_kind == entity_kind)
 
     stats = stats_query.first()
+
+    if entity_kind == "lead":
+        unsubscribed = (
+            db.session.query(func.count(CampaignRecipient.id))
+            .join(LeadForm, CampaignRecipient.entity_id == LeadForm.id)
+            .filter(
+                CampaignRecipient.campaign_id == cid,
+                CampaignRecipient.entity_kind == "lead",
+                LeadForm.unsubscribed == 1
+            )
+            .scalar() or 0
+        )
+
+    elif entity_kind == "prospect":
+        unsubscribed = (
+            db.session.query(func.count(CampaignRecipient.id))
+            .join(ProspectsIA, CampaignRecipient.entity_id == ProspectsIA.id)
+            .filter(
+                CampaignRecipient.campaign_id == cid,
+                CampaignRecipient.entity_kind == "prospect",
+                ProspectsIA.unsubscribed == 1
+            )
+            .scalar() or 0
+        )
+
+    else:
+        lead_unsubscribed = (
+            db.session.query(func.count(CampaignRecipient.id))
+            .join(LeadForm, CampaignRecipient.entity_id == LeadForm.id)
+            .filter(
+                CampaignRecipient.campaign_id == cid,
+                CampaignRecipient.entity_kind == "lead",
+                LeadForm.unsubscribed == 1
+            )
+            .scalar() or 0
+        )
+
+        prospect_unsubscribed = (
+            db.session.query(func.count(CampaignRecipient.id))
+            .join(ProspectsIA, CampaignRecipient.entity_id == ProspectsIA.id)
+            .filter(
+                CampaignRecipient.campaign_id == cid,
+                CampaignRecipient.entity_kind == "prospect",
+                ProspectsIA.unsubscribed == 1
+            )
+            .scalar() or 0
+        )
+        unsubscribed = lead_unsubscribed + prospect_unsubscribed
+
 
     total = stats.total or 0
     pending = stats.pending or 0
@@ -4571,14 +5380,19 @@ def campaign_stats(cid):
     clicked = stats.clicked or 0
     bounced = stats.bounced or 0
     errors = stats.errors or 0
+    
+    complained = stats.complained or 0
     total_clicks = stats.total_clicks or 0
 
     # De momento, si no tienes unsubscribe en prospects, mejor dejarlo a 0
-    unsubscribed = 0
+    print(f"[DEBUG] campaign_stats - unsubscribed: '{unsubscribed}'")
 
     delivery_rate = round((delivered / sent) * 100, 2) if sent else 0
-    open_rate = round((opened / delivered) * 100, 2) if delivered else 0
-    click_rate = round((clicked / delivered) * 100, 2) if delivered else 0
+    open_rate = round((opened / sent) * 100, 2) if sent else 0
+    click_rate = round((clicked / sent) * 100, 2) if sent else 0
+    ctor_rate = round((clicked / opened) * 100, 2) if opened else 0
+    bounce_rate = round((bounced / sent) * 100, 2) if sent else 0
+    unsubscribe_rate = round((unsubscribed / sent) * 100, 2) if sent else 0
 
     by_status_query = db.session.query(
         CampaignRecipient.send_status,
@@ -4610,7 +5424,8 @@ def campaign_stats(cid):
         func.count(CampaignRecipient.id).desc()
     ).all()
 
-    complained = 0
+    
+    print(f"[DEBUG] entity_kind = '{entity_kind}'")
 
     return render_template(
         "campaign_stats.html",
@@ -4629,18 +5444,18 @@ def campaign_stats(cid):
         total_clicks=total_clicks,
         delivery_rate=delivery_rate,
         open_rate=open_rate,
-        click_rate=_rate,
+        click_rate=click_rate,
+        ctor_rate=ctor_rate,
+        bounce_rate=bounce_rate,
         by_status=by_status,
         by_country=by_country,
+        unsubscribe_rate=unsubscribe_rate
     )
-
-
-
 
 
 @application.route("/store_prospect_targets", methods=["POST"])
 def store_prospect_targets():
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
 
     nombre_target = (data.get("nombre_target") or "").strip()
     prospect_ids = data.get("prospect_ids") or []
@@ -4665,18 +5480,16 @@ def store_prospect_targets():
             "error": "Todos los prospect_ids deben ser numéricos"
         }), 400
 
-    # quitar duplicados manteniendo orden
+    # Quitar duplicados manteniendo el orden
     prospect_ids = list(dict.fromkeys(prospect_ids))
 
-    print(f"[INFO] Almacenando prospect target para '{nombre_target}' con {len(prospect_ids)} prospectos: {prospect_ids}")
+    print(
+        f"[INFO] Almacenando prospect target para '{nombre_target}' "
+        f"con {len(prospect_ids)} prospectos: {prospect_ids}"
+    )
 
     creds = get_db_credentials("secretoBC/Mysql")
-    dbname = "bc_pruebas" if (BD == "PRUEBAS") else creds["dbname"]
-
-    print(
-        f"Conectando a la base de datos con host: {creds['host']}, "
-        f"usuario: {creds['username']}, base de datos: {dbname}"
-    )
+    dbname = "bc_pruebas" if BD == "PRUEBAS" else creds["dbname"]
 
     conn = pymysql.connect(
         host=creds["host"],
@@ -4689,39 +5502,111 @@ def store_prospect_targets():
 
     try:
         with conn.cursor() as cur:
-            # 1) Insertar cabecera en prospect_targets
-            sql_target = """
-                INSERT INTO prospect_targets (name)
-                VALUES (%s)
-            """
-            cur.execute(sql_target, (nombre_target,))
-            new_id = cur.lastrowid
-
-            # 2) Validar que los prospectos existen
+            # 1) Validar existencia, baja y bloqueo de email
             placeholders = ",".join(["%s"] * len(prospect_ids))
+
             sql_check = f"""
-                SELECT id
+                SELECT
+                    id,
+                    COALESCE(unsubscribed, 0) AS unsubscribed,
+                    COALESCE(email_suppressed, 0) AS email_suppressed,
+                    email_suppressed_reason
                 FROM prospects_IA
                 WHERE id IN ({placeholders})
             """
-            cur.execute(sql_check, tuple(prospect_ids))
-            existing_ids = {row[0] for row in cur.fetchall()}
 
-            missing_ids = [prospect_id for prospect_id in prospect_ids if prospect_id not in existing_ids]
+            cur.execute(sql_check, tuple(prospect_ids))
+            rows = cur.fetchall()
+
+            existing_ids = {row[0] for row in rows}
+
+            unsubscribed_ids = {
+                row[0]
+                for row in rows
+                if int(row[1] or 0) == 1
+            }
+
+            suppressed_ids = {
+                row[0]
+                for row in rows
+                if int(row[2] or 0) == 1
+            }
+
+            suppressed_reasons = {
+                row[0]: row[3]
+                for row in rows
+                if int(row[2] or 0) == 1
+            }
+
+            missing_ids = [
+                prospect_id
+                for prospect_id in prospect_ids
+                if prospect_id not in existing_ids
+            ]
+
             if missing_ids:
                 conn.rollback()
+
                 return jsonify({
                     "ok": False,
                     "error": "Algunos prospectos no existen",
                     "missing_ids": missing_ids
                 }), 400
 
-            # 3) Insertar detalle en prospect_target_items
+            # Un prospecto puede estar dado de baja y bloqueado a la vez
+            excluded_ids = unsubscribed_ids | suppressed_ids
+
+            valid_prospect_ids = [
+                prospect_id
+                for prospect_id in prospect_ids
+                if prospect_id not in excluded_ids
+            ]
+
+            if not valid_prospect_ids:
+                conn.rollback()
+
+                return jsonify({
+                    "ok": False,
+                    "error": (
+                        "Todos los prospectos seleccionados están dados "
+                        "de baja o bloqueados para envíos"
+                    ),
+                    "unsubscribed_ids": sorted(unsubscribed_ids),
+                    "suppressed_ids": sorted(suppressed_ids),
+                    "suppressed_reasons": suppressed_reasons
+                }), 400
+
+            print(f"PROSPECT IDS RECIBIDOS: {prospect_ids}")
+            print(f"TOTAL RECIBIDOS: {len(prospect_ids)}")
+            print(f"UNSUBSCRIBED IDS: {sorted(unsubscribed_ids)}")
+            print(f"TOTAL UNSUBSCRIBED: {len(unsubscribed_ids)}")
+            print(f"SUPPRESSED IDS: {sorted(suppressed_ids)}")
+            print(f"TOTAL SUPPRESSED: {len(suppressed_ids)}")
+            print(f"TOTAL VÁLIDOS: {len(valid_prospect_ids)}")
+
+            # 2) Insertar cabecera solo si queda algún prospecto válido
+            sql_target = """
+                INSERT INTO prospect_targets (name)
+                VALUES (%s)
+            """
+
+            cur.execute(sql_target, (nombre_target,))
+            new_id = cur.lastrowid
+
+            # 3) Insertar solo prospectos válidos
             sql_item = """
-                INSERT INTO prospect_target_items (target_id, prospect_id)
+                INSERT INTO prospect_target_items (
+                    target_id,
+                    prospect_id
+                )
                 VALUES (%s, %s)
             """
-            params_items = [(new_id, prospect_id) for prospect_id in prospect_ids]
+
+            params_items = [
+                (new_id, prospect_id)
+                for prospect_id in valid_prospect_ids
+            ]
+
             cur.executemany(sql_item, params_items)
 
         conn.commit()
@@ -4730,15 +5615,33 @@ def store_prospect_targets():
             "ok": True,
             "id": new_id,
             "nombre_target": nombre_target,
-            "total_prospectos": len(prospect_ids),
-            "message": f"Prospect target '{nombre_target}' almacenado con {len(prospect_ids)} prospectos."
+            "total_seleccionados": len(prospect_ids),
+            "total_prospectos": len(valid_prospect_ids),
+            "total_omitidos": len(excluded_ids),
+            "omitidos_unsubscribe": len(unsubscribed_ids),
+            "omitidos_bloqueados": len(suppressed_ids),
+            "unsubscribed_ids": sorted(unsubscribed_ids),
+            "suppressed_ids": sorted(suppressed_ids),
+            "suppressed_reasons": suppressed_reasons,
+            "message": (
+                f"Prospect target '{nombre_target}' almacenado con "
+                f"{len(valid_prospect_ids)} prospectos. "
+                f"Se omitieron {len(unsubscribed_ids)} dados de baja y "
+                f"{len(suppressed_ids)} bloqueados."
+            )
         }), 201
 
     except pymysql.err.IntegrityError as e:
         conn.rollback()
+
         errno = e.args[0] if e.args else None
         errmsg = e.args[1] if len(e.args) > 1 else str(e)
-        print(f"DB IntegrityError {errno}: {errmsg} | nombre_target={repr(nombre_target)}")
+
+        print(
+            f"DB IntegrityError {errno}: {errmsg} | "
+            f"nombre_target={repr(nombre_target)}"
+        )
+
         return jsonify({
             "ok": False,
             "error": f"MySQL {errno}: {errmsg}"
@@ -4746,7 +5649,9 @@ def store_prospect_targets():
 
     except pymysql.err.Error as e:
         conn.rollback()
+
         print(f"DB Error: {e}")
+
         return jsonify({
             "ok": False,
             "error": str(e)
@@ -4754,7 +5659,9 @@ def store_prospect_targets():
 
     except Exception as e:
         conn.rollback()
+
         print(f"Error inesperado: {e}")
+
         return jsonify({
             "ok": False,
             "error": str(e)
@@ -4766,9 +5673,74 @@ def store_prospect_targets():
         except Exception:
             pass
 
+@application.route("/bloquear_contacto", methods=["POST"])
+def bloquear_contacto():
+    data = request.get_json(silent=True) or request.form
+
+    entity_kind = data.get("entity_kind")
+    entity_id = data.get("entity_id")
+
+    if not entity_kind or not entity_id:
+        return jsonify({
+            "ok": False,
+            "message": "Faltan entity_kind o entity_id"
+        }), 400
+
+    try:
+        entity_id = int(entity_id)
+    except (TypeError, ValueError):
+        return jsonify({
+            "ok": False,
+            "message": "entity_id no válido"
+        }), 400
+
+    if entity_kind == "lead":
+        contacto = db.session.get(LeadForm, entity_id)
+
+    elif entity_kind == "prospect":
+        contacto = db.session.get(ProspectsIA, entity_id)
+
+    else:
+        return jsonify({
+            "ok": False,
+            "message": "Tipo de contacto no válido"
+        }), 400
+
+    if not contacto:
+        return jsonify({
+            "ok": False,
+            "message": "Contacto no encontrado"
+        }), 404
+
+    contacto.email_suppressed = True
+    contacto.email_suppressed_at = datetime.utcnow()
+    contacto.email_suppressed_reason = "Bloqueado manualmente"
+
+    try:
+        db.session.commit()
+
+        return jsonify({
+            "ok": True,
+            "message": "Contacto bloqueado correctamente",
+            "entity_kind": entity_kind,
+            "entity_id": entity_id
+        })
+
+    except Exception as exc:
+        db.session.rollback()
+
+        print("Error bloqueando contacto:", exc)
+
+        return jsonify({
+            "ok": False,
+            "message": "No se pudo bloquear el contacto"
+        }), 500
+
+
+
 @application.route("/store_lead_targets", methods=["POST"])
 def store_lead_targets():
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
 
     nombre_target = (data.get("nombre_target") or "").strip()
     lead_ids = data.get("lead_ids") or []
@@ -4793,13 +5765,16 @@ def store_lead_targets():
             "error": "Todos los lead_ids deben ser numéricos"
         }), 400
 
-    # quitar duplicados manteniendo orden
+    # Quitar duplicados manteniendo el orden
     lead_ids = list(dict.fromkeys(lead_ids))
 
-    print(f"[INFO] Almacenando lead targets para '{nombre_target}' con {len(lead_ids)} leads: {lead_ids}")
+    print(
+        f"[INFO] Almacenando lead target '{nombre_target}' "
+        f"con {len(lead_ids)} leads: {lead_ids}"
+    )
 
     creds = get_db_credentials("secretoBC/Mysql")
-    dbname = "bc_pruebas" if (BD == "PRUEBAS") else creds["dbname"]
+    dbname = "bc_pruebas" if BD == "PRUEBAS" else creds["dbname"]
 
     print(
         f"Conectando a la base de datos con host: {creds['host']}, "
@@ -4817,39 +5792,103 @@ def store_lead_targets():
 
     try:
         with conn.cursor() as cur:
-            # 1) Insertar cabecera en lead_targets
-            sql_target = """
-                INSERT INTO lead_targets (nombre_target)
-                VALUES (%s)
-            """
-            cur.execute(sql_target, (nombre_target,))
-            new_id = cur.lastrowid
 
-            # 2) Validar que los leads existen
+            # 1. Validar que todos los leads existan y comprobar
+            # baja voluntaria y bloqueo de email.
             placeholders = ",".join(["%s"] * len(lead_ids))
+
             sql_check = f"""
-                SELECT id
+                SELECT
+                    id,
+                    COALESCE(unsubscribed, 0) AS unsubscribed,
+                    COALESCE(email_suppressed, 0) AS email_suppressed,
+                    email_suppressed_reason
                 FROM lead_forms
                 WHERE id IN ({placeholders})
             """
-            cur.execute(sql_check, tuple(lead_ids))
-            existing_ids = {row[0] for row in cur.fetchall()}
 
-            missing_ids = [lead_id for lead_id in lead_ids if lead_id not in existing_ids]
+            cur.execute(sql_check, tuple(lead_ids))
+            rows = cur.fetchall()
+
+            existing_ids = {row[0] for row in rows}
+
+            unsubscribed_ids = {
+                row[0]
+                for row in rows
+                if int(row[1] or 0) == 1
+            }
+
+            suppressed_ids = {
+                row[0]
+                for row in rows
+                if int(row[2] or 0) == 1
+            }
+
+            suppressed_reasons = {
+                row[0]: row[3]
+                for row in rows
+                if int(row[2] or 0) == 1
+            }
+
+            missing_ids = [
+                lead_id
+                for lead_id in lead_ids
+                if lead_id not in existing_ids
+            ]
+
             if missing_ids:
                 conn.rollback()
+
                 return jsonify({
                     "ok": False,
                     "error": "Algunos leads no existen",
                     "missing_ids": missing_ids
                 }), 400
 
-            # 3) Insertar detalle en lead_target_items
+            # Un lead puede estar dado de baja y bloqueado a la vez.
+            excluded_ids = unsubscribed_ids | suppressed_ids
+
+            valid_lead_ids = [
+                lead_id
+                for lead_id in lead_ids
+                if lead_id not in excluded_ids
+            ]
+
+            if not valid_lead_ids:
+                conn.rollback()
+
+                return jsonify({
+                    "ok": False,
+                    "error": (
+                        "Todos los leads seleccionados están dados de baja "
+                        "o bloqueados para envíos"
+                    ),
+                    "unsubscribed_ids": sorted(unsubscribed_ids),
+                    "suppressed_ids": sorted(suppressed_ids),
+                    "suppressed_reasons": suppressed_reasons
+                }), 400
+
+            # 2. Crear la cabecera solo después de validar que
+            # queda al menos un lead válido.
+            sql_target = """
+                INSERT INTO lead_targets (nombre_target)
+                VALUES (%s)
+            """
+
+            cur.execute(sql_target, (nombre_target,))
+            new_id = cur.lastrowid
+
+            # 3. Insertar únicamente los leads válidos.
             sql_item = """
                 INSERT INTO lead_target_items (target_id, lead_id)
                 VALUES (%s, %s)
             """
-            params_items = [(new_id, lead_id) for lead_id in lead_ids]
+
+            params_items = [
+                (new_id, lead_id)
+                for lead_id in valid_lead_ids
+            ]
+
             cur.executemany(sql_item, params_items)
 
         conn.commit()
@@ -4858,15 +5897,32 @@ def store_lead_targets():
             "ok": True,
             "id": new_id,
             "nombre_target": nombre_target,
-            "total_leads": len(lead_ids),
-            "message": f"Lead target '{nombre_target}' almacenado con {len(lead_ids)} leads."
+            "total_leads": len(valid_lead_ids),
+
+            "omitidos_unsubscribe": len(unsubscribed_ids),
+            "omitidos_bloqueados": len(suppressed_ids),
+            "total_omitidos": len(excluded_ids),
+
+            "message": (
+                f"Lead target '{nombre_target}' almacenado con "
+                f"{len(valid_lead_ids)} leads. "
+                f"Se omitieron {len(excluded_ids)} contactos: "
+                f"{len(unsubscribed_ids)} dados de baja y "
+                f"{len(suppressed_ids)} bloqueados."
+            )
         }), 201
 
     except pymysql.err.IntegrityError as e:
         conn.rollback()
+
         errno = e.args[0] if e.args else None
         errmsg = e.args[1] if len(e.args) > 1 else str(e)
-        print(f"DB IntegrityError {errno}: {errmsg} | nombre_target={repr(nombre_target)}")
+
+        print(
+            f"DB IntegrityError {errno}: {errmsg} | "
+            f"nombre_target={repr(nombre_target)}"
+        )
+
         return jsonify({
             "ok": False,
             "error": f"MySQL {errno}: {errmsg}"
@@ -4874,7 +5930,9 @@ def store_lead_targets():
 
     except pymysql.err.Error as e:
         conn.rollback()
+
         print(f"DB Error: {e}")
+
         return jsonify({
             "ok": False,
             "error": str(e)
@@ -4882,7 +5940,9 @@ def store_lead_targets():
 
     except Exception as e:
         conn.rollback()
+
         print(f"Error inesperado: {e}")
+
         return jsonify({
             "ok": False,
             "error": str(e)
@@ -4893,7 +5953,6 @@ def store_lead_targets():
             conn.close()
         except Exception:
             pass
-
 
 def clean_text(value):
     if pd.isna(value):
@@ -4916,47 +5975,105 @@ def clean_int(value):
 
 @application.route("/consultar_prospectos_IA", methods=["GET", "POST"])
 def consultar_prospectos_IA():
+
     estado = request.args.get("estado", "").strip()
     origen = request.args.get("origen", "").strip()
 
-    creds = get_db_credentials("secretoBC/Mysql")
-    dbname = "bc_pruebas" if (BD == "PRUEBAS") else creds["dbname"]
+    # Contexto de navegación e informes
+    modo = request.args.get("modo", "prospectos").strip()
+    campaign_id = request.args.get("campaign_id", type=int)
+    campaign_name = request.args.get("campaign_name", "").strip()
 
-    print(
-        f"Conectando a la base de datos con host: {creds['host']}, "
-        f"usuario: {creds['username']}, base de datos: {dbname}"
+    modos_validos = (
+        "prospectos",
+        "aperturas",
+        "clicks",
+        "rebotes",
+        "bajas"
     )
+
+    if modo not in modos_validos:
+        modo = "prospectos"
+
+    titulos = {
+        "prospectos": "Consultar prospectos",
+        "aperturas": "Prospectos que han abierto la campaña: ",
+        "clicks": "Prospectos que han hecho clic en la campaña: ",
+        "rebotes": "Prospectos con rebote en la campaña:",
+        "bajas": "Prospectos dados de baja en la campaña:",
+    }
+
+    titulo = titulos[modo]
+
+
+
+    creds = get_db_credentials("secretoBC/Mysql")
+    dbname = "bc_pruebas" if BD == "PRUEBAS" else creds["dbname"]
 
     conn = pymysql.connect(
         host=creds["host"],
         user=creds["username"],
         password=creds["password"],
         database=dbname,
-        port=int(creds.get("port", 3306))
+        port=int(creds.get("port", 3306)),
+        cursorclass=pymysql.cursors.DictCursor
     )
 
-    from pymysql.cursors import DictCursor
-
     try:
-        where_clauses = []
-        params = []
+        condiciones_prospecto = []
+        params_prospecto = []
 
-        where_clauses.append("p.lead_status = %s")
-        params.append("prospect")
+        condiciones_campaign = []
+        params_campaign = []
 
+        # Siempre mostramos registros clasificados como prospect
+        condiciones_prospecto.append("p.lead_status = %s")
+        params_prospecto.append("prospect")
+
+        # Filtros normales de prospectos
         if estado and estado != "Todos":
-            where_clauses.append("p.estado = %s")
-            params.append(estado)
+            condiciones_prospecto.append("p.estado = %s")
+            params_prospecto.append(estado)
 
         if origen:
-            where_clauses.append("ps.description = %s")
-            params.append(origen)
+            condiciones_prospecto.append("ps.description = %s")
+            params_prospecto.append(origen)
+
+        # Filtro para bajas
+        if modo == "bajas":
+            condiciones_prospecto.append("p.unsubscribed = 1")
+
+        # Informes asociados a una campaña
+        if campaign_id:
+            condiciones_campaign.append("cr.campaign_id = %s")
+            params_campaign.append(campaign_id)
+
+        if modo == "aperturas":
+            condiciones_campaign.append("cr.opened_at IS NOT NULL")
+
+        elif modo == "clicks":
+            condiciones_campaign.append("cr.clicked_at IS NOT NULL")
+
+        elif modo == "rebotes":
+            condiciones_campaign.append("cr.bounced_at IS NOT NULL")
+
+        # En los informes necesitamos que el prospecto pertenezca
+        # obligatoriamente a la campaña
+        if modo in ("aperturas", "clicks", "rebotes", "bajas"):
+            tipo_join = "INNER JOIN"
+        else:
+            tipo_join = "LEFT JOIN"
+
+        condiciones = condiciones_prospecto + condiciones_campaign
+        params = params_prospecto + params_campaign
 
         where_sql = ""
-        if where_clauses:
-            where_sql = "WHERE " + " AND ".join(where_clauses)
 
-        with conn.cursor(DictCursor) as cur:
+        if condiciones:
+            where_sql = "WHERE " + " AND ".join(condiciones)
+
+        with conn.cursor() as cur:
+
             sql = f"""
                 SELECT
                     p.id,
@@ -4982,13 +6099,39 @@ def consultar_prospectos_IA():
 
                     COUNT(cr.id) AS total_campanas,
 
-                    COALESCE(SUM(CASE WHEN cr.opened_at IS NOT NULL THEN 1 ELSE 0 END), 0) AS total_abiertas
+                    MAX(cr.opened_at) AS ultima_apertura,
+                    MAX(cr.clicked_at) AS ultimo_click,
+
+                    COALESCE(
+                        SUM(
+                            CASE
+                                WHEN cr.opened_at IS NOT NULL THEN 1
+                                ELSE 0
+                            END
+                        ),
+                        0
+                    ) AS total_abiertas,
+
+                    COALESCE(
+                        SUM(
+                            CASE
+                                WHEN cr.clicked_at IS NOT NULL THEN 1
+                                ELSE 0
+                            END
+                        ),
+                        0
+                    ) AS total_campanas_clicadas,
+
+                    COALESCE(
+                        SUM(COALESCE(cr.click_count, 0)),
+                        0
+                    ) AS total_clicks
 
                 FROM prospects_IA p
 
-                LEFT JOIN campaign_recipients cr
+                {tipo_join} campaign_recipients cr
                     ON cr.entity_id = p.id
-                   AND cr.entity_kind = 'prospect'
+                AND cr.entity_kind = 'prospect'
 
                 LEFT JOIN prospect_sources ps
                     ON ps.id = p.source_id
@@ -5017,13 +6160,22 @@ def consultar_prospectos_IA():
                     p.unsubscribed_at,
                     ps.description
 
-                ORDER BY p.fecha DESC, p.id DESC
+                ORDER BY
+                    p.fecha DESC,
+                    p.id DESC
             """
+
+            print("[DEBUG] modo:", modo)
+            print("[DEBUG] campaign_id:", campaign_id)
+            print("[DEBUG] SQL:", sql)
+            print("[DEBUG] params:", params)
+
             cur.execute(sql, params)
             rows = cur.fetchall()
 
             cur.execute("""
-                SELECT DISTINCT ps.description AS origen
+                SELECT DISTINCT
+                    ps.description AS origen
                 FROM prospects_IA p
                 LEFT JOIN prospect_sources ps
                     ON ps.id = p.source_id
@@ -5031,23 +6183,38 @@ def consultar_prospectos_IA():
                   AND TRIM(ps.description) <> ''
                 ORDER BY ps.description
             """)
+
             origenes_rows = cur.fetchall()
 
-        origenes = [r["origen"] for r in origenes_rows]
+        origenes = [row["origen"] for row in origenes_rows]
 
     finally:
         conn.close()
 
-    print(f"Prospectos obtenidos: {len(rows)}")
-    print("Prospectos:", rows)
+    titulos = {
+        "prospectos": "Consultar prospectos",
+        "aperturas": "Prospectos que abrieron la campaña",
+        "clicks": "Prospectos que hicieron clic en la campaña :",
+        "rebotes": "Prospectos con rebote en la campaña :",
+        "bajas": "Prospectos dados de bajaen la campaña :"
+    }
+
+    titulo = titulos.get(modo, "Consultar prospectos")
 
     return render_template(
         "consultar_prospectos_IA.html",
         prospectos=rows,
         estado=estado,
         origen=origen,
-        origenes=origenes
-    )    
+        origenes=origenes,
+        modo=modo,
+        campaign_id=campaign_id,
+        campaign_name=campaign_name,
+        titulo=titulo,
+        entity_kind="prospect"
+    )
+
+
 
 @application.route("/import_bd_IA", methods=["GET", "POST"])
 def import_bd_IA():
@@ -5307,6 +6474,275 @@ def import_bd_IA():
 
 
 
+
+@application.route("/exportar_datos_campanas", methods=["GET", "POST"])
+def exportar_datos_campanas():
+
+    if request.method == "GET":
+        return render_template("exportacion_datos_campanas.html")
+    
+    connection = None
+
+    try:
+        creds = get_db_credentials("secretoBC/Mysql")
+        BD = request.args.get("BD", "")
+        dbname = "bc_pruebas" if BD == "PRUEBAS" else creds["dbname"]
+
+        connection = pymysql.connect(
+            host=creds["host"],
+            user=creds["username"],
+            password=creds["password"],
+            database=dbname,
+            port=int(creds.get("port", 3306)),
+            cursorclass=pymysql.cursors.DictCursor,
+            autocommit=True,
+        )
+
+        query = """
+            SELECT
+                c.id AS campaign_id,
+                c.name AS campaign_name,
+                c.campaign_type,
+                c.status AS campaign_status,
+                c.created_at AS campaign_created_at,
+                c.scheduled_at,
+                c.sent_at AS campaign_sent_at,
+
+                cr.id AS recipient_id,
+                cr.email,
+                cr.entity_kind,
+                cr.entity_id,
+
+                cr.pais,
+                cr.idioma,
+                cr.origen,
+                cr.segment,
+                cr.tipo_lead,
+                cr.estado AS recipient_estado,
+
+                cr.send_status,
+                cr.sent_at,
+                cr.delivered_at,
+                cr.opened_at,
+                cr.clicked_at,
+                cr.bounced_at,
+                cr.complained_at,
+                cr.last_event,
+                cr.click_count,
+                cr.tracking_id,
+                cr.ses_message_id,
+
+                p.id AS prospect_id,
+                p.fecha AS prospect_created_date,
+                p.club,
+                p.tipo AS prospect_tipo,
+                p.estado AS prospect_estado,
+                p.propietario,
+                p.num_pistas,
+                p.web,
+                p.lead_status,
+                p.lead_converted_at,
+
+                lf.id AS lead_id,
+                lf.name AS lead_name,
+                lf.created_at AS lead_created_at,
+                lf.quote_number,
+                lf.estado AS lead_estado,
+                lf.probabilidad_exito,
+                lf.cantidad_total,
+                lf.descuento_total,
+
+                CASE WHEN lf.proforma_solicitada = 1 THEN 'Sí' ELSE 'No' END AS solicito_proforma,
+                lf.fecha_solicitud_proforma,
+
+                CASE WHEN lf.renting_solicitado = 1 THEN 'Sí' ELSE 'No' END AS solicito_renting,
+                lf.fecha_solicitud_renting,
+
+                CASE WHEN lf.renting_concedido = 1 THEN 'Sí' ELSE 'No' END AS renting_aprobado,
+                lf.fecha_concedido_renting,
+
+                CASE WHEN lf.renting_denegado = 1 THEN 'Sí' ELSE 'No' END AS renting_denegado,
+                lf.fecha_denegado_renting,
+
+                CASE WHEN p.unsubscribed = 1 THEN 'Sí' ELSE 'No' END AS prospect_unsubscribed,
+                p.unsubscribed_at AS prospect_unsubscribed_at,
+
+                CASE WHEN lf.unsubscribed = 1 THEN 'Sí' ELSE 'No' END AS lead_unsubscribed,
+                lf.unsubscribed_at AS lead_unsubscribed_at
+
+            FROM campaign_recipients cr
+            INNER JOIN campaigns c ON c.id = cr.campaign_id
+            LEFT JOIN prospects_IA p
+                ON cr.entity_kind = 'prospect'
+            AND cr.entity_id = p.id
+            LEFT JOIN (
+                SELECT lf1.*
+                FROM lead_forms lf1
+                INNER JOIN (
+                    SELECT email, MAX(id) AS ultimo_id
+                    FROM lead_forms
+                    GROUP BY email
+                ) ult ON ult.ultimo_id = lf1.id
+            ) lf ON lf.email = cr.email
+            ORDER BY c.id, cr.sent_at, cr.email;
+            """
+
+        with connection.cursor() as cursor:
+            cursor.execute(query)
+            rows = cursor.fetchall()
+
+        df = pd.DataFrame(rows)
+
+        df = df.rename(columns={
+            "campaign_id": "ID Campaña",
+            "campaign_name": "Campaña",
+            "campaign_type": "Tipo campaña",
+            "campaign_status": "Estado campaña",
+            "campaign_created_at": "Fecha creación campaña",
+            "scheduled_at": "Fecha programada",
+            "campaign_sent_at": "Fecha envío campaña",
+            "recipient_id": "ID Destinatario",
+            "email": "Email",
+            "entity_kind": "Tipo origen",
+            "entity_id": "ID origen",
+            "pais": "País",
+            "idioma": "Idioma",
+            "origen": "Origen",
+            "segment": "Segmento",
+            "tipo_lead": "Tipo lead",
+            "recipient_estado": "Estado contacto",
+            "send_status": "Estado envío",
+            "sent_at": "Fecha envío email",
+            "delivered_at": "Fecha entrega",
+            "opened_at": "Fecha apertura",
+            "clicked_at": "Fecha clic",
+            "bounced_at": "Fecha rebote",
+            "complained_at": "Fecha queja",
+            "last_event": "Último evento",
+            "click_count": "Número de clics",
+            "tracking_id": "Tracking ID",
+            "ses_message_id": "ID mensaje SES",
+            "prospect_id": "ID Prospecto",
+            "prospect_created_date": "Fecha alta prospecto",
+            "club": "Club",
+            "prospect_tipo": "Tipo prospecto",
+            "prospect_estado": "Estado prospecto",
+            "propietario": "Comercial asignado",
+            "num_pistas": "Número de pistas",
+            "web": "Web",
+            "lead_status": "Estado comercial",
+            "lead_converted_at": "Fecha conversión a lead",
+            "lead_id": "ID Lead",
+            "lead_name": "Nombre lead",
+            "lead_created_at": "Fecha creación oferta",
+            "quote_number": "Número oferta",
+            "lead_estado": "Estado oferta",
+            "probabilidad_exito": "Probabilidad de éxito",
+            "cantidad_total": "Importe oferta",
+            "descuento_total": "Descuento total",
+            "solicito_proforma": "Solicitó proforma",
+            "fecha_solicitud_proforma": "Fecha solicitud proforma",
+            "solicito_renting": "Solicitó renting",
+            "fecha_solicitud_renting": "Fecha solicitud renting",
+            "renting_aprobado": "Renting aprobado",
+            "fecha_concedido_renting": "Fecha aprobación renting",
+            "renting_denegado": "Renting denegado",
+            "fecha_denegado_renting": "Fecha denegación renting",
+            "prospect_unsubscribed": "Baja prospecto",
+            "prospect_unsubscribed_at": "Fecha baja prospecto",
+            "lead_unsubscribed": "Baja lead",
+            "lead_unsubscribed_at": "Fecha baja lead",
+        })
+
+
+       
+       
+
+        print(df.head(5).to_string())
+        print(df.dtypes)
+
+        
+
+        output = BytesIO()
+
+
+
+
+        output = BytesIO()
+
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+
+            # Escribir el DataFrame
+            df.to_excel(writer, index=False, sheet_name="Marketing completo")
+
+            ws = writer.book["Marketing completo"]
+
+            # Congelar primera fila
+            ws.freeze_panes = "A2"
+
+            # Activar filtros
+            ws.auto_filter.ref = ws.dimensions
+
+            # ====== FORMATO DEL ENCABEZADO ======
+            from openpyxl.styles import Font, PatternFill
+
+            header_fill = PatternFill(
+                fill_type="solid",
+                start_color="1F4E78",
+                end_color="1F4E78"
+            )
+
+            for cell in ws[1]:
+                cell.font = Font(bold=True, color="FFFFFF")
+                cell.fill = header_fill
+
+            # ====== AJUSTAR ANCHO COLUMNAS ======
+            for column in ws.columns:
+                max_length = max(len(str(cell.value or "")) for cell in column)
+                ws.column_dimensions[column[0].column_letter].width = min(max_length + 2, 40)
+
+
+
+        output.seek(0)
+
+        document_no = f"Datos_Campañas_{datetime.now():%Y%m%d_%H%M%S}.xlsx"
+
+        dropbox_path = f"/2026 PPT - Marketing/Datos Campañas/{document_no}"
+
+
+
+
+        ruta = subir_a_dropbox(
+            output.getvalue(),
+            dropbox_path
+        )
+
+        print(f"Archivo guardado en {ruta}")
+
+        
+
+
+
+
+
+
+
+       
+    except Exception as e:
+        print("ERROR exportando datos campañas:", e)
+        return {"error": str(e)}, 500
+
+    finally:
+        if connection:
+            connection.close()
+
+
+    return render_template(
+        "exportacion_datos_campanas.html",
+        ok=True,
+        archivo=document_no,
+        ruta=ruta
+    )
 
 @application.route('/base', methods=['GET', 'POST'])
 def base():

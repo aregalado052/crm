@@ -10,6 +10,7 @@ import boto3
 import os
 import math
 import dropbox
+from dropbox.common import PathRoot
 import smtplib
 from email.message import EmailMessage
 import os
@@ -203,6 +204,20 @@ def oferta_core(payload: dict, pdf_data: bytes | None = None):
 
 
 
+       
+        root_namespace_id = account_info.root_info.root_namespace_id
+
+        dbx = dbx.with_path_root(
+            PathRoot.namespace_id(root_namespace_id)
+        )
+
+       
+
+        
+        
+       
+
+
         creds = get_db_credentials()
 
         dbname = "bc_pruebas" if (BD == "PRUEBAS") else creds["dbname"]
@@ -242,8 +257,16 @@ def oferta_core(payload: dict, pdf_data: bytes | None = None):
         print(f"Nombre del documento: {document_no}")
 
         update_pdf_bd(session_id, total_excl_iva_raw, document_no, pdf_data,connection)
+
         
+
+      
+
         dropbox_path = f"/2024 PPT - Ofertas/{document_no}"
+
+     
+        
+        
         
 
         # Guardar localmente (opcional)
@@ -251,8 +274,22 @@ def oferta_core(payload: dict, pdf_data: bytes | None = None):
         #    f.write(pdf_data)
 
         # Subir a Dropbox
-        dbx = dropbox.Dropbox(DROPBOX_TOKEN)
-        dbx.files_upload(pdf_data, dropbox_path, mode=dropbox.files.WriteMode.overwrite)
+
+        try:
+            dbx.files_upload(
+                pdf_data,
+                dropbox_path,
+                mode=dropbox.files.WriteMode.overwrite
+            )
+            print(f"✅ PDF subido a Dropbox en: {dropbox_path}")
+
+        except Exception as e:
+            print("❌ Error subiendo a Dropbox:")
+            print(type(e))
+            print(e)
+            raise
+       
+      
 
         
 
@@ -504,6 +541,12 @@ def proforma_core(payload: dict, pdf_data: bytes | None = None):
         account_info = dbx.users_get_current_account()
         print(f"Conectado a Dropbox como: {account_info.name.display_name}")
 
+        root_namespace_id = account_info.root_info.root_namespace_id
+
+        dbx = dbx.with_path_root(
+            PathRoot.namespace_id(root_namespace_id)
+        )
+
         
 
         creds = get_db_credentials()
@@ -555,7 +598,21 @@ def proforma_core(payload: dict, pdf_data: bytes | None = None):
 
         
         
-        dropbox_path = f"/2024 PPT - Ofertas/{document_no}"
+        dropbox_path = f"/2026 PPT - Proformas/{document_no}"
+
+        try:
+            dbx.files_upload(
+                pdf_data,
+                dropbox_path,
+                mode=dropbox.files.WriteMode.overwrite
+            )
+            print(f"✅ PDF subido a Dropbox en: {dropbox_path}")
+
+        except Exception as e:
+            print("❌ Error subiendo a Dropbox:")
+            print(type(e))
+            print(e)
+            raise
         
 
         # Guardar localmente (opcional)
@@ -563,8 +620,7 @@ def proforma_core(payload: dict, pdf_data: bytes | None = None):
         #    f.write(pdf_data)
 
         # Subir a Dropbox
-        dbx = dropbox.Dropbox(DROPBOX_TOKEN)
-        dbx.files_upload(pdf_data, dropbox_path, mode=dropbox.files.WriteMode.overwrite)
+      
 
         print(f"✅ PDF subido a Dropbox en: {dropbox_path}")
 
@@ -806,13 +862,13 @@ def build_proforma_cta(proforma_url: str, idioma: str, renting: bool) -> str:
     proforma_url_proforma = f"{proforma_url}&origen=proforma"
 
     if es:
-        pretext0 = "Si desea tener la mejor iluminación en sus pistas de pádel por una cómmoda cuota. Ejemplo España-a 72 meses: <b style=\"color:#011640;\">115&euro; CUOTA MESUAL POR PISTA</b> (aprox., pendiente de aprobación). Para más información <a class=\"lp-inline-link\" href=\"https://ledpadel.com/es/renting-iluminacion-pistas-padel/?utm_source=respuesta_formulario&amp;utm_medium=email&amp;utm_campaign=renting_ellite_2026&amp;utm_content=link_paises_es#paises\" target=\"_blank\" style=\"color:#135EF2;text-decoration:underline;font-weight:600;\">haga clic aquí</a>."
+        pretext0 = "Si desea tener la mejor iluminación en sus pistas de pádel por una cómmoda cuota. Ejemplo España-a 72 meses: <b style=\"color:#011640;\">115&euro; CUOTA MESUAL POR PISTA</b> (aprox., pendiente de aprobación). Para más información <a class=\"lp-inline-link\" href=\"https://ledpadel.com/es/renting-iluminacion-pistas-padel/?utm_source=respuesta_formulario&utm_medium=email&utm_campaign=renting_ellite_2026&utm_content=link_oferta_es\" target=\"_blank\" style=\"color:#135EF2;text-decoration:underline;font-weight:600;\">haga clic aquí</a>."
         pretext1 = "Si desea más información, puede contactar conmigo por teléfono, email o WhatsApp."
         pretext2 = "Si desea que emitamos una factura proforma, puede solicitarla aquí:"
         button_text_proforma = "Solicite su factura proforma"
         button_text_renting = "Solicite su plan de renting"
     else:
-        pretext0 = "If you want the best lighting on your padel courts for a comfortable fee. Example Spain-72 months: <b style=\"color:#011640;\">115&euro; MONTHLY FEE PER COURT</b> (approx., pending approval). For more information <a class=\"lp-inline-link\" href=\"https://ledpadel.com/es/renting-iluminacion-pistas-padel/?utm_source=respuesta_formulario&amp;utm_medium=email&amp;utm_campaign=renting_ellite_2026&amp;utm_content=link_paises_es#paises\" target=\"_blank\" style=\"color:#135EF2;text-decoration:underline;font-weight:600;\">click here</a>."
+        pretext0 = "If you want the best lighting on your padel courts for a comfortable fee. Example Spain-72 months: <b style=\"color:#011640;\">115&euro; MONTHLY FEE PER COURT</b> (approx., pending approval). For more information <a class=\"lp-inline-link\" href=\"https://ledpadel.com/en/padel-court-lighting-leasing/?utm_source=respuesta_formulario&utm_medium=email&utm_campaign=renting_ellite_2026&utm_content=link_oferta_en\" target=\"_blank\" style=\"color:#135EF2;text-decoration:underline;font-weight:600;\">click here</a>."
         pretext1 = "If you have any questions, you can contact me by phone, email, or WhatsApp."
         pretext2 = "If you would like us to issue a proforma invoice, you can request it here:"
         button_text_proforma = "Request your proforma invoice"
@@ -1796,8 +1852,10 @@ def render_email_body_images_folder(slug: str, lang: str = "en") -> str:
 {head_html if head_html.startswith("<head") else f"<head>{head_html}</head>"}
 <body>
   <div data-composed="message">{message}</div>
-  {atts_html}
+   <!--
+   {atts_html}
   <div data-composed="images">{images_block}</div>
+  -->
   <div data-composed="signature">{signature}</div>
   </body>
 </html>"""

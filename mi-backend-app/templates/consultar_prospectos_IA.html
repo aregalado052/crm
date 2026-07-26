@@ -31,50 +31,64 @@
   
 
   <div class="flex items-center gap-4 mb-4 flex-wrap">
-    
+
     <div class="text-3xl font-bold text-blue-700 flex items-baseline gap-3 flex-wrap">
-      <span>{{ _('Aquí puedes consultar y gestionar tus Prospectos con Origen :') }}</span>
-      <form id="origenFilterForm" method="GET" action="{{ url_for('consultar_prospectos_IA') }}" class="m-0">
-        <input type="hidden" name="estado" value="{{ estado or '' }}">
 
-        <select
-          id="origen"
-          name="origen"
-          onchange="document.getElementById('origenFilterForm').submit()"
-          class="border border-gray-300 rounded-lg px-3 py-2 bg-white text-sm min-w-[240px]"
-        >
-          <option value="">{{ _('Todos') }}</option>
-          {% for o in origenes %}
-            <option value="{{ o }}" {{ 'selected' if origen == o else '' }}>
-              {{ o }}
-            </option>
-          {% endfor %}
-        </select>
-      </form>
-      {% if estado == 'operativo' %}
-        <span class="bg-blue-200 text-blue-700 px-3 py-1 rounded-lg text-lg">
-          — Operativos
-        </span>
-      {% elif estado == 'renovacion' %}
-        <span class="bg-violet-200 text-violet-700 px-3 py-1 rounded-lg text-lg">
-          — En Renovación
-        </span>
-      {% elif estado == 'concepto' %}
-        <span class="bg-green-200 text-green-700 px-3 py-1 rounded-lg text-lg">
-          — En Concepto
-        </span>
-      {% elif estado == 'proyecto' %}
-        <span class="bg-red-200 text-red-700 px-3 py-1 rounded-lg text-lg">
-          — En Proyecto
-        </span>
+      {% if modo == "prospectos" %}
+
+        <span>{{ _('Aquí puedes consultar y gestionar tus Prospectos con Origen:') }}</span>
+
+        <form id="origenFilterForm"
+              method="GET"
+              action="{{ url_for('consultar_prospectos_IA') }}"
+              class="m-0">
+
+          <input type="hidden" name="estado" value="{{ estado or '' }}">
+
+          <select
+            id="origen"
+            name="origen"
+            onchange="document.getElementById('origenFilterForm').submit()"
+            class="border border-gray-300 rounded-lg px-3 py-2 bg-white text-sm min-w-[240px]"
+          >
+            <option value="">{{ _('Todos') }}</option>
+
+            {% for o in origenes %}
+              <option value="{{ o }}" {{ 'selected' if origen == o else '' }}>
+                {{ o }}
+              </option>
+            {% endfor %}
+          </select>
+
+        </form>
+
+        {% if estado == 'operativo' %}
+          <span class="bg-blue-200 text-blue-700 px-3 py-1 rounded-lg text-lg">— Operativos</span>
+        {% elif estado == 'renovacion' %}
+          <span class="bg-violet-200 text-violet-700 px-3 py-1 rounded-lg text-lg">— En Renovación</span>
+        {% elif estado == 'concepto' %}
+          <span class="bg-green-200 text-green-700 px-3 py-1 rounded-lg text-lg">— En Concepto</span>
+        {% elif estado == 'proyecto' %}
+          <span class="bg-red-200 text-red-700 px-3 py-1 rounded-lg text-lg">— En Proyecto</span>
+        {% else %}
+          <span class="bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-lg">
+            — {{ _('Todos los Prospectos') }}
+          </span>
+        {% endif %}
+
       {% else %}
-        <span class="bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-lg">
-          — {{ _('Todos los Prospectos') }}
-        </span>
-      {% endif %}
-    </div>
 
-    
+        <span>{{ titulo }}</span>
+
+        {% if campaign_name %}
+          <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-lg text-lg">
+            — {{ campaign_name }}
+          </span>
+        {% endif %}
+
+      {% endif %}
+
+    </div>
 
   </div>
 
@@ -85,32 +99,32 @@
 
   <div class="flex justify-between items-center mb-4">
     <div class="space-x-4">
+       {% if modo == 'prospectos' %}
+        <button id="btn-operativos" class="bg-red-300 text-white px-4 py-2 rounded hover:bg-red-400">
+          {{ _('Operativos') }}
 
-      <button id="btn-operativos" class="bg-red-300 text-white px-4 py-2 rounded hover:bg-red-400">
-        {{ _('Operativos') }}
+        </button>
 
-      </button>
-
-      <button id="btn-renovacion" class="bg-violet-300 text-white px-4 py-2 rounded hover:bg-violet-400">
-        {{ _('En Renovación') }}
-        
-      </button>
+        <button id="btn-renovacion" class="bg-violet-300 text-white px-4 py-2 rounded hover:bg-violet-400">
+          {{ _('En Renovación') }}
+          
+        </button>
 
 
-      <button id="btn-en-concepto" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-        {{ _('En Concepto') }}
-      </button>
+        <button id="btn-en-concepto" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+          {{ _('En Concepto') }}
+        </button>
 
-      <button id="btn-en-proyecto" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-        {{ _('En Proyecto') }}
-      </button>
+        <button id="btn-en-proyecto" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+          {{ _('En Proyecto') }}
+        </button>
 
-      <button id="btn-todos" 
-        type="button" 
-        class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
-        {{ _('Todos los Prospectos') }}
-      </button>
-
+        <button id="btn-todos" 
+          type="button" 
+          class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+          {{ _('Todos los Prospectos') }}
+        </button>
+      {% endif %}
       <button id="btn-generar-target"
         type="button"
         class="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600">
@@ -126,9 +140,11 @@
     </div>
   </div>
 
-
-  <div class="max-h-[400px] overflow-y-auto border border-gray-200 rounded-lg shadow">
-    <table id="mi-tabla" class="min-w-full divide-y divide-gray-300">
+ <div class="max-h-[400px] overflow-auto border border-gray-200 rounded-lg shadow">
+    <table id="mi-tabla" class="table-auto w-max divide-y divide-gray-300">
+  <!-- <div class="max-h-[400px] overflow-y-auto border border-gray-200 rounded-lg shadow"> -->
+  <!-- <table id="mi-tabla" class="min-w-full divide-y divide-gray-300"> -->
+   
     <thead class="bg-gray-300">
       <tr>
         <th data-type="number" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
@@ -147,20 +163,72 @@
           {{ _('Email') }}
         </th>
 
-        <th data-type="text" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
-          {{ _('Tipo') }}
-        </th>
+        
 
         <th data-type="text" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
           {{ _('País') }}
         </th>
+        {% if modo == 'prospectos' %}
 
-        <th data-type="number" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
-          {{ _('Campañas') }}
-        </th>
-        <th data-type="number" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
-          {{ _('Aperturas') }}
-        </th>
+          <th data-type="number" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+            {{ _('Campañas') }}
+          </th>
+          <th data-type="number" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+            {{ _('Aperturas') }}
+          </th>
+
+          <th data-type="number" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+            {{ _('Campañas clicadas') }}
+          </th>
+
+          <th data-type="number" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+            {{ _('Clics') }}
+          </th>
+        {% elif modo == 'aperturas' %}
+
+          <th data-type="date"
+              class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+            {{ _('Última apertura') }}
+          </th>
+
+        {% elif modo == 'clicks' %}
+
+          <th data-type="date"
+              class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+            {{ _('Último clic') }}
+          </th>
+
+          <th data-type="number"
+              class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+            {{ _('Total clics') }}
+          </th>
+
+
+        {% elif modo == 'rebotes' %}
+
+          <th data-type="date"
+              class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+            {{ _('Fecha rebote') }}
+          </th>
+
+          <th data-type="text"
+              class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+            {{ _('Tipo') }}
+          </th>
+
+          <th data-type="text"
+              class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+            {{ _('Diagnóstico') }}
+          </th>
+
+        {% elif modo == 'bajas' %}
+
+          <th data-type="text"
+              class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
+            {{ _('Baja email') }}
+          </th>
+
+        {% endif %} 
 
         <th data-type="text" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
           {{ _('Idioma') }}
@@ -170,9 +238,6 @@
           {{ _('Estado') }}
         </th>
 
-        <th data-type="number" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
-          {{ _('Nº Pistas') }}
-        </th>
 
         <th data-type="text" class="sticky top-0 bg-gray-300 z-10 px-4 py-2 text-center text-sm font-medium text-gray-800">
           {{ _('Web') }}
@@ -189,8 +254,15 @@
         aria-selected="{{ 'true' if loop.first else 'false' }}"
         aria-label="Abrir prospecto {{ prospecto['id'] }}"
         data-id="{{ prospecto['id'] }}"
-        data-href="{{ url_for('prospectsIA_manage', prospectIA_id=prospecto['id']) }}"
-      >
+        data-href="{{ url_for(
+          'prospectsIA_manage', 
+          prospectIA_id=prospecto['id'],
+          modo=modo,
+          campaign_id=campaign_id,
+          campaign_name=campaign_name,
+          estado=estado
+          ) }}"
+     >
         <td class="px-4 py-2 text-center">{{ loop.index }}</td>
 
         {% set f = prospecto['fecha'] %}
@@ -207,11 +279,63 @@
 
         <td class="px-4 py-2 text-center">{{ prospecto['club'] or '' }}</td>
         <td class="px-4 py-2 text-center">{{ prospecto['email'] or '' }}</td>
-        <td class="px-4 py-2 text-center">{{ prospecto['tipo'] or '' }}</td>
+        
         <td class="px-4 py-2 text-center">{{ prospecto['pais'] or '' }}</td>
 
-        <td class="px-4 py-2 text-right">{{ prospecto['total_campanas'] }}</td>
-        <td class="px-4 py-2 text-right">{{ prospecto['total_abiertas'] }}</td>
+
+
+         {% if modo == 'prospectos' %}
+
+          <td class="px-4 py-2 text-right">{{ prospecto['total_campanas'] }}</td>
+          <td class="px-4 py-2 text-right">{{ prospecto['total_abiertas'] }}</td>
+
+          <td class="px-4 py-2 text-right">{{ prospecto['total_campanas_clicadas'] }}</td>
+          <td class="px-4 py-2 text-right">{{ prospecto['total_clicks'] }}</td>
+          
+        
+        {% elif modo == 'aperturas' %}
+
+          <td class="px-4 py-2 text-center">
+            {{ prospecto['ultima_apertura'] or '—' }}
+          </td>
+
+         {% elif modo == 'clicks' %}
+
+          <td class="px-4 py-2 text-center">
+            {{ prospecto['ultimo_click'] or '—' }}
+          </td>
+
+          <td class="px-4 py-2 text-center">
+            {{ prospecto['total_clicks'] }}
+          </td>
+
+        
+        {% elif modo == 'rebotes' %}
+
+          <td class="px-4 py-2 text-center">
+            {{ prospecto['ultimo_rebote'] or '—' }}
+          </td>
+
+          <td class="px-4 py-2 text-center">
+            {{ prospecto['bounce_type'] or '—' }}
+          </td>
+
+          <td class="px-4 py-2 text-left">
+            {{ prospecto['bounce_diagnostic'] or '—' }}
+          </td>
+        
+        {% elif modo == 'bajas' %}
+
+        <td class="px-4 py-2 text-center">
+          {% if prospecto['unsubscribed'] %}
+            <span class="text-red-600 font-semibold">Sí</span>
+          {% else %}
+            <span class="text-gray-400">No</span>
+          {% endif %}
+        </td>
+
+      {% endif %}
+        
         <td class="px-4 py-2 text-center">{{ prospecto['idioma'] or '' }}</td>
 
         <td class="px-4 py-2 text-center">
@@ -228,7 +352,7 @@
           {% endif %}
         </td>
 
-        <td class="px-4 py-2 text-center">{{ prospecto['num_pistas'] or '' }}</td>
+        
 
         <td class="px-4 py-2 text-center">
           {% if prospecto['web'] %}
@@ -251,6 +375,12 @@
 
 {% block scripts %}
 {{ super() }}
+
+{% if modo != "prospectos" and campaign_id %}
+    {% set ruta_volver = url_for("campaign_stats", cid=campaign_id, entity_kind='prospect') %}
+{% else %}
+    {% set ruta_volver = none %}
+{% endif %}
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   const table = document.getElementById("mi-tabla");
@@ -259,6 +389,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const thead = table.querySelector("thead");
   const tbody = table.querySelector("tbody");
   const ths = Array.from(thead.querySelectorAll("th"));
+
+  const btnTarget = document.getElementById("btn-generar-target");
+
+  if (btnTarget) {
+    btnTarget.addEventListener("click", guardarTargetSeleccionado);
+  }
+
+  const btnExit = document.getElementById("btn-exit");
+
+  if (btnExit) {
+    btnExit.addEventListener("click", volver);
+  }
 
   // ------- Menú en cabeceras (Asc/Desc/Buscar) -------
   document.addEventListener("click", (e) => {
@@ -765,8 +907,7 @@ async function guardarTargetSeleccionado() {
   });
 
   if (!nombreTarget) return;
-
-  try {
+    try {
     Swal.fire({
       title: "Guardando...",
       allowOutsideClick: false,
@@ -792,19 +933,41 @@ async function guardarTargetSeleccionado() {
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: data.error || "No se pudo crear el target"
+        text: data.error || data.message || "No se pudo crear el target"
       });
       return;
     }
 
+    const totalProspectos = data.total_prospectos ?? prospectIds.length;
+
+    const omitidosUnsubscribe = data.omitidos_unsubscribe ?? 0;
+    const omitidosBloqueados = data.omitidos_bloqueados ?? 0;
+    const totalOmitidos = data.total_omitidos ?? (
+        omitidosUnsubscribe + omitidosBloqueados
+    );
+
     Swal.fire({
       icon: "success",
       title: "Target creado",
-      text: `Target "${nombreTarget}" creado con ${prospectIds.length} prospectos`,
-      timer: 2000,
+      html: `
+        Target "<strong>${data.nombre_target || nombreTarget}</strong>" creado con
+        <strong>${totalProspectos}</strong> prospectos.
+        ${
+          totalOmitidos > 0
+            ? `
+              <br><br>
+              Se omitieron <strong>${totalOmitidos}</strong> contactos:
+              <br>
+              • <strong>${omitidosUnsubscribe}</strong> dados de baja
+              <br>
+              • <strong>${omitidosBloqueados}</strong> bloqueados
+            `
+            : ""
+        }
+      `,
+      timer: 5000,
       showConfirmButton: false
     });
-
   } catch (err) {
     console.error(err);
 
@@ -814,44 +977,51 @@ async function guardarTargetSeleccionado() {
       text: "No se pudo conectar con el servidor"
     });
   }
+
+
+
 }
-document.getElementById('btn-exit').addEventListener('click', function (e) {
-  
+async function volver(e) {
   e.preventDefault();
-  const ruta = '/base';
-  const data = {};
 
-  salir();
-  async function salir() {
+  const modo = "{{ modo }}";
 
-    try {
-      const response = await fetch(ruta, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(data)
-      });
+    {% if ruta_volver %}
+        window.location.href = "{{ ruta_volver }}";
+        return;
+    {% endif %}
 
-      if (!response.ok) throw new Error("{{ _('Error en la respuesta del servidor.') }}");
+  // Solo para modo leads hacemos POST a /base
+  try {
+    const response = await fetch("/base", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      credentials: "include",
+      body: JSON.stringify({})
+    });
 
-      const html = await response.text();
-      document.open();
-      document.write(html);
-      document.close();
+    if (!response.ok) {
+      throw new Error("Error en la respuesta del servidor");
+    }
 
-    } catch (error) {
-      console.error("Error al enviar datos:", error);
-      Swal.fire({
-        icon: 'error',
-        title: '{{ _("Error") | escapejs }}',
-        text: '{{ _("No se pudo cargar la página. Inténtalo de nuevo más tarde.") | escapejs }}',
-        confirmButtonColor: '#3085d6'
-      });
-    };
-  } 
-});
+    const html = await response.text();
+
+    document.open();
+    document.write(html);
+    document.close();
+
+  } catch (error) {
+    console.error(error);
+
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "No se pudo cargar la página."
+    });
+  }
+}
 </script>
 
 

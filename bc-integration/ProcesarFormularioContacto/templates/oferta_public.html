@@ -208,10 +208,15 @@
     loadCountryOptions();
     idiomaSelect.addEventListener("change", loadCountryOptions);
 
+    const submitBtn = form.querySelector('button[type="submit"]');
+
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
 
-      alert ("sessionId: " + document.getElementById("sessionId")?.value);
+      // Evitar múltiples envíos
+      submitBtn.disabled = true;
+      submitBtn.textContent = TEXT_PROCESSING;
+      submitBtn.classList.add("opacity-50", "cursor-not-allowed");
 
       const payload = {
         token: document.getElementById("token")?.value || "",
@@ -223,15 +228,18 @@
         pistas_laterales: document.getElementById("pistas_laterales")?.value,
         mailorigen: "web@planetpower.es",
         origen: "oferta_campaña_prospecto"
-            };
+      };
 
       if (!payload.name || !payload.pais || !payload.idioma) {
         msg.textContent = TEXT_REQUIRED;
         msg.className = "text-red-600 text-center mt-4";
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = TEXT_BUTTON;
+        submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
         return;
       }
 
-      // 👉 VALIDACIÓN NUEVA
       const perimetrales = parseInt(payload.pistas_perimetrales) || 0;
       const laterales = parseInt(payload.pistas_laterales) || 0;
 
@@ -240,6 +248,10 @@
           ? "You must request at least 1 court."
           : "Debes indicar al menos 1 pista.";
         msg.className = "text-red-600 text-center mt-4";
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = TEXT_BUTTON;
+        submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
         return;
       }
 
@@ -258,17 +270,33 @@
         if (!result.ok) {
           msg.textContent = result.message || "Error.";
           msg.className = "text-red-600 text-center mt-4";
+
+          submitBtn.disabled = false;
+          submitBtn.textContent = TEXT_BUTTON;
+          submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
           return;
         }
 
         msg.textContent = result.message || TEXT_SUCCESS;
         msg.className = "text-green-600 text-center mt-4";
 
+        // Ocultar el formulario tras 10 segundos
+        setTimeout(() => {
+          form.reset();
+          form.style.display = "none";
+        }, 10000);
+
       } catch (e) {
         msg.textContent = TEXT_CONNECTION_ERROR;
         msg.className = "text-red-600 text-center mt-4";
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = TEXT_BUTTON;
+        submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
       }
     });
+
+    
   });
 
 </script>

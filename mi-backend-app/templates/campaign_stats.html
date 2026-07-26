@@ -18,6 +18,7 @@
     </div>
 
     {% set back_url = url_for('campanas_leads') if entity_kind == 'lead' else url_for('campanas_prospects') %}
+    {% set consulta_route = 'consultar_leads' if entity_kind == 'lead' else 'consultar_prospectos_IA' %}
 
     <a href="{{ back_url }}" class="btn btn-warning">
       Volver
@@ -49,17 +50,47 @@
       <div class="card shadow-sm h-100">
         <div class="card-body">
           <div class="text-muted small">Abiertos</div>
-          <div class="fs-3 fw-bold text-info">{{ opened }}</div>
-          <div class="small text-muted">Open rate {{ open_rate }}%</div>
+
+          <div class="fs-3 fw-bold">
+            <a
+              href="{{ url_for(
+                    consulta_route,
+                    modo='aperturas',
+                    campaign_id=campaign.id,
+                    campaign_name=campaign.name,
+                    
+              ) }}"
+              class="text-info text-decoration-none"
+            >
+              {{ opened }}
+              </a>
+            </div>
+
+          <div class="small text-muted">
+            Open rate {{ open_rate }}%
+          </div>
         </div>
       </div>
     </div>
-
     <div class="col-md-2">
       <div class="card shadow-sm h-100">
         <div class="card-body">
           <div class="text-muted small">Clicks</div>
-          <div class="fs-3 fw-bold text-warning">{{ clicked }}</div>
+
+            <div class="fs-3 fw-bold text-warning">
+              <a
+                href="{{ url_for(
+                      consulta_route,
+                      modo='clicks',
+                      campaign_id=campaign.id,
+                      campaign_name=campaign.name,
+                      
+                ) }}"
+                class="text-info text-decoration-none"
+              >
+                {{ clicked }}
+              </a>
+            </div>
           <div class="small text-muted">CTR {{ click_rate }}%</div>
         </div>
       </div>
@@ -69,7 +100,7 @@
       <div class="card shadow-sm h-100">
         <div class="card-body">
           <div class="text-muted small">CTOR</div>
-          <div class="fs-3 fw-bold">{{ ctor }}%</div>
+          <div class="fs-3 fw-bold">{{ ctor_rate }}%</div>
           <div class="small text-muted">Total clicks {{ total_clicks }}</div>
         </div>
       </div>
@@ -86,12 +117,29 @@
       </div>
     </div>
 
+    
+
     <div class="col-md-3">
       <div class="card shadow-sm h-100">
         <div class="card-body">
           <div class="text-muted small">Rebotes</div>
-          <div class="fs-4 fw-bold text-danger">{{ bounced }}</div>
-          <div class="small text-muted">{{ bounce_rate }}%</div>
+
+          <a href="{{ url_for(
+              'campana_rebotes',
+              campaign_id=campaign.id,
+              entity_kind=entity_kind,
+              
+          ) }}"
+            class="text-decoration-none">
+
+            <div class="fs-4 fw-bold text-danger">
+              {{ bounced }}
+            </div>
+
+            <div class="small text-muted">
+              {{ bounce_rate }}%
+            </div>
+          </a>
         </div>
       </div>
     </div>
@@ -100,7 +148,21 @@
       <div class="card shadow-sm h-100">
         <div class="card-body">
           <div class="text-muted small">Bajas</div>
-          <div class="fs-4 fw-bold text-dark">{{ unsubscribed }}</div>
+            <div class="fs-4 fw-bold text-dark">
+              <a
+                href="{{ url_for(
+                      consulta_route,
+                      modo='bajas',
+                      campaign_id=campaign.id,
+                      campaign_name=campaign.name,
+                      
+                ) }}"
+                class="text-info text-decoration-none"
+              >
+                  
+                {{ unsubscribed }}
+              </a>
+            </div>
           <div class="small text-muted">{{ unsubscribe_rate }}%</div>
         </div>
       </div>

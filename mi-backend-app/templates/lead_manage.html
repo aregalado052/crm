@@ -705,87 +705,111 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   
-document.getElementById("btn-proforma").addEventListener("click", function () {
-  
-
-  const leadId = leadData.id || (document.getElementById('leadId')?.value || '').trim();
-
-  const data = {
-    quoteNumber: (document.getElementById('inputQuoteNumber')?.value || '').trim(),
-    email: (document.querySelector('[name="email"]')?.value || '').trim(),
-    idioma: (document.getElementById('inputIdioma')?.value || '').trim(),
-    pais: (document.getElementById('inputPais')?.value || '').trim(),
-    lead_id: leadId,
-  };
-  
-  
-
-  // Validación básica
-  if (!data.quoteNumber || !data.email) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Campos incompletos',
-      text: 'Debes indicar número de presupuesto y email'
-    });
-    return;
-  }
-
-  Swal.fire({
-    title: 'Generando factura proforma...',
-    allowOutsideClick: false,
-    didOpen: () => {
-      Swal.showLoading();
-    }
-  });
-
-  fetch('/facturaProforma', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  })
-  .then(r => {
-    if (!r.ok) throw new Error('Error en la respuesta del servidor');
-    return r.json();
-  })
- .then(result => {
-    if (result.redirect) window.location.href = result.redirect;
-  })
-
-  .catch(err => {
-    console.error(err);
-    Swal.fire({ icon: 'error', title: 'Error', text: err.message });
-  });
-
-
-});
-
-document.getElementById("btn-campanas").addEventListener("click", function () {
-  
-  const leadId = leadData.id || (document.getElementById('leadId')?.value || '').trim();
-
-
-
-  if (!leadId) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Falta lead_id',
-      text: 'No se puede consultar campañas sin lead.'
-    });
-    return;
-  }
-
-  window.location.href = `/consultar_campanas_por_lead?lead_id=${encodeURIComponent(leadId)}`;
-});
-
-  
-
-
-  document.getElementById('btn-exit').addEventListener('click', function (e) {
+  document.getElementById("btn-proforma").addEventListener("click", function () {
     
-    e.preventDefault();
-    window.location.href = "/consultar_leads?estado=En%20curso";
+
+    const leadId = leadData.id || (document.getElementById('leadId')?.value || '').trim();
+
+    const data = {
+      quoteNumber: (document.getElementById('inputQuoteNumber')?.value || '').trim(),
+      email: (document.querySelector('[name="email"]')?.value || '').trim(),
+      idioma: (document.getElementById('inputIdioma')?.value || '').trim(),
+      pais: (document.getElementById('inputPais')?.value || '').trim(),
+      lead_id: leadId,
+    };
+    
+    
+
+    // Validación básica
+    if (!data.quoteNumber || !data.email) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Campos incompletos',
+        text: 'Debes indicar número de presupuesto y email'
+      });
+      return;
+    }
+
+    Swal.fire({
+      title: 'Generando factura proforma...',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    fetch('/facturaProforma', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    .then(r => {
+      if (!r.ok) throw new Error('Error en la respuesta del servidor');
+      return r.json();
+    })
+  .then(result => {
+      if (result.redirect) window.location.href = result.redirect;
+    })
+
+    .catch(err => {
+      console.error(err);
+      Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+    });
+
+
   });
 
+  document.getElementById("btn-campanas").addEventListener("click", function () {
+    
+    const leadId = leadData.id || (document.getElementById('leadId')?.value || '').trim();
+
+
+
+    if (!leadId) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Falta lead_id',
+        text: 'No se puede consultar campañas sin lead.'
+      });
+      return;
+    }
+
+    window.location.href = `/consultar_campanas_por_lead?lead_id=${encodeURIComponent(leadId)}`;
+  });
+
+  
+
+
+  document.getElementById("btn-exit").addEventListener("click", function (e) {
+    e.preventDefault();
+
+    {% if modo == "leads" %}
+
+        window.location.href = {{ url_for(
+            "consultar_leads",
+            modo="leads",
+            estado=estado_origen
+        ) | tojson }};
+
+    {% elif campaign_id %}
+
+        window.location.href = {{ url_for(
+            "consultar_leads",
+            modo=modo,
+            campaign_id=campaign_id,
+            campaign_name=campaign_name
+        ) | tojson }};
+
+    {% else %}
+
+        window.location.href = {{ url_for(
+            "consultar_leads",
+            modo="leads",
+            estado="Sin calificar"
+        ) | tojson }};
+
+    {% endif %}
+  });
 
 
 

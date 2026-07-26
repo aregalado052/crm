@@ -88,9 +88,15 @@
     document.addEventListener('DOMContentLoaded', () => {
       const form = document.getElementById("oferta-form");
       const msg = document.getElementById("message");
+      const submitBtn = form.querySelector('button[type="submit"]');
 
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
+
+        // Evitar múltiples envíos
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Procesando...";
+        submitBtn.classList.add("opacity-50", "cursor-not-allowed");
 
         const payload = {
           token: document.getElementById("token")?.value || "",
@@ -106,6 +112,10 @@
         if (!payload.name || !payload.pais || !payload.idioma) {
           msg.textContent = "Todos los campos son obligatorios.";
           msg.className = "text-red-600 text-center mt-4";
+
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Enviar solicitud";
+          submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
           return;
         }
 
@@ -124,15 +134,29 @@
           if (!result.ok) {
             msg.textContent = result.message || "Error.";
             msg.className = "text-red-600 text-center mt-4";
+
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Enviar solicitud";
+            submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
             return;
           }
 
           msg.textContent = "Solicitud enviada correctamente.";
           msg.className = "text-green-600 text-center mt-4";
 
+          // Ocultar el formulario después de 10 segundos
+          setTimeout(() => {
+            form.reset();
+            form.style.display = "none";
+          }, 10000);
+
         } catch (e) {
           msg.textContent = "Error de conexión.";
           msg.className = "text-red-600 text-center mt-4";
+
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Enviar solicitud";
+          submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
         }
       });
     });

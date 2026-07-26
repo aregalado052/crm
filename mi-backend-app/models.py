@@ -208,12 +208,46 @@ class LeadForm(db.Model):
         db.DateTime,
         nullable=True
     )
+    email_suppressed = db.Column(
+                db.Boolean,
+                nullable=False,
+                default=False
+            )
+    
+    email_suppressed_at = db.Column(
+        db.DateTime,
+        nullable=True
+    )
+
+    email_suppressed_reason = db.Column(
+        db.String(255),
+        nullable=True
+    )
+
+   
+
+    bounce_count = db.Column(
+        db.Integer,
+        nullable=False,
+        default=0
+    )
+
+    last_bounce_at = db.Column(
+        db.DateTime,
+        nullable=True
+    )
+
+    last_bounce_error = db.Column(
+        db.Text,
+        nullable=True
+    )
 
     created_at = db.Column(
         db.DateTime,
         nullable=False,
         server_default=db.text("CURRENT_TIMESTAMP"),
     )
+
 
     updated_at = db.Column(
         db.DateTime,
@@ -253,6 +287,7 @@ class LeadForm(db.Model):
             "pistas_laterales BETWEEN 0 AND 20",
             name="lead_forms_chk_6"
         ),
+        
     )
 
 class Newsletter(db.Model):
@@ -333,9 +368,16 @@ class CampaignRecipient(db.Model):
     seleccionado = db.Column(db.Boolean, nullable=False, default=True)
 
     send_status = db.Column(db.Enum(
-        "pending","sent","error","delivered","open","click","bounce","unsubscribe"
+        "pending",
+        "sent",
+        "error",
+        "delivered",
+        "open",
+        "click",
+        "bounced",
+        "unsubscribe",
+        "complained"
     ), default="pending", nullable=False)
-
     sent_at = db.Column(db.DateTime)
     opened_at = db.Column(db.DateTime)
     clicked_at = db.Column(db.DateTime)
@@ -345,6 +387,13 @@ class CampaignRecipient(db.Model):
 
     delivered_at = db.Column(db.DateTime)
     bounced_at = db.Column(db.DateTime)
+    bounce_type = db.Column(db.String(30))
+    bounce_subtype = db.Column(db.String(80))
+    bounce_diagnostic = db.Column(db.Text)
+
+    
+
+
     complained_at = db.Column(db.DateTime)
 
     unsubscribe_token = db.Column(db.String(128), unique=True, index=True)
@@ -527,6 +576,27 @@ class ProspectsIA(db.Model):
 
     unsubscribed = db.Column(db.Boolean, default=False)
     unsubscribed_at = db.Column(db.DateTime)
+    email_suppressed = db.Column(
+    db.Boolean,
+    nullable=False,
+    default=False
+)
+
+    email_suppressed_at = db.Column(db.DateTime)
+
+    email_suppressed_reason = db.Column(
+        db.String(255)
+    )
+
+    bounce_count = db.Column(
+        db.Integer,
+        nullable=False,
+        default=0
+    )
+
+    last_bounce_at = db.Column(db.DateTime)
+
+    last_bounce_error = db.Column(db.Text)
 
 
     lead_status = db.Column(

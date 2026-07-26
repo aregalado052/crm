@@ -1537,81 +1537,246 @@ def consume_token(conn, token: str) -> bool:
         return cur.rowcount == 1
 
 
+def convertir_prospecto_despues_de_oferta(
+    connection,
+    email,
+    lead_id
+):
+    if not email:
+        return {
+            "convertido": False,
+            "motivo": "email_vacio"
+        }
 
+    if not lead_id:
+        return {
+            "convertido": False,
+            "motivo": "lead_id_vacio"
+        }
 
+    email_normalizado = email.strip().lower()
 
-def insert_base_datos( connection,lead):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT id
+                FROM prospects_IA
+                WHERE LOWER(TRIM(email)) = %s
+                  AND lead_status = 'prospect'
+                LIMIT 1
+                """,
+                (email_normalizado,)
+            )
 
-     # Extrae valores del payload
-       
-        fecha_actual            = lead.fecha_actual        # str 'YYYY-MM-DD' o None
-        origen                  = lead.origen              # str o None
-        name                    = lead.name                # str o None
-        email                   = lead.email               # str o None
-        quote_number            = lead.quote_number        # str o None
-        idioma                  = lead.idioma              # str o None
-        pais                    = lead.pais                # str o None
-        descuento_adicional     = lead.descuento_adicional
-        descuento_total         = lead.descuento_total
-        cantidad_total          = lead.cantidad_total
-        estado                  = lead.estado
-        tipo_lead               = lead.tipo_lead
-        pistas_perimetrales     = lead.pistas_perimetrales
-        pistas_laterales        = lead.pistas_laterales
-        incluir_transporte      = lead.incluir_transporte
-        importe_transporte      = lead.importe_transporte   
+            prospecto = cursor.fetchone()
 
-        print (f"Datos para insertar en BD: {fecha_actual}, {origen}, {name}, {email}, {quote_number}, {idioma}, {pais}, {descuento_adicional},{tipo_lead}, {descuento_total}, {cantidad_total}, {estado}, {pistas_perimetrales}, {pistas_laterales} {incluir_transporte}, {importe_transporte} ")
+            if not prospecto:
+                print(
+                    f"ℹ️ {email_normalizado} "
+                    "no es un prospecto activo"
+                )
 
-        # --- Inserción ---
-        sql = """
-        INSERT INTO lead_forms (
-          fecha_actual, origen,
-          name, email, quote_number, idioma, pais, tipo_lead,
-          descuento_adicional, descuento_total, cantidad_total,
-          estado,pistas_perimetrales, pistas_laterales,incluir_transporte, importe_transporte
-          
-        ) VALUES (
-          %(fecha_actual)s, %(origen)s, 
-          %(name)s, %(email)s, %(quote_number)s, %(idioma)s, %(pais)s, %(tipo_lead)s,
-          %(descuento_adicional)s, %(descuento_total)s, %(cantidad_total)s,
-          %(estado)s, %(pistas_perimetrales)s, %(pistas_laterales)s, %(incluir_transporte)s, %(importe_transporte)s
-          
+                return {
+                    "convertido": False,
+                    "motivo": "no_es_prospecto"
+                }
+
+            prospecto_id = prospecto["id"]
+
+            cursor.execute(
+                """
+                UPDATE campaign_recipients
+                SET
+                    entity_id = %s,
+                    entity_kind = 'lead'
+                WHERE entity_id = %s
+                  AND entity_kind = 'prospect'
+                """,
+                (
+                    lead_id,
+                    prospecto_id
+                )
+            )
+
+            historial_movido = cursor.rowcount
+
+            cursor.execute(
+                """
+                UPDATE prospects_IA
+                SET
+                    lead_status = 'lead',
+                    lead_converted_at = NOW()
+                WHERE id = %s
+                  AND lead_status = 'prospect'
+                """,
+                (prospecto_id,)
+            )
+
+            if cursor.rowcount == 0:
+                raise RuntimeError(
+                    "No se pudo marcar el prospecto como lead"
+                )
+
+        connection.commit()
+
+        return {
+            "convertido": True,
+            "prospecto_id": prospecto_id,
+            "lead_id": lead_id,
+            "historial_movido": historial_movido
+        }
+
+    except Exception as error:
+        connection.rollback()
+
+        print(
+            f"❌ Error convirtiendo prospecto: {error}"
         )
-        """
 
-        params = {
-            "origen": origen,
-            "fecha_actual": fecha_actual,            
-            "name": name,
-            "email": email,
-            "quote_number": quote_number,
-            "idioma": idioma,
-            "pais": pais,
-            "tipo_lead": tipo_lead, 
-            "descuento_adicional": descuento_adicional,
-            "descuento_total": descuento_total,
-            "cantidad_total": cantidad_total,
-            "estado": estado,
-            "pistas_perimetrales": pistas_perimetrales,
-            "pistas_laterales": pistas_laterales,
-            "incluir_transporte": incluir_transporte,
-            "importe_transporte": importe_transporte    
+        return {
+            "convertido": False,
+            "motivo": "error_conversion",
+            "error": str(error)
         }
 
 
-        try:
-            
-            with connection.cursor() as cur:
-                cur.execute(sql, params)
-               
-            connection.commit()
-            print("✅ Datos insertados en la base de datos")
-        except pymysql.connect.Error as db_err:
-            print(f"❌ Error de conexión a la base de datos: {db_err}")
-            # Detalle controlado para el cliente
-            return {"ok": False, "error": f"DB: {db_err}"}
-       
+    
+def insert_base_datos(connection, lead):
+
+    fecha_actual = lead.fecha_actual
+    origen = lead.origen
+    name = lead.name
+    email = lead.email
+    quote_number = lead.quote_number
+    idioma = lead.idioma
+    pais = lead.pais
+    descuento_adicional = lead.descuento_adicional
+    descuento_total = lead.descuento_total
+    cantidad_total = lead.cantidad_total
+    estado = lead.estado
+    tipo_lead = lead.tipo_lead
+    pistas_perimetrales = lead.pistas_perimetrales
+    pistas_laterales = lead.pistas_laterales
+    incluir_transporte = lead.incluir_transporte
+    importe_transporte = lead.importe_transporte
+
+    convertido_desde_prospecto = (
+        1 if lead.convertido_desde_prospecto else 0
+    )
+
+    print(
+        "Datos para insertar en BD:",
+        fecha_actual,
+        origen,
+        name,
+        email,
+        quote_number,
+        idioma,
+        pais,
+        descuento_adicional,
+        tipo_lead,
+        descuento_total,
+        cantidad_total,
+        estado,
+        pistas_perimetrales,
+        pistas_laterales,
+        incluir_transporte,
+        importe_transporte,
+        convertido_desde_prospecto
+    )
+
+    sql = """
+        INSERT INTO lead_forms (
+            fecha_actual,
+            origen,
+            name,
+            email,
+            quote_number,
+            idioma,
+            pais,
+            tipo_lead,
+            descuento_adicional,
+            descuento_total,
+            cantidad_total,
+            estado,
+            pistas_perimetrales,
+            pistas_laterales,
+            incluir_transporte,
+            importe_transporte,
+            convertido_desde_prospecto
+        )
+        VALUES (
+            %(fecha_actual)s,
+            %(origen)s,
+            %(name)s,
+            %(email)s,
+            %(quote_number)s,
+            %(idioma)s,
+            %(pais)s,
+            %(tipo_lead)s,
+            %(descuento_adicional)s,
+            %(descuento_total)s,
+            %(cantidad_total)s,
+            %(estado)s,
+            %(pistas_perimetrales)s,
+            %(pistas_laterales)s,
+            %(incluir_transporte)s,
+            %(importe_transporte)s,
+            %(convertido_desde_prospecto)s
+        )
+    """
+
+    params = {
+        "fecha_actual": fecha_actual,
+        "origen": origen,
+        "name": name,
+        "email": email,
+        "quote_number": quote_number,
+        "idioma": idioma,
+        "pais": pais,
+        "tipo_lead": tipo_lead,
+        "descuento_adicional": descuento_adicional,
+        "descuento_total": descuento_total,
+        "cantidad_total": cantidad_total,
+        "estado": estado,
+        "pistas_perimetrales": pistas_perimetrales,
+        "pistas_laterales": pistas_laterales,
+        "incluir_transporte": incluir_transporte,
+        "importe_transporte": importe_transporte,
+        "convertido_desde_prospecto": convertido_desde_prospecto
+    }
+
+    try:
+        with connection.cursor() as cur:
+            cur.execute(sql, params)
+            lead_id = cur.lastrowid
+
+        connection.commit()
+
+        print(
+            f"✅ Datos insertados en la base de datos. "
+            f"Lead ID: {lead_id}"
+        )
+
+        return {
+            "ok": True,
+            "lead_id": lead_id
+        }
+
+    except pymysql.MySQLError as db_err:
+        connection.rollback()
+
+        print(
+            f"❌ Error de base de datos: {db_err}"
+        )
+
+        return {
+            "ok": False,
+            "error": f"DB: {db_err}"
+        }
+
+
 
 import json
 import base64
@@ -1957,7 +2122,21 @@ def crear_contacto_core(data):
 
     print (f"Descuento total: {porcentaje_descuento}, Cantidad total: {total_amount_quote}")
 
-   
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT id
+            FROM prospects_IA
+            WHERE LOWER(TRIM(email)) = LOWER(TRIM(%s))
+            AND lead_status = 'prospect'
+            LIMIT 1
+            """,
+            (email,)
+        )
+
+        prospecto = cursor.fetchone()
+
+    es_prospecto = prospecto is not None
    
     
     lead = SimpleNamespace(
@@ -1970,6 +2149,8 @@ def crear_contacto_core(data):
                 idioma=idioma,
                 descuento_adicional=descuento_adicional,
                 origen=origen,
+                convertido_desde_prospecto=es_prospecto,
+
                 pistas_perimetrales=pistas_perimetrales,
                 pistas_laterales=pistas_laterales,
                 estado="Sin calificar",
@@ -1985,12 +2166,27 @@ def crear_contacto_core(data):
 
 
     print (f"Lead para insertar en BD: {lead}")
-    insert_base_datos(connection,lead)
-            
-        
-            
+ 
+
+    resultado_insert = insert_base_datos(connection, lead)
+
+    if not resultado_insert["ok"]:
+        raise RuntimeError(resultado_insert["error"])
+
+    lead_id = resultado_insert["lead_id"]
+
+    resultado_conversion = convertir_prospecto_despues_de_oferta(
+        connection=connection,
+        email=email,
+        lead_id=lead_id
+    )
+
+    print(
+        "Resultado de conversión del prospecto:",
+        resultado_conversion
+    )
+
     connection.close()
-        
     
          
        

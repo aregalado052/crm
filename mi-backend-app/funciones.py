@@ -19,9 +19,14 @@ import urllib.parse
 import io
 import smtplib, ssl, socket
 
+import dropbox
+from dropbox.common import PathRoot
+
+
 
 from models import ResetToken, User, Project
-from config import (SENDER_EMAIL, SENDER_PASSWORD, ENTORNO_COMPLETO)
+from config import (SENDER_EMAIL, SENDER_PASSWORD, ENTORNO_COMPLETO,
+                    AWS_REGION, DROPBOX_SECRET_NAME)
 
 URL_LOCAL = "http://127.0.0.1:8000"
 URL_WWW = "https://crmplanetpower.es"
@@ -446,11 +451,15 @@ def create_scheduler_by_project(pid,uid):
 
 def get_dropbox_access_token():
 
+    sm = boto3.client("secretsmanager", region_name=AWS_REGION)
+    resp = sm.get_secret_value(SecretId=DROPBOX_SECRET_NAME)
+    secret = json.loads(resp["SecretString"])
+
 
     # === CONFIGURA ESTOS DATOS ===
-    APP_KEY = 'gcwcrtb1njdp6zm'
-    APP_SECRET = '7r5f0uvnmfbhsz1'
-    REFRESH_TOKEN = 'sd2BXGVRNBUAAAAAAAAAASk4qlUGFPw6Z5NObZq4oEY114DUQFCxs9jkV-acFft_'
+    APP_KEY = secret["DROPBOX_APP_KEY"]
+    APP_SECRET = secret["DROPBOX_APP_SECRET"]
+    REFRESH_TOKEN =secret["DROPBOX_REFRESH_TOKEN"]
 
     # Codifica app_key:app_secret en base64
     user_pass = f"{APP_KEY}:{APP_SECRET}"
@@ -490,3 +499,23 @@ def get_dropbox_access_token():
     except pycurl.error as e:
         print("❌ Error al refrescar token:", e)
         return None
+
+
+def subir_a_dropbox(contenido, ruta):
+    token = get_dropbox_access_token()
+
+    dbx = dropbox.Dropbox(token)
+
+    account = dbx.users_get_current_account()
+
+    dbx = dbx.with_path_root(
+        PathRoot.namespace_id(account.root_info.root_namespace_id)
+    )
+
+    dbx.files_upload(
+        contenido,
+        ruta,
+        mode=dropbox.files.WriteMode.overwrite
+    )
+
+    return ruta

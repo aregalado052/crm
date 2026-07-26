@@ -4775,14 +4775,16 @@ def send_campaign_batch(cid):
 
             print(f"Enviando email SES {recipient.email} con asunto '{subject}' desde '{campaign.sender}' (reply-to: '{campaign.reply_to}')")
 
-            send_email_ses(
+            response = send_email_ses(
                 to_email=recipient.email,
                 subject=subject,
                 html=final_html,
                 sender=campaign.sender,
                 reply_to=campaign.reply_to
             )
+            print("SES response:", response)
 
+            recipient.ses_message_id = response["MessageId"]
             recipient.send_status = "sent"
             recipient.sent_at =datetime.now(timezone.utc)
             recipient.error_message = None
@@ -4977,14 +4979,16 @@ def send_campaign_batch_stream(cid, entity_kind=""):
             print("----- HTML FINAL (DEBUG) -----")
             print(final_html[:3000])  # solo los primeros 3000 caracteres para no saturar logs
 
-            send_email_ses(
+            response=send_email_ses(
                 to_email=recipient.email,
                 subject=subject,
                 html=final_html,
                 sender=campaign.sender,
                 reply_to=campaign.reply_to
             )
-
+            print("SES response:", response)
+            
+            recipient.ses_message_id = response["MessageId"]
             recipient.send_status = "sent"
             recipient.sent_at = datetime.now(timezone.utc)
             recipient.error_message = None
