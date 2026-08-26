@@ -197,11 +197,24 @@ def oferta_core(payload: dict, pdf_data: bytes | None = None):
         BD= bd if bd in ["PRODUCCION", "PRUEBAS"] else "PRODUCCION"
         print(f"💶 BD (interna): {BD}")
 
-        DROPBOX_TOKEN= get_dropbox_access_token()
-        dbx = dropbox.Dropbox(DROPBOX_TOKEN)
-        account_info = dbx.users_get_current_account()
-        print(f"Conectado a Dropbox como: {account_info.name.display_name}")
+       
 
+
+        DROPBOX_TOKEN = get_dropbox_access_token()
+        print("TOKEN OK:", bool(DROPBOX_TOKEN))
+
+        dbx = dropbox.Dropbox(DROPBOX_TOKEN)
+
+        try:
+            print("ANTES users_get_current_account")
+            account_info = dbx.users_get_current_account()
+            print("DESPUES users_get_current_account")
+            print("CUENTA:", account_info.name.display_name)
+        except Exception as e:
+            print("DROPBOX ERROR TYPE:", type(e).__name__)
+            print("DROPBOX ERROR REPR:", repr(e))
+            print("DROPBOX ERROR STR:", str(e))
+            raise
 
 
        
@@ -536,10 +549,21 @@ def proforma_core(payload: dict, pdf_data: bytes | None = None):
         BD= bd if bd in ["PRODUCCION", "PRUEBAS"] else "PRODUCCION"
         print(f"💶 BD (interna): {BD}")
 
-        DROPBOX_TOKEN= get_dropbox_access_token()
+        DROPBOX_TOKEN = get_dropbox_access_token()
+        print("TOKEN OK:", bool(DROPBOX_TOKEN))
+
         dbx = dropbox.Dropbox(DROPBOX_TOKEN)
-        account_info = dbx.users_get_current_account()
-        print(f"Conectado a Dropbox como: {account_info.name.display_name}")
+
+        try:
+            print("ANTES users_get_current_account")
+            account_info = dbx.users_get_current_account()
+            print("DESPUES users_get_current_account")
+            print("CUENTA:", account_info.name.display_name)
+        except Exception as e:
+            print("DROPBOX ERROR TYPE:", type(e).__name__)
+            print("DROPBOX ERROR REPR:", repr(e))
+            print("DROPBOX ERROR STR:", str(e))
+            raise
 
         root_namespace_id = account_info.root_info.root_namespace_id
 
@@ -999,7 +1023,7 @@ def send_email_with_proforma_pdf(pdf_data: bytes, filename: str, session_data: d
 
 
     print ("proforma SEND_EMAIL", SEND_EMAIL)
-    print("EMAIL_PASSWORD", sender_password )
+    
     if not sender_email or not sender_password:
         raise ValueError("Credenciales de correo no configuradas en variables de entorno")
 
@@ -1009,7 +1033,7 @@ def send_email_with_proforma_pdf(pdf_data: bytes, filename: str, session_data: d
     msg["To"] = session_data['email']
 
     cc_addresses = ["angel.r@planetpower.es"]
-    #cc_addresses = ["angel.r@planetpower.es", "marketing@planetpower.es"]
+    #cc_addresses = ["angel.r@planetpower.es", "alfonso@planetpower.es", "marketing@planetpower.es"]
     #cc_addresses = ["alfonso@planetpower.es", "angel.r@planetpower.es"]
     
     msg["Cc"] = ", ".join(cc_addresses)
@@ -1137,7 +1161,7 @@ def send_renting_email_with_proforma_pdf(pdf_data: bytes, filename: str, session
 
 
     print ("RENTING SEND_EMAIL", SEND_EMAIL)
-    print("EMAIL_PASSWORD", sender_password )
+    
     if not sender_email or not sender_password:
         raise ValueError("Credenciales de correo no configuradas en variables de entorno")
 
@@ -1147,7 +1171,7 @@ def send_renting_email_with_proforma_pdf(pdf_data: bytes, filename: str, session
     msg["To"] = session_data['renting_email']
 
     cc_addresses = ["angel.r@planetpower.es"]
-    #cc_addresses = ["angel.r@planetpower.es", "marketing@planetpower.es"]
+    #cc_addresses = ["angel.r@planetpower.es", "alfonso@planetpower.es", "marketing@planetpower.es"]
     #cc_addresses = ["alfonso@planetpower.es", "angel.r@planetpower.es"]
     
     msg["Cc"] = ", ".join(cc_addresses)
@@ -1288,7 +1312,7 @@ def send_email_with_pdf(pdf_data: bytes, filename: str, session_id: str, url:str
     #templates_dir = Path(__file__).parent / "templates"
 
     print ("send email SEND_EMAIL", SEND_EMAIL)
-    print("EMAIL_PASSWORD", sender_password )
+    
     if not sender_email or not sender_password:
         raise ValueError("Credenciales de correo no configuradas en variables de entorno")
 
@@ -1297,7 +1321,7 @@ def send_email_with_pdf(pdf_data: bytes, filename: str, session_id: str, url:str
     msg["From"] = sender_email
     msg["To"] = session_data['email']
     cc_addresses = ["angel.r@planetpower.es"]
-    #cc_addresses = ["angel.r@planetpower.es", "marketing@planetpower.es"]
+    #cc_addresses = ["angel.r@planetpower.es", "alfonso@planetpower.es", "marketing@planetpower.es"]
     #cc_addresses = ["alfonso@planetpower.es", "angel.r@planetpower.es"]
     msg["Cc"] = ", ".join(cc_addresses)
 
@@ -1456,7 +1480,7 @@ def send_wellcome_email ( session_id: str, connection):
 
 
     print ("wellcome SEND_EMAIL", SEND_EMAIL)
-    print("EMAIL_PASSWORD", sender_password )
+    
     if not sender_email or not sender_password:
         raise ValueError("Credenciales de correo no configuradas en variables de entorno")
 
@@ -1466,7 +1490,7 @@ def send_wellcome_email ( session_id: str, connection):
     msg["To"] = session_data['email']
 
     cc_addresses = ["angel.r@planetpower.es"]
-    #cc_addresses = ["angel.r@planetpower.es", "marketing@planetpower.es"]
+    #cc_addresses = ["angel.r@planetpower.es", "alfonso@planetpower.es", "marketing@planetpower.es"]
     #cc_addresses = ["alfonso@planetpower.es", "angel.r@planetpower.es"]
     msg["Cc"] = ", ".join(cc_addresses)
 
@@ -1591,8 +1615,8 @@ def get_dropbox_access_token():
         c.close()
         response = response_buffer.getvalue().decode('utf-8')
         data = json.loads(response)
-        print("✅ Nuevo access_token:")
-        print(data)
+        
+        
         return data.get('access_token')
         
     except pycurl.error as e:

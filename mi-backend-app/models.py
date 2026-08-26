@@ -706,3 +706,151 @@ class ProspectTargetItem(db.Model):
             "ProspectsIA",
             back_populates="source"
         )
+
+class Pais(db.Model):
+    __tablename__ = "pais"
+
+    codigo = db.Column(
+        db.Integer,
+        primary_key=True,
+        autoincrement=True
+    )
+
+    codigo_pais = db.Column(
+        db.CHAR(2),
+        nullable=False
+    )
+
+    pais_es = db.Column(
+        db.String(100),
+        nullable=False
+    )
+
+    pais_en = db.Column(
+        db.String(100),
+        nullable=True
+    )
+
+    pais_fr = db.Column(
+        db.String(100),
+        nullable=True
+    )
+
+    pais_it = db.Column(
+        db.String(100),
+        nullable=True
+    )
+
+    zona = db.Column(
+        db.String(100),
+        nullable=False
+    )
+
+    mercado = db.Column(
+        db.String(20),
+        nullable=False,
+        server_default="General"
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "codigo_pais",
+            name="unique_codigo_pais"
+        ),
+        db.CheckConstraint(
+            "REGEXP_LIKE(codigo_pais, '^[A-Z]{2}$')",
+            name="pais_chk_1"
+        ),
+        {
+            "mysql_engine": "InnoDB",
+            "mysql_charset": "utf8mb4",
+            "mysql_collate": "utf8mb4_unicode_ci"
+        }
+    )
+
+    def __repr__(self):
+        return (
+            f"<Pais codigo={self.codigo} "
+            f"codigo_pais='{self.codigo_pais}' "
+            f"pais_es='{self.pais_es}'>"
+        )
+
+
+class EmailGenericoCategoria(db.Model):
+    __tablename__ = "email_generico_categoria"
+
+    codigo = db.Column(
+        db.Integer,
+        primary_key=True,
+        autoincrement=True
+    )
+
+    nombre = db.Column(
+        db.String(100),
+        nullable=False,
+        unique=True
+    )
+
+    terminos = db.relationship(
+        "EmailGenericoTermino",
+        back_populates="categoria",
+        cascade="all, delete-orphan",
+        lazy="select"
+    )
+
+    def __repr__(self):
+        return (
+            f"<EmailGenericoCategoria "
+            f"codigo={self.codigo} "
+            f"nombre='{self.nombre}'>"
+        )
+
+class EmailGenericoTermino(db.Model):
+    __tablename__ = "email_generico_termino"
+
+    codigo = db.Column(
+        db.Integer,
+        primary_key=True,
+        autoincrement=True
+    )
+
+    categoria_id = db.Column(
+        db.Integer,
+        db.ForeignKey(
+            "email_generico_categoria.codigo",
+            ondelete="CASCADE",
+            onupdate="CASCADE"
+        ),
+        nullable=False,
+        index=True
+    )
+
+    termino = db.Column(
+        db.String(100),
+        nullable=False
+    )
+
+    categoria = db.relationship(
+        "EmailGenericoCategoria",
+        back_populates="terminos"
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "categoria_id",
+            "termino",
+            name="unique_categoria_termino"
+        ),
+        {
+            "mysql_engine": "InnoDB",
+            "mysql_charset": "utf8mb4",
+            "mysql_collate": "utf8mb4_unicode_ci"
+        }
+    )
+
+    def __repr__(self):
+        return (
+            f"<EmailGenericoTermino "
+            f"categoria_id={self.categoria_id} "
+            f"termino='{self.termino}'>"
+        )

@@ -18,9 +18,18 @@ import base64
 import urllib.parse
 import io
 import smtplib, ssl, socket
+from unidecode import unidecode
 
 import dropbox
 from dropbox.common import PathRoot
+import pandas as pd
+
+from email_validator import (
+    validate_email,
+    EmailNotValidError,
+)
+
+
 
 
 
@@ -519,3 +528,89 @@ def subir_a_dropbox(contenido, ruta):
     )
 
     return ruta
+
+def normalize_country_key(value):
+    value = clean_text(value)
+
+    if not value:
+        return None
+
+    return " ".join(
+        unidecode(value)
+        .strip()
+        .casefold()
+        .split()
+    )
+
+
+def load_country_lookup(cursor):
+    cursor.execute("""
+        SELECT
+            codigo_pais,
+            pais_es,
+            pais_en,
+            pais_fr,
+            pais_it
+        FROM pais
+    """)
+
+    country_lookup = {}
+
+    for codigo_pais, pais_es, pais_en, pais_fr, pais_it in cursor.fetchall():
+        if not pais_es:
+            continue
+
+        for country_value in (
+            codigo_pais,
+            pais_es,
+            pais_en,
+            pais_fr,
+            pais_it
+        ):
+            key = normalize_country_key(country_value)
+
+            if key:
+                country_lookup[key] = pais_es
+
+    return country_lookup
+
+def clean_text(value):
+    if pd.isna(value):
+        return None
+    text = str(value).strip()
+    if not text or text.lower() == "nan":
+        return None
+    return text
+
+
+def clean_int(value):
+    if pd.isna(value):
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def validar_email_importacion(valor):
+    email = clean_text(valor)
+
+    if not email:
+        return None, "Email vacío"
+
+    email = email.strip().lower()
+
+    if email.startswith("mailto:"):
+        return None, "Contiene el prefijo mailto:"
+
+    try:
+        resultado = validate_email(
+            email,
+            check_deliverability=False,
+            allow_smtputf8=False,
+        )
+
+        return resultado.normalized.lower(), None
+
+    except EmailNotValidError as exc:
+        return None, str(exc)

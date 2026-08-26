@@ -1,6 +1,6 @@
 page 50193 "Lambda Setup"
 {
-    PageType = Card;
+    PageType = List;
     SourceTable = "Lambda Setup";
     ApplicationArea = All;
     UsageCategory = Administration;
@@ -10,34 +10,43 @@ page 50193 "Lambda Setup"
     {
         area(content)
         {
-            group(General)
+            repeater(General)
             {
-                field(Enabled; Rec."Enabled")
+                field("Primary Key"; Rec."Primary Key")
                 {
                     ApplicationArea = All;
                 }
-                field(EndpointURL; Rec."Endpoint URL")
+
+                field(Description; Rec.Description)
                 {
                     ApplicationArea = All;
                 }
-                field(APIKey; Rec."API Key")
+
+                field(Enabled; Rec.Enabled)
                 {
                     ApplicationArea = All;
                 }
-                field(BearerToken; Rec."Bearer Token")
+
+                field("Endpoint URL"; Rec."Endpoint URL")
                 {
                     ApplicationArea = All;
+                }
+
+                field("API Key"; Rec."API Key")
+                {
+                    ApplicationArea = All;
+                }
+
+                field("Bearer Token"; Rec."Bearer Token")
+                {
+                    ApplicationArea = All;
+                }
+                field(DatabaseName; Rec."Database Name")
+                {
+                    ApplicationArea = All;
+                    Caption = 'Base de datos';
                 }
             }
         }
     }
-    trigger OnOpenPage()
-    begin
-        // Garantiza que exista el registro único SETUP
-        if not Rec.Get('SETUP')then begin
-            Rec.Init();
-            Rec."Primary Key":='SETUP';
-            Rec.Insert();
-        end;
-    end;
 }

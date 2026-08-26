@@ -2,7 +2,7 @@
   "id": "f4289755-28d4-49bd-ac16-afd378505d45",
   "name": "SALESQUOTE_BD",
   "publisher": "AREGALADO",
-  "version": "1.0.0.9",
+  "version": "1.0.0.11",
   "runtime": "12.0",
   "target": "Cloud",
   "application": "26.0.0.0",
@@ -13,9 +13,8 @@
     "includeSourceInSymbolFile": true,
     "applyToDevExtension": false
   },
-  "features": [
-    "NOIMPLICITWITH"
-  ],
+
+ 
   "dependencies": [
     {
       "id": "16d404c0-c1b7-447c-b405-277f5a8818e5",
@@ -49,7 +48,7 @@
     }
   ],
   "build": {
-    "by": "AL Language Extension,15.2.1630495",
+    "by": "AL Language Extension,15.2.1630495"
     
   }
 }

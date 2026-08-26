@@ -26,6 +26,7 @@ import html as html_lib
 import pymysql
 
 
+
 from urllib.parse import urlencode
 
 from flask import current_app as application
@@ -4632,8 +4633,8 @@ def build_final_email_html(
         lower_html = newsletter_html.lower()
 
     cta_html = ""
-    if entity_kind == "prospect" and oferta_url:
-        cta_html = build_oferta_cta(oferta_url=oferta_url, idioma=lang)
+    #if entity_kind == "prospect" and oferta_url:
+    #    cta_html = build_oferta_cta(oferta_url=oferta_url, idioma=lang)
 
     footer = build_email_footer(
         lang=lang,
@@ -5096,3 +5097,5 @@ def guardar_historico_campaign(cid, entity_kind=""):
     result = db.session.execute(db.text(sql), params)
     db.session.commit()
     return result.rowcount
+
+

@@ -20,6 +20,15 @@ from sqlalchemy import func
 from types import SimpleNamespace
 from unidecode import unidecode
 import requests
+import time
+from collections import Counter
+from sqlalchemy.orm import selectinload
+
+
+
+
+
+
 
 from itsdangerous import URLSafeTimedSerializer
 
@@ -27,6 +36,9 @@ from openpyxl.styles import Font, PatternFill
 
 
 import pandas as pd
+
+
+
 
 
 
@@ -42,13 +54,18 @@ import zipfile
 from bs4 import BeautifulSoup
 
 from flask import (flash, jsonify, make_response, redirect, render_template,
-                   request, session, url_for)
+                   request, session, url_for, abort)
 from flask_babel import Babel, _
 from flask_jwt_extended import (create_access_token, get_jwt_identity,
                                 jwt_required, set_access_cookies)
-from sqlalchemy import and_, asc, case
+
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import joinedload
+
+
+
+
+from sqlalchemy import and_, case, func, or_,asc
 
 
 
@@ -59,11 +76,11 @@ from app_init import bcrypt, create_app, db
 from creacion_BD import crear_base_si_no_existe
 from funciones import (create_reset_token,lead_exists_for_prospect,
                        send_new_password, update_user_password,
-                       validate_reset_token, get_dropbox_access_token,subir_a_dropbox)
+                       validate_reset_token, get_dropbox_access_token,subir_a_dropbox,
+                       clean_text,clean_int,load_country_lookup,normalize_country_key,validar_email_importacion)
 
 from models import (db, Campaign, Newsletter, User,CampaignRecipient, LeadForm, LeadTarget,LeadTargetItem,LeadCampaignHistory,ProspectsIA,  
-                            ProspectTarget, ProspectTargetItem)
-
+                            ProspectTarget, ProspectTargetItem,Pais,EmailGenericoCategoria,EmailGenericoTermino)
 
 from config import (BD ,EMAIL_USER,EMAIL_PASSWORD,URL_CONTACTO ,URL_OFERTAS,URL_ACTUALIZAR_CONTACTO,
                      API_KEY,ENVIRONMENT,SEND_EMAIL,SEND_WELLCOME_EMAIL,URL_PROFORMAS,URL_FORM_CONTACTO,
@@ -1150,6 +1167,18 @@ def campana_rebotes():
     if not campaign:
         abort(404)
 
+    email_suppressed_expr = case(
+        (
+            CampaignRecipient.entity_kind == "prospect",
+            func.coalesce(ProspectsIA.email_suppressed, False)
+        ),
+        (
+            CampaignRecipient.entity_kind == "lead",
+            func.coalesce(LeadForm.email_suppressed, False)
+        ),
+        else_=False
+    ).label("email_suppressed")
+
     rows = (
         db.session.query(
             CampaignRecipient.id.label("recipient_id"),
@@ -1171,6 +1200,22 @@ def campana_rebotes():
 
             CampaignRecipient.error_message,
             CampaignRecipient.ses_message_id,
+
+            email_suppressed_expr,
+        )
+        .outerjoin(
+            ProspectsIA,
+            and_(
+                CampaignRecipient.entity_kind == "prospect",
+                CampaignRecipient.entity_id == ProspectsIA.id
+            )
+        )
+        .outerjoin(
+            LeadForm,
+            and_(
+                CampaignRecipient.entity_kind == "lead",
+                CampaignRecipient.entity_id == LeadForm.id
+            )
         )
         .filter(
             CampaignRecipient.campaign_id == campaign_id,
@@ -1204,6 +1249,7 @@ def campana_rebotes():
         cid=campaign_id,
         entity_kind=entity_kind
     )
+
     return render_template(
         "campana_rebotes.html",
         campaign=campaign,
@@ -1215,6 +1261,7 @@ def campana_rebotes():
         undetermined_bounces=undetermined_bounces,
         back_url=back_url
     )
+
 
 @application.route('/contactoFacturaProforma', methods=['GET'])
 def contactoFacturaProforma():
@@ -2003,7 +2050,7 @@ def lead_manage():
 
     try:
         if request.method == "POST":
-            from types import SimpleNamespace
+            
             
             try:
                 # Asegura parseo JSON
@@ -2027,6 +2074,8 @@ def lead_manage():
                 probabilidad_exito = None
                 if prob_exito_raw not in (None, ""):
                     probabilidad_exito = int(prob_exito_raw)  # lanza ValueError si no es número
+
+                
 
                 # Valida mínimos
                 if not id_:
@@ -3869,6 +3918,17 @@ def campaigns_history():
         func.max(LeadCampaignHistory.sent_at).desc()
     ).all()
 
+
+    rows = query.order_by(
+        func.max(LeadCampaignHistory.sent_at).desc()
+    ).all()
+
+    print("TOTAL CAMPAÑAS:", len(rows))
+
+    for row in rows:
+        if row.campaign_id == 29:
+            print("CAMPAÑA 29 ENCONTRADA:", row)
+
     return render_template(
         "campaigns_history.html",
         rows=rows,
@@ -4203,7 +4263,61 @@ def parse_ses_datetime(value):
         return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
+def actualizar_estado_rebote_contacto(
+    contacto,
+    bounce_type,
+    bounce_subtype,
+    bounce_timestamp,
+    diagnostic
+):
+    """
+    Actualiza la supresión de correo del LeadForm o ProspectsIA
+    asociado a un rebote de Amazon SES.
 
+    Los rebotes permanentes bloquean futuros envíos.
+    Los rebotes transitorios, como MailboxFull, no bloquean
+    definitivamente el contacto.
+
+    El commit se realiza posteriormente en ses_notifications().
+    """
+
+    if contacto is None:
+        return
+
+    bounce_type = (bounce_type or "").strip()
+    bounce_subtype = (bounce_subtype or "").strip()
+    diagnostic = (diagnostic or "").strip()
+
+    # No bloquear por errores temporales:
+    # MailboxFull, MessageTooLarge, ContentRejected, etc.
+    if bounce_type != "Permanent":
+        application.logger.info(
+            "Rebote transitorio: contacto=%s "
+            "type=%s subtype=%s",
+            getattr(contacto, "id", None),
+            bounce_type,
+            bounce_subtype
+        )
+        return
+
+    motivo = "SES permanent bounce"
+
+    if bounce_subtype:
+        motivo += f": {bounce_subtype}"
+
+    if diagnostic:
+        motivo += f" - {diagnostic}"
+
+    contacto.email_suppressed = True
+    contacto.email_suppressed_at = bounce_timestamp
+    contacto.email_suppressed_reason = motivo[:255]
+
+    application.logger.info(
+        "Contacto suprimido por rebote permanente: "
+        "contacto=%s subtype=%s",
+        getattr(contacto, "id", None),
+        bounce_subtype
+    )
 
 
 @application.route("/aws/ses/notifications", methods=["POST"])
@@ -4329,8 +4443,39 @@ def ses_notifications():
         recipient.delivered_at = parse_ses_datetime(
             delivery.get("timestamp")
         )
-
         recipient.send_status = "delivered"
+
+        contacto = None
+
+        if (
+            recipient.entity_kind == "lead"
+            and recipient.entity_id
+        ):
+            contacto = db.session.get(
+                LeadForm,
+                recipient.entity_id
+            )
+
+        elif (
+            recipient.entity_kind == "prospect"
+            and recipient.entity_id
+        ):
+            contacto = db.session.get(
+                ProspectsIA,
+                recipient.entity_id
+            )
+
+        if contacto:
+            contacto.bounce_count = 0
+            contacto.last_bounce_at = None
+            contacto.last_bounce_error = None
+
+            application.logger.info(
+                "Contador de rebotes reiniciado tras entrega: "
+                "contacto=%s entity_kind=%s",
+                getattr(contacto, "id", None),
+                recipient.entity_kind
+            )
 
     elif notification_type == "Complaint":
         complaint = message.get("complaint", {})
@@ -4535,37 +4680,30 @@ def campaign_review(cid):
         entity_kind=entity_kind
     )
 
-@application.route("/campanas/<int:cid>/borrar", methods=["POST"])
-def campaign_delete(cid):
-    item = Campaign.query.get_or_404(cid)
-    entity_kind = request.args.get("entity_kind", "").strip()
 
-    try:
-        db.session.delete(item)
-        db.session.commit()
-        flash("Campaña borrada correctamente", "success")
-    except Exception as e:
-        db.session.rollback()
-        print("[ERROR] borrando campaña:", e)
-        flash(f"Error al borrar la campaña: {e}", "error")
-
-    if entity_kind == "lead":
-        return redirect(url_for("campanas_leads"))
-    elif entity_kind == "prospect":
-        return redirect(url_for("campanas_prospects"))
-    else:
-        return redirect(url_for("campanas_leads"))
-
-
-
-@application.route("/campanas/<int:cid>/generar_target/<int:target_id>")
+@application.route(
+    "/campanas/<int:cid>/generar_target/<int:target_id>"
+)
 def campaign_generate_target(cid, target_id):
     conn = None
-    entity_kind = request.args.get("entity_kind", "").strip()
+
+    entity_kind = request.args.get(
+        "entity_kind",
+        ""
+    ).strip().lower()
+
+    if entity_kind not in {"lead", "prospect"}:
+        flash("Tipo de entidad inválido.", "error")
+        return redirect(url_for("campanas_leads"))
 
     try:
         creds = get_db_credentials("secretoBC/Mysql")
-        dbname = "bc_pruebas" if (BD == "PRUEBAS") else creds["dbname"]
+
+        dbname = (
+            "bc_pruebas"
+            if BD == "PRUEBAS"
+            else creds["dbname"]
+        )
 
         conn = pymysql.connect(
             host=creds["host"],
@@ -4573,9 +4711,12 @@ def campaign_generate_target(cid, target_id):
             password=creds["password"],
             database=dbname,
             port=int(creds.get("port", 3306)),
+            autocommit=False,
             cursorclass=pymysql.cursors.DictCursor
         )
 
+        # Borra únicamente los destinatarios del tipo solicitado.
+        # Este DELETE solo se ejecutará si no existe actividad previa.
         sql_delete = """
             DELETE FROM campaign_recipients
             WHERE campaign_id = %s
@@ -4612,28 +4753,55 @@ def campaign_generate_target(cid, target_id):
                     SHA2(UUID(), 256),
                     UUID(),
                     NOW()
-                FROM lead_target_items lti
-                INNER JOIN lead_targets lt
+                FROM lead_target_items AS lti
+
+                INNER JOIN lead_targets AS lt
                     ON lt.id = lti.target_id
-                INNER JOIN lead_forms lf
+
+                INNER JOIN lead_forms AS lf
                     ON lf.id = lti.lead_id
+
                 INNER JOIN (
                     SELECT
                         MIN(lf2.id) AS selected_id
-                    FROM lead_target_items lti2
-                    INNER JOIN lead_forms lf2
+                    FROM lead_target_items AS lti2
+
+                    INNER JOIN lead_forms AS lf2
                         ON lf2.id = lti2.lead_id
+
                     WHERE lti2.target_id = %s
+
                       AND lf2.email IS NOT NULL
                       AND TRIM(lf2.email) <> ''
-                      AND (lf2.unsubscribed IS NULL OR lf2.unsubscribed = 0 OR lf2.unsubscribed = '0')
+
+                      AND COALESCE(
+                          lf2.unsubscribed,
+                          0
+                      ) = 0
+
+                      AND COALESCE(
+                          lf2.email_suppressed,
+                          0
+                      ) = 0
+
                     GROUP BY LOWER(TRIM(lf2.email))
-                ) dedup
+                ) AS dedup
                     ON dedup.selected_id = lf.id
+
                 WHERE lti.target_id = %s
+
+                  AND COALESCE(
+                      lf.unsubscribed,
+                      0
+                  ) = 0
+
+                  AND COALESCE(
+                      lf.email_suppressed,
+                      0
+                  ) = 0
             """
 
-        elif entity_kind == "prospect":
+        else:
             sql_insert = """
                 INSERT INTO campaign_recipients
                 (
@@ -4663,51 +4831,169 @@ def campaign_generate_target(cid, target_id):
                     SHA2(UUID(), 256),
                     UUID(),
                     NOW()
-                FROM prospect_target_items pti
-                INNER JOIN prospect_targets pt
+                FROM prospect_target_items AS pti
+
+                INNER JOIN prospect_targets AS pt
                     ON pt.id = pti.target_id
-                INNER JOIN prospects_IA pf
+
+                INNER JOIN prospects_IA AS pf
                     ON pf.id = pti.prospect_id
+
                 INNER JOIN (
                     SELECT
                         MIN(pf2.id) AS selected_id
-                    FROM prospect_target_items pti2
-                    INNER JOIN prospects_IA pf2
+                    FROM prospect_target_items AS pti2
+
+                    INNER JOIN prospects_IA AS pf2
                         ON pf2.id = pti2.prospect_id
+
                     WHERE pti2.target_id = %s
-                    AND pf2.email IS NOT NULL
-                    AND TRIM(pf2.email) <> ''
-                    AND (pf2.unsubscribed IS NULL OR pf2.unsubscribed = 0 OR pf2.unsubscribed = '0')
+
+                      AND pf2.email IS NOT NULL
+                      AND TRIM(pf2.email) <> ''
+
+                      AND COALESCE(
+                          pf2.unsubscribed,
+                          0
+                      ) = 0
+
+                      AND COALESCE(
+                          pf2.email_suppressed,
+                          0
+                      ) = 0
+
                     GROUP BY LOWER(TRIM(pf2.email))
-                ) dedup
+                ) AS dedup
                     ON dedup.selected_id = pf.id
+
                 WHERE pti.target_id = %s
+
+                  AND COALESCE(
+                      pf.unsubscribed,
+                      0
+                  ) = 0
+
+                  AND COALESCE(
+                      pf.email_suppressed,
+                      0
+                  ) = 0
             """
-        else:
-            flash("Tipo de entidad inválido", "error")
-            return redirect(url_for("campanas_leads"))
 
         with conn.cursor() as cur:
-            cur.execute(sql_delete, (cid, entity_kind))
+            # Bloquea la campaña durante la regeneración para evitar que
+            # otro proceso la modifique simultáneamente.
+            cur.execute(
+                """
+                SELECT id
+                FROM campaigns
+                WHERE id = %s
+                FOR UPDATE
+                """,
+                (cid,)
+            )
+
+            campaign = cur.fetchone()
+
+            if not campaign:
+                conn.rollback()
+
+                flash(
+                    "La campaña indicada no existe.",
+                    "error"
+                )
+
+                if entity_kind == "lead":
+                    return redirect(
+                        url_for("campanas_leads")
+                    )
+
+                return redirect(
+                    url_for("campanas_prospects")
+                )
+
+            # Impide borrar destinatarios si ya existe cualquier
+            # actividad de envío o seguimiento.
+            cur.execute(
+                """
+                SELECT COUNT(*) AS total
+                FROM campaign_recipients
+                WHERE campaign_id = %s
+                  AND entity_kind = %s
+                  AND (
+                      sent_at IS NOT NULL
+                      OR delivered_at IS NOT NULL
+                      OR opened_at IS NOT NULL
+                      OR clicked_at IS NOT NULL
+                      OR bounced_at IS NOT NULL
+                      OR complained_at IS NOT NULL
+                  )
+                """,
+                (cid, entity_kind)
+            )
+
+            result = cur.fetchone()
+            recipients_with_activity = result["total"] or 0
+
+            if recipients_with_activity > 0:
+                conn.rollback()
+
+                flash(
+                    "No se puede regenerar el target porque "
+                    f"{recipients_with_activity} destinatarios ya "
+                    "tienen envíos o eventos registrados.",
+                    "error"
+                )
+
+                if entity_kind == "lead":
+                    return redirect(
+                        url_for("campanas_leads")
+                    )
+
+                return redirect(
+                    url_for("campanas_prospects")
+                )
+
+            # No existe actividad: se pueden reemplazar los
+            # destinatarios sin perder estadísticas.
+            cur.execute(
+                sql_delete,
+                (cid, entity_kind)
+            )
+
             deleted_rows = cur.rowcount
 
-            cur.execute(sql_insert, (cid, target_id, target_id))
+            cur.execute(
+                sql_insert,
+                (cid, target_id, target_id)
+            )
+
             inserted_rows = cur.rowcount
 
         conn.commit()
 
         flash(
-            f"Target regenerado correctamente. "
+            "Target regenerado correctamente. "
             f"Destinatarios anteriores borrados: {deleted_rows}. "
-            f"Nuevos insertados: {inserted_rows}.",
+            f"Nuevos destinatarios insertados: {inserted_rows}.",
             "success"
         )
 
-    except Exception as e:
+    except Exception as exc:
         if conn:
             conn.rollback()
-        print(f"Error al generar target para campaña {cid}, target {target_id}: {e}")
-        flash("Error al generar target: " + str(e), "error")
+
+        application.logger.exception(
+            "Error al generar target. "
+            "campaign_id=%s target_id=%s entity_kind=%s",
+            cid,
+            target_id,
+            entity_kind
+        )
+
+        flash(
+            f"Error al generar el target: {str(exc)}",
+            "error"
+        )
 
     finally:
         if conn:
@@ -4715,9 +5001,31 @@ def campaign_generate_target(cid, target_id):
 
     if entity_kind == "lead":
         return redirect(url_for("campanas_leads"))
+
+    return redirect(url_for("campanas_prospects"))
+
+
+@application.route("/campanas/<int:cid>/borrar", methods=["POST"])
+def campaign_delete(cid):
+    item = Campaign.query.get_or_404(cid)
+    entity_kind = request.args.get("entity_kind", "").strip()
+
+    try:
+        db.session.delete(item)
+        db.session.commit()
+        flash("Campaña borrada correctamente", "success")
+    except Exception as e:
+        db.session.rollback()
+        print("[ERROR] borrando campaña:", e)
+        flash(f"Error al borrar la campaña: {e}", "error")
+
+    if entity_kind == "lead":
+        return redirect(url_for("campanas_leads"))
     elif entity_kind == "prospect":
         return redirect(url_for("campanas_prospects"))
-    return redirect(url_for("campanas_leads"))
+    else:
+        return redirect(url_for("campanas_leads"))
+
 
 
 @application.route("/campanas/<int:cid>/targets")
@@ -5164,6 +5472,7 @@ def unsubscribe():
 @application.route("/unsubscribe", methods=["POST"])
 def unsubscribe_submit():
     print("Formulario de baja recibido con datos:", request.form)
+
     token = request.form.get("token")
     print("Token recibido para procesar baja:", token)
 
@@ -5172,19 +5481,32 @@ def unsubscribe_submit():
             "unsubscribe_en_OK.html",
             preview=True
         )
+
     recipient = CampaignRecipient.query.filter_by(
         unsubscribe_token=token
     ).first()
 
-    lang = recipient.idioma if recipient else "es"  
     if not recipient:
         return "Token inválido", 404
 
-    # marcar baja global por email o lead
-    lead = LeadForm.query.filter_by(email=recipient.email).first()
+    lang = recipient.idioma or "es"
+
+    # Marcar baja global por email
+    lead = LeadForm.query.filter_by(
+        email=recipient.email
+    ).first()
+
     if lead:
         lead.unsubscribed = True
         lead.unsubscribed_at = datetime.now(timezone.utc)
+
+    prospect = ProspectsIA.query.filter_by(
+        email=recipient.email
+    ).first()
+
+    if prospect:
+        prospect.unsubscribed = True
+        prospect.unsubscribed_at = datetime.now(timezone.utc)
 
     db.session.commit()
 
@@ -5195,10 +5517,8 @@ def unsubscribe_submit():
 
     return render_template(
         template,
-        preview=False,
-        
-        )
-
+        preview=False
+    )
 @application.route("/email/open")
 def email_open():
     tracking_id = request.args.get("id", "").strip()
@@ -5284,10 +5604,17 @@ def campaign_send_stream(cid):
 
 @application.route("/campanas/<int:cid>/stats")
 def campaign_stats(cid):
-    campaign = Campaign.query.get(cid)
+    campaign = db.session.get(Campaign, cid)
 
+    # Permite consultar campañas que ya no estén en campaigns,
+    # pero que todavía tengan información histórica.
     if not campaign:
-        hist = LeadCampaignHistory.query.filter_by(campaign_id=cid).first()
+        hist = (
+            LeadCampaignHistory.query
+            .filter_by(campaign_id=cid)
+            .first()
+        )
+
         if not hist:
             abort(404)
 
@@ -5297,80 +5624,219 @@ def campaign_stats(cid):
             campaign_name=hist.campaign_name,
             subject_es=None,
             subject_en=None,
-            idioma=None
+            idioma=None,
         )
 
-    entity_kind = request.args.get("entity_kind", "").strip()
+    entity_kind = request.args.get(
+        "entity_kind",
+        "",
+    ).strip()
+
+    # ---------------------------------------------------------
+    # Estadísticas generales
+    # ---------------------------------------------------------
 
     stats_query = db.session.query(
-        func.count(CampaignRecipient.id).label("total"),
-        func.sum(func.if_(CampaignRecipient.send_status == "pending", 1, 0)).label("pending"),
-        func.sum(func.if_(CampaignRecipient.sent_at.isnot(None), 1, 0)).label("sent"),
-        func.sum(func.if_(CampaignRecipient.delivered_at.isnot(None), 1, 0)).label("delivered"),
-        func.sum(func.if_(CampaignRecipient.opened_at.isnot(None), 1, 0)).label("opened"),
-        func.sum(func.if_(CampaignRecipient.clicked_at.isnot(None), 1, 0)).label("clicked"),
-        func.sum(func.if_(CampaignRecipient.bounced_at.isnot(None), 1, 0)).label("bounced"),
-        func.sum(func.if_(CampaignRecipient.complained_at.isnot(None), 1, 0)).label("complained"),
-        func.sum(func.if_(CampaignRecipient.send_status == "error", 1, 0)).label("errors"),
-        func.coalesce(func.sum(CampaignRecipient.click_count), 0).label("total_clicks")
+        func.count(
+            CampaignRecipient.id
+        ).label("total"),
+
+        func.sum(
+            func.if_(
+                CampaignRecipient.send_status == "pending",
+                1,
+                0,
+            )
+        ).label("pending"),
+
+        # Se considera enviado si tiene fecha de envío.
+        func.sum(
+            func.if_(
+                CampaignRecipient.sent_at.isnot(None),
+                1,
+                0,
+            )
+        ).label("sent"),
+
+        # Las métricas de interacción se calculan por sus fechas,
+        # no por send_status.
+        func.sum(
+            func.if_(
+                CampaignRecipient.delivered_at.isnot(None),
+                1,
+                0,
+            )
+        ).label("delivered"),
+
+        func.sum(
+            func.if_(
+                CampaignRecipient.opened_at.isnot(None),
+                1,
+                0,
+            )
+        ).label("opened"),
+
+        func.sum(
+            func.if_(
+                CampaignRecipient.clicked_at.isnot(None),
+                1,
+                0,
+            )
+        ).label("clicked"),
+
+        # Todos los destinatarios cuyo estado final es bounced.
+        func.sum(
+            func.if_(
+                CampaignRecipient.send_status == "bounced",
+                1,
+                0,
+            )
+        ).label("bounced"),
+
+        # Rebotes permanentes confirmados por SES.
+        func.sum(
+            func.if_(
+                and_(
+                    CampaignRecipient.send_status == "bounced",
+                    CampaignRecipient.bounce_type == "Permanent",
+                ),
+                1,
+                0,
+            )
+        ).label("permanent_bounces"),
+
+        # Rebotes sin tipo o que no sean permanentes.
+        func.sum(
+            func.if_(
+                and_(
+                    CampaignRecipient.send_status == "bounced",
+                    or_(
+                        CampaignRecipient.bounce_type.is_(None),
+                        CampaignRecipient.bounce_type != "Permanent",
+                    ),
+                ),
+                1,
+                0,
+            )
+        ).label("transient_bounces"),
+
+        func.sum(
+            func.if_(
+                or_(
+                    CampaignRecipient.complained_at.isnot(None),
+                    CampaignRecipient.send_status == "complained",
+                ),
+                1,
+                0,
+            )
+        ).label("complained"),
+
+        func.sum(
+            func.if_(
+                CampaignRecipient.send_status == "error",
+                1,
+                0,
+            )
+        ).label("errors"),
+
+        func.coalesce(
+            func.sum(CampaignRecipient.click_count),
+            0,
+        ).label("total_clicks"),
     ).filter(
         CampaignRecipient.campaign_id == cid
     )
-    
 
     if entity_kind:
-        stats_query = stats_query.filter(CampaignRecipient.entity_kind == entity_kind)
+        stats_query = stats_query.filter(
+            CampaignRecipient.entity_kind == entity_kind
+        )
 
     stats = stats_query.first()
 
+    # ---------------------------------------------------------
+    # Bajas
+    # ---------------------------------------------------------
+
     if entity_kind == "lead":
         unsubscribed = (
-            db.session.query(func.count(CampaignRecipient.id))
-            .join(LeadForm, CampaignRecipient.entity_id == LeadForm.id)
+            db.session.query(
+                func.count(CampaignRecipient.id)
+            )
+            .join(
+                LeadForm,
+                CampaignRecipient.entity_id == LeadForm.id,
+            )
             .filter(
                 CampaignRecipient.campaign_id == cid,
                 CampaignRecipient.entity_kind == "lead",
-                LeadForm.unsubscribed == 1
+                LeadForm.unsubscribed.is_(True),
             )
-            .scalar() or 0
+            .scalar()
+            or 0
         )
 
     elif entity_kind == "prospect":
         unsubscribed = (
-            db.session.query(func.count(CampaignRecipient.id))
-            .join(ProspectsIA, CampaignRecipient.entity_id == ProspectsIA.id)
+            db.session.query(
+                func.count(CampaignRecipient.id)
+            )
+            .join(
+                ProspectsIA,
+                CampaignRecipient.entity_id == ProspectsIA.id,
+            )
             .filter(
                 CampaignRecipient.campaign_id == cid,
                 CampaignRecipient.entity_kind == "prospect",
-                ProspectsIA.unsubscribed == 1
+                ProspectsIA.unsubscribed.is_(True),
             )
-            .scalar() or 0
+            .scalar()
+            or 0
         )
 
     else:
         lead_unsubscribed = (
-            db.session.query(func.count(CampaignRecipient.id))
-            .join(LeadForm, CampaignRecipient.entity_id == LeadForm.id)
+            db.session.query(
+                func.count(CampaignRecipient.id)
+            )
+            .join(
+                LeadForm,
+                CampaignRecipient.entity_id == LeadForm.id,
+            )
             .filter(
                 CampaignRecipient.campaign_id == cid,
                 CampaignRecipient.entity_kind == "lead",
-                LeadForm.unsubscribed == 1
+                LeadForm.unsubscribed.is_(True),
             )
-            .scalar() or 0
+            .scalar()
+            or 0
         )
 
         prospect_unsubscribed = (
-            db.session.query(func.count(CampaignRecipient.id))
-            .join(ProspectsIA, CampaignRecipient.entity_id == ProspectsIA.id)
+            db.session.query(
+                func.count(CampaignRecipient.id)
+            )
+            .join(
+                ProspectsIA,
+                CampaignRecipient.entity_id == ProspectsIA.id,
+            )
             .filter(
                 CampaignRecipient.campaign_id == cid,
                 CampaignRecipient.entity_kind == "prospect",
-                ProspectsIA.unsubscribed == 1
+                ProspectsIA.unsubscribed.is_(True),
             )
-            .scalar() or 0
+            .scalar()
+            or 0
         )
-        unsubscribed = lead_unsubscribed + prospect_unsubscribed
 
+        unsubscribed = (
+            lead_unsubscribed
+            + prospect_unsubscribed
+        )
+
+    # ---------------------------------------------------------
+    # Normalización de resultados
+    # ---------------------------------------------------------
 
     total = stats.total or 0
     pending = stats.pending or 0
@@ -5378,80 +5844,232 @@ def campaign_stats(cid):
     delivered = stats.delivered or 0
     opened = stats.opened or 0
     clicked = stats.clicked or 0
+
     bounced = stats.bounced or 0
+    permanent_bounces = stats.permanent_bounces or 0
+    transient_bounces = stats.transient_bounces or 0
+
     errors = stats.errors or 0
-    
     complained = stats.complained or 0
     total_clicks = stats.total_clicks or 0
 
-    # De momento, si no tienes unsubscribe en prospects, mejor dejarlo a 0
-    print(f"[DEBUG] campaign_stats - unsubscribed: '{unsubscribed}'")
+    # ---------------------------------------------------------
+    # Tasas
+    # ---------------------------------------------------------
 
-    delivery_rate = round((delivered / sent) * 100, 2) if sent else 0
-    open_rate = round((opened / sent) * 100, 2) if sent else 0
-    click_rate = round((clicked / sent) * 100, 2) if sent else 0
-    ctor_rate = round((clicked / opened) * 100, 2) if opened else 0
-    bounce_rate = round((bounced / sent) * 100, 2) if sent else 0
-    unsubscribe_rate = round((unsubscribed / sent) * 100, 2) if sent else 0
+    delivery_rate = (
+        round((delivered / sent) * 100, 2)
+        if sent
+        else 0
+    )
+
+    open_rate = (
+        round((opened / sent) * 100, 2)
+        if sent
+        else 0
+    )
+
+    click_rate = (
+        round((clicked / sent) * 100, 2)
+        if sent
+        else 0
+    )
+
+    ctor_rate = (
+        round((clicked / opened) * 100, 2)
+        if opened
+        else 0
+    )
+
+    bounce_rate = (
+        round((bounced / sent) * 100, 2)
+        if sent
+        else 0
+    )
+
+    permanent_bounce_rate = (
+        round((permanent_bounces / sent) * 100, 2)
+        if sent
+        else 0
+    )
+
+    transient_bounce_rate = (
+        round((transient_bounces / sent) * 100, 2)
+        if sent
+        else 0
+    )
+
+    unsubscribe_rate = (
+        round((unsubscribed / sent) * 100, 2)
+        if sent
+        else 0
+    )
+
+    # ---------------------------------------------------------
+    # Estado operativo final
+    # ---------------------------------------------------------
+
+    estado_operativo = case(
+        (
+            or_(
+                CampaignRecipient.complained_at.isnot(None),
+                CampaignRecipient.send_status == "complained",
+            ),
+            "Queja",
+        ),
+        (
+            CampaignRecipient.send_status == "unsubscribe",
+            "Baja",
+        ),
+        (
+            CampaignRecipient.send_status == "error",
+            "Error",
+        ),
+        (
+            and_(
+                CampaignRecipient.send_status == "bounced",
+                CampaignRecipient.bounce_type == "Permanent",
+            ),
+            "Rebote permanente",
+        ),
+        (
+            CampaignRecipient.send_status == "bounced",
+            "Rebote transitorio/otro",
+        ),
+        (
+            CampaignRecipient.send_status.in_(
+                [
+                    "delivered",
+                    "open",
+                    "click",
+                ]
+            ),
+            "Entregado",
+        ),
+        (
+            CampaignRecipient.send_status == "sent",
+            "Enviado sin confirmación",
+        ),
+        (
+            CampaignRecipient.send_status == "pending",
+            "Pendiente",
+        ),
+        else_="Otro",
+    ).label("estado_operativo")
 
     by_status_query = db.session.query(
-        CampaignRecipient.send_status,
-        func.count(CampaignRecipient.id)
+        estado_operativo,
+        func.count(CampaignRecipient.id),
     ).filter(
         CampaignRecipient.campaign_id == cid
     )
 
     if entity_kind:
-        by_status_query = by_status_query.filter(CampaignRecipient.entity_kind == entity_kind)
+        by_status_query = by_status_query.filter(
+            CampaignRecipient.entity_kind == entity_kind
+        )
 
-    by_status = by_status_query.group_by(
-        CampaignRecipient.send_status
-    ).all()
+    by_status = (
+        by_status_query
+        .group_by(estado_operativo)
+        .all()
+    )
+
+    orden_estados = {
+        "Pendiente": 1,
+        "Enviado sin confirmación": 2,
+        "Entregado": 3,
+        "Rebote transitorio/otro": 4,
+        "Rebote permanente": 5,
+        "Error": 6,
+        "Queja": 7,
+        "Baja": 8,
+        "Otro": 9,
+    }
+
+    by_status = sorted(
+        by_status,
+        key=lambda fila: orden_estados.get(
+            fila[0],
+            99,
+        ),
+    )
+
+    # ---------------------------------------------------------
+    # Países
+    # ---------------------------------------------------------
 
     by_country_query = db.session.query(
         CampaignRecipient.pais,
-        func.count(CampaignRecipient.id)
+        func.count(CampaignRecipient.id),
     ).filter(
         CampaignRecipient.campaign_id == cid
     )
 
     if entity_kind:
-        by_country_query = by_country_query.filter(CampaignRecipient.entity_kind == entity_kind)
+        by_country_query = by_country_query.filter(
+            CampaignRecipient.entity_kind == entity_kind
+        )
 
-    by_country = by_country_query.group_by(
-        CampaignRecipient.pais
-    ).order_by(
-        func.count(CampaignRecipient.id).desc()
-    ).all()
+    by_country = (
+        by_country_query
+        .group_by(CampaignRecipient.pais)
+        .order_by(
+            func.count(CampaignRecipient.id).desc()
+        )
+        .all()
+    )
 
-    
-    print(f"[DEBUG] entity_kind = '{entity_kind}'")
+    application.logger.info(
+        "Estadísticas de campaña: campaign=%s "
+        "entity_kind=%s total=%s delivered=%s "
+        "bounced=%s permanent=%s transient=%s",
+        cid,
+        entity_kind or "all",
+        total,
+        delivered,
+        bounced,
+        permanent_bounces,
+        transient_bounces,
+    )
+
+    # ---------------------------------------------------------
+    # Plantilla
+    # ---------------------------------------------------------
 
     return render_template(
         "campaign_stats.html",
         campaign=campaign,
         entity_kind=entity_kind,
+
         total=total,
         pending=pending,
         sent=sent,
         delivered=delivered,
         opened=opened,
         clicked=clicked,
+
         bounced=bounced,
+        permanent_bounces=permanent_bounces,
+        transient_bounces=transient_bounces,
+
         unsubscribed=unsubscribed,
         errors=errors,
         complained=complained,
         total_clicks=total_clicks,
+
         delivery_rate=delivery_rate,
         open_rate=open_rate,
         click_rate=click_rate,
         ctor_rate=ctor_rate,
         bounce_rate=bounce_rate,
+        permanent_bounce_rate=permanent_bounce_rate,
+        transient_bounce_rate=transient_bounce_rate,
+        unsubscribe_rate=unsubscribe_rate,
+
         by_status=by_status,
         by_country=by_country,
-        unsubscribe_rate=unsubscribe_rate
     )
-
 
 @application.route("/store_prospect_targets", methods=["POST"])
 def store_prospect_targets():
@@ -5954,23 +6572,6 @@ def store_lead_targets():
         except Exception:
             pass
 
-def clean_text(value):
-    if pd.isna(value):
-        return None
-    text = str(value).strip()
-    if not text or text.lower() == "nan":
-        return None
-    return text
-
-
-def clean_int(value):
-    if pd.isna(value):
-        return None
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return None
-
 
 
 @application.route("/consultar_prospectos_IA", methods=["GET", "POST"])
@@ -6228,12 +6829,17 @@ def import_bd_IA():
         flash("Debes seleccionar un archivo Excel.", "error")
         return redirect(url_for("import_bd_IA"))
 
-    if not (file.filename.endswith(".xlsx") or file.filename.endswith(".xls")):
+    if not file.filename.lower().endswith((".xlsx", ".xls")):
         flash("El archivo debe ser un Excel válido (.xlsx o .xls).", "error")
         return redirect(url_for("import_bd_IA"))
 
     file_name = file.filename.strip()
-    default_description = file_name.rsplit(".", 1)[0] if "." in file_name else file_name
+    default_description = (
+        file_name.rsplit(".", 1)[0]
+        if "." in file_name
+        else file_name
+    )
+
     if not description:
         description = default_description
 
@@ -6242,23 +6848,22 @@ def import_bd_IA():
 
         df.columns = [
             unidecode(str(col))
-                .strip()
-                .lower()
-                .replace("\n", " ")
-                .replace("\r", " ")
+            .strip()
+            .lower()
+            .replace("\n", " ")
+            .replace("\r", " ")
             for col in df.columns
         ]
-
 
         rename_map = {
             "fecha": "fecha",
             "idioma": "idioma",
-            "país": "pais",
             "pais": "pais",
             "email": "email",
             "club": "club",
             "nombre club": "club",
             "nombre_club": "club",
+            "nombre": "club",
             "estado": "estado",
             "propietario": "propietario",
             "nº pistas": "num_pistas",
@@ -6281,24 +6886,38 @@ def import_bd_IA():
 
         df = df.rename(columns=rename_map)
 
-        required_columns = {"fecha", "idioma", "pais", "email", "estado"}
+        required_columns = {
+            "fecha",
+            "idioma",
+            "pais",
+            "email",
+            "estado"
+        }
+
         missing = required_columns - set(df.columns)
 
         if missing:
             flash(
-                f"Faltan columnas obligatorias: {', '.join(sorted(missing))}",
+                f"Faltan columnas obligatorias: "
+                f"{', '.join(sorted(missing))}",
                 "error"
             )
             return redirect(url_for("import_bd_IA"))
 
-        estados_validos = {"operativo", "renovacion", "concepto", "proyecto"}
+        estados_validos = {
+            "operativo",
+            "renovacion",
+            "concepto",
+            "proyecto"
+        }
 
         creds = get_db_credentials("secretoBC/Mysql")
-        dbname = "bc_pruebas" if (BD == "PRUEBAS") else creds["dbname"]
+        dbname = "bc_pruebas" if BD == "PRUEBAS" else creds["dbname"]
 
         print(
             f"Conectando a la base de datos con host: {creds['host']}, "
-            f"usuario: {creds['username']}, base de datos: {dbname}"
+            f"usuario: {creds['username']}, "
+            f"base de datos: {dbname}"
         )
 
         conn = pymysql.connect(
@@ -6311,18 +6930,19 @@ def import_bd_IA():
             cursorclass=pymysql.cursors.Cursor
         )
 
+        errores = []
+        resumen_errores = Counter()
+
         procesadas = 0
         omitidas = 0
-        errores = []
 
         sql_insert_source = """
             INSERT INTO prospect_sources (
                 file_name,
                 description,
                 created_at
-            ) VALUES (
-                %s, %s, NOW()
             )
+            VALUES (%s, %s, NOW())
         """
 
         sql = """
@@ -6346,8 +6966,10 @@ def import_bd_IA():
                 unsubscribed,
                 unsubscribed_at,
                 source_id
-            ) VALUES (
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            )
+            VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
             )
             ON DUPLICATE KEY UPDATE
                 fecha = VALUES(fecha),
@@ -6367,54 +6989,133 @@ def import_bd_IA():
                 proveedor_pistas = VALUES(proveedor_pistas),
                 source_id = VALUES(source_id)
         """
-
+        inicio = time.perf_counter()
         try:
             with conn.cursor() as cur:
-                cur.execute(sql_insert_source, (file_name, description))
+                cur.execute(
+                    sql_insert_source,
+                    (file_name, description)
+                )
                 source_id = cur.lastrowid
 
+                # Se carga una sola vez la tabla maestra de países.
+                country_lookup = load_country_lookup(cur)
+
+                t_inicio_leads = time.perf_counter()
+
+                cur.execute("""
+                    SELECT LOWER(email)
+                    FROM lead_forms
+                """)
+
+                lead_emails = {
+                    row[0]
+                    for row in cur.fetchall()
+                    if row[0]
+                }
+
+                t_carga_leads = time.perf_counter() - t_inicio_leads
+                batch = []
+                batch_size = 500
+                t_insert = 0
+
                 for index, row in df.iterrows():
+                    excel_row = index + 2
+                    email = None
+
                     try:
-                        email = clean_text(row.get("email"))
-                        if not email:
-                            errores.append(f"Fila {index + 2}: email vacío")
+                        email_original = clean_text(row.get("email"))
+
+                        email, email_error = validar_email_importacion(
+                            email_original
+                        )
+
+                        if email_error:
+                            resumen_errores["Email inválido"] += 1
+
+                            errores.append(
+                                f"Fila {excel_row}: email inválido "
+                                f"'{email_original}' ({email_error})"
+                            )
+
                             omitidas += 1
                             continue
-                        email = email.lower()
+                        if email in lead_emails:
+                            resumen_errores["Ya existe como lead"] += 1
 
-                        if lead_exists_for_prospect(cur, email):
-                            errores.append(f"Fila {index + 2}: omitida porque ya existe como lead ({email})")
+                            errores.append(
+                                f"Fila {excel_row}: omitida porque ya "
+                                f"existe como lead ({email})"
+                            )
                             omitidas += 1
                             continue
 
                         estado = clean_text(row.get("estado"))
+
                         if not estado:
-                            errores.append(f"Fila {index + 2}: estado vacío")
+                            resumen_errores["Estado vacío"] += 1
+                            errores.append(
+                                f"Fila {excel_row}: estado vacío ({email})"
+                            )
                             omitidas += 1
                             continue
+
                         estado = estado.lower()
 
                         if estado not in estados_validos:
-                            errores.append(f"Fila {index + 2}: estado inválido '{estado}'")
+                            resumen_errores[f"Estado inválido: {estado}"] += 1
+
+                            errores.append(
+                                f"Fila {excel_row}: estado inválido "
+                                f"'{estado}' ({email})"
+                            )
                             omitidas += 1
                             continue
 
-                        fecha = pd.to_datetime(row.get("fecha"), errors="coerce")
+                        fecha = pd.to_datetime(
+                            row.get("fecha"),
+                            errors="coerce"
+                        )
+
                         if pd.isna(fecha):
-                            errores.append(f"Fila {index + 2}: fecha inválida")
+                            resumen_errores["Fecha inválida"] += 1
+                            errores.append(
+                                f"Fila {excel_row}: fecha inválida ({email})"
+                            )
                             omitidas += 1
                             continue
 
                         idioma = clean_text(row.get("idioma"))
-                        pais = clean_text(row.get("pais"))
 
                         if not idioma:
-                            errores.append(f"Fila {index + 2}: idioma vacío")
+                            resumen_errores["Idioma vacío"] += 1
+
+                            errores.append(
+                                f"Fila {excel_row}: idioma vacío ({email})"
+                            )
                             omitidas += 1
                             continue
 
+                        pais_excel = clean_text(row.get("pais"))
+
+                        if not pais_excel:
+                            resumen_errores["País vacío"] += 1
+                            errores.append(
+                                f"Fila {excel_row}: país vacío ({email})"
+                            )
+                            omitidas += 1
+                            continue
+
+                        country_key = normalize_country_key(pais_excel)
+                        pais = country_lookup.get(country_key)
+
                         if not pais:
-                            errores.append(f"Fila {index + 2}: país vacío")
+                            resumen_errores[f"País no reconocido: {pais_excel}"] += 1
+
+                            errores.append(
+                                f"Fila {excel_row}: país no reconocido "
+                                f"'{pais_excel}' ({email})"
+                            )
                             omitidas += 1
                             continue
 
@@ -6440,40 +7141,143 @@ def import_bd_IA():
                             source_id
                         )
 
-                        cur.execute(sql, values)
+                        batch.append(values)
                         procesadas += 1
 
+                        if len(batch) >= batch_size:
+                            t_inicio_insert = time.perf_counter()
+
+                            cur.executemany(sql, batch)
+
+                            t_insert += time.perf_counter() - t_inicio_insert
+                            batch.clear()
+
                     except Exception as e:
-                        errores.append(f"Fila {index + 2}: {str(e)}")
+                        resumen_errores["Error inesperado"] += 1
+                        errores.append(
+                            f"Fila {excel_row}: {str(e)}"
+                        )
                         omitidas += 1
 
-                conn.commit()
+                if batch:
+                    t_inicio_insert = time.perf_counter()
 
+                    cur.executemany(sql, batch)
+
+                    t_insert += time.perf_counter() - t_inicio_insert
+                    batch.clear()
+
+                conn.commit()
+                fin = time.perf_counter()
+                segundos = fin - inicio
+
+                total_filas = procesadas + omitidas
+
+                tiempo_resto = segundos - t_carga_leads - t_insert
+
+                print("=" * 60)
+                print(f"Tiempo total: {segundos:.2f} segundos")
+                print(f"Filas: {total_filas}")
+                print(f"Procesadas: {procesadas}")
+                print(f"Omitidas: {omitidas}")
+
+                if segundos > 0:
+                    print(
+                        f"Velocidad: "
+                        f"{total_filas / segundos:.2f} filas/segundo"
+                    )
+
+                if total_filas > 0:
+                    print(
+                        f"Tiempo por fila: "
+                        f"{(segundos * 1000) / total_filas:.2f} ms"
+                    )
+
+                print("-" * 60)
+                print(
+                    f"Tiempo carga emails leads: "
+                    f"{t_carga_leads:.2f} segundos"
+                )
+                print(
+                    f"Cantidad emails en memoria: "
+                    f"{len(lead_emails)}"
+                )
+                print(
+                    f"Tiempo INSERT/UPDATE: "
+                    f"{t_insert:.2f} segundos"
+                )
+                print(
+                    f"Tiempo resto del proceso: "
+                    f"{tiempo_resto:.2f} segundos"
+                )
+                print("=" * 60)
         except Exception as e:
             conn.rollback()
-            flash(f"Error al importar en base de datos: {str(e)}", "error")
+            flash(
+                f"Error al importar en base de datos: {str(e)}",
+                "error"
+            )
             return redirect(url_for("import_bd_IA"))
 
         finally:
             conn.close()
 
         flash(
-            f"Importación completada. Filas procesadas: {procesadas}. Omitidas: {omitidas}.",
+            f"Importación completada.<br>"
+            f"<b>Filas procesadas:</b> {procesadas}<br>"
+            f"<b>Filas omitidas:</b> {omitidas}",
             "success"
         )
 
         if errores:
-            flash("Errores detectados:<br>" + "<br>".join(errores[:10]), "warning")
 
+            resumen_html = """
+            <div style="text-align:left">
+                <h3 style="margin-bottom:10px;">
+                    Resumen de incidencias
+                </h3>
+
+                <ul>
+            """
+
+            for tipo, cantidad in resumen_errores.most_common():
+                resumen_html += (
+                    f"<li><b>{tipo}</b>: {cantidad}</li>"
+                )
+
+            resumen_html += """
+                </ul>
+
+                <hr>
+
+                <b>Primeras incidencias:</b>
+
+                <ul>
+            """
+
+            for error in errores[:10]:
+                resumen_html += f"<li>{error}</li>"
+
+            resumen_html += "</ul>"
+
+            if len(errores) > 10:
+                resumen_html += (
+                    f"<p><i>... y {len(errores)-10} incidencias más.</i></p>"
+                )
+
+            resumen_html += "</div>"
+
+            flash(resumen_html, "warning")
         return redirect(url_for("import_bd_IA"))
 
     except Exception as e:
-        flash(f"Error al leer el archivo: {str(e)}", "error")
+        flash(
+            f"Error al leer el archivo: {str(e)}",
+            "error"
+        )
         return redirect(url_for("import_bd_IA"))
+
     
-
-
-
 
 @application.route("/exportar_datos_campanas", methods=["GET", "POST"])
 def exportar_datos_campanas():
@@ -6526,6 +7330,12 @@ def exportar_datos_campanas():
                 cr.opened_at,
                 cr.clicked_at,
                 cr.bounced_at,
+
+                cr.bounce_type,
+                cr.bounce_subtype,
+                cr.bounce_diagnostic,
+                cr.error_message,
+
                 cr.complained_at,
                 cr.last_event,
                 cr.click_count,
@@ -6551,6 +7361,8 @@ def exportar_datos_campanas():
                 lf.probabilidad_exito,
                 lf.cantidad_total,
                 lf.descuento_total,
+                lf.pedido_venta,
+                lf.fecha_pedido_venta,
 
                 CASE WHEN lf.proforma_solicitada = 1 THEN 'Sí' ELSE 'No' END AS solicito_proforma,
                 lf.fecha_solicitud_proforma,
@@ -6593,6 +7405,9 @@ def exportar_datos_campanas():
 
         df = pd.DataFrame(rows)
 
+        # Libera la lista original porque el DataFrame ya contiene los datos.
+        del rows
+
         df = df.rename(columns={
             "campaign_id": "ID Campaña",
             "campaign_name": "Campaña",
@@ -6617,6 +7432,10 @@ def exportar_datos_campanas():
             "opened_at": "Fecha apertura",
             "clicked_at": "Fecha clic",
             "bounced_at": "Fecha rebote",
+            "bounce_type": "Tipo rebote",
+            "bounce_subtype": "Subtipo rebote",
+            "bounce_diagnostic": "Diagnóstico rebote",
+            "error_message": "Mensaje error",
             "complained_at": "Fecha queja",
             "last_event": "Último evento",
             "click_count": "Número de clics",
@@ -6640,6 +7459,8 @@ def exportar_datos_campanas():
             "probabilidad_exito": "Probabilidad de éxito",
             "cantidad_total": "Importe oferta",
             "descuento_total": "Descuento total",
+            "pedido_venta": "Número pedido venta",
+            "fecha_pedido_venta": "Fecha pedido venta",
             "solicito_proforma": "Solicitó proforma",
             "fecha_solicitud_proforma": "Fecha solicitud proforma",
             "solicito_renting": "Solicitó renting",
@@ -6657,9 +7478,11 @@ def exportar_datos_campanas():
 
        
        
-
-        print(df.head(5).to_string())
-        print(df.dtypes)
+        application.logger.info(
+            "Exportación: filas=%s columnas=%s",
+            len(df),
+            len(df.columns)
+        )
 
         
 
@@ -6668,7 +7491,7 @@ def exportar_datos_campanas():
 
 
 
-        output = BytesIO()
+      
 
         with pd.ExcelWriter(output, engine="openpyxl") as writer:
 
@@ -6743,6 +7566,123 @@ def exportar_datos_campanas():
         archivo=document_no,
         ruta=ruta
     )
+
+@application.get("/api/prospectos/paises")
+def obtener_paises():
+    paises = (
+        Pais.query
+        .order_by(Pais.pais_es.asc())
+        .all()
+    )
+
+    return jsonify({
+        "ok": True,
+        "paises": [
+            pais.pais_es
+            for pais in paises
+        ]
+    })
+
+@application.get("/api/emails-genericos")
+def obtener_emails_genericos():
+    categorias = (
+        EmailGenericoCategoria.query
+        .options(
+            selectinload(EmailGenericoCategoria.terminos)
+        )
+        .all()
+    )
+
+    print ("Categorias obtenidas:", categorias)
+    return jsonify({
+        "ok": True,
+        "categorias": [
+            {
+                "codigo": categoria.codigo,
+                "nombre": categoria.nombre,
+                "terminos": [
+                    termino.termino
+                    for termino in categoria.terminos
+                ]
+            }
+            for categoria in categorias
+        ]
+    })
+
+
+@application.route("/campaigns/<int:cid>/delete-history", methods=["POST"])
+def campaign_delete_history(cid):
+
+    connection = None
+
+    try:
+        creds = get_db_credentials("secretoBC/Mysql")
+
+        dbname = "bc_pruebas" if BD == "PRUEBAS" else creds["dbname"]
+
+        
+
+        connection = pymysql.connect(
+            host=creds["host"],
+            user=creds["username"],
+            password=creds["password"],
+            database=dbname,
+            port=int(creds.get("port", 3306)),
+            cursorclass=pymysql.cursors.DictCursor,
+            autocommit=False,
+        )
+
+        with connection.cursor() as cursor:
+
+            # 1. Borrar histórico consolidado
+            cursor.execute("""
+                DELETE FROM lead_campaign_history
+                WHERE campaign_id = %s
+            """, (cid,))
+            deleted_history = cursor.rowcount
+
+            # 2. Borrar destinatarios/eventos
+            cursor.execute("""
+                DELETE FROM campaign_recipients
+                WHERE campaign_id = %s
+            """, (cid,))
+            deleted_recipients = cursor.rowcount
+
+            # 3. Borrar cabecera de campaña
+            cursor.execute("""
+                DELETE FROM campaigns
+                WHERE id = %s
+            """, (cid,))
+            deleted_campaign = cursor.rowcount
+
+        connection.commit()
+        return {
+            "ok": True,
+            "message": (
+                f"Campaña eliminada correctamente. "
+                f"Histórico: {deleted_history}, "
+                f"destinatarios: {deleted_recipients}, "
+                f"campaña: {deleted_campaign}."
+            )
+        }
+
+    except Exception as e:
+
+        if connection:
+            connection.rollback()
+
+        application.logger.exception(
+            "Error eliminando campaña %s", cid
+        )
+
+        return {
+            "ok": False,
+            "message": str(e)
+        }, 500
+
+    finally:
+        if connection:
+            connection.close()
 
 @application.route('/base', methods=['GET', 'POST'])
 def base():

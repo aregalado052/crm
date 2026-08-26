@@ -125,6 +125,18 @@
           {{ _('Todos los Prospectos') }}
         </button>
       {% endif %}
+      <button id="btn-filtrar-paises"
+        type="button"
+        class="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600">
+        {{ _('Filtrar Paises') }}
+      </button>
+      <button id="btn-filtrar-emails"
+        type="button"
+        class="bg-amber-800 text-white px-4 py-2 rounded hover:bg-amber-900">
+        {{ _('Filtrar Emails') }}
+      </button>
+      
+      
       <button id="btn-generar-target"
         type="button"
         class="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600">
@@ -254,6 +266,8 @@
         aria-selected="{{ 'true' if loop.first else 'false' }}"
         aria-label="Abrir prospecto {{ prospecto['id'] }}"
         data-id="{{ prospecto['id'] }}"
+        data-pais="{{ prospecto['pais'] or '' }}"
+        data-email="{{ prospecto['email'] or '' }}"
         data-href="{{ url_for(
           'prospectsIA_manage', 
           prospectIA_id=prospecto['id'],
@@ -402,6 +416,608 @@ document.addEventListener("DOMContentLoaded", () => {
     btnExit.addEventListener("click", volver);
   }
 
+  const btnFiltrarEmails =
+    document.getElementById("btn-filtrar-emails");
+
+  let categoriasEmailDisponibles = [];
+  let categoriasEmailSeleccionadas = null;
+  let filtroEmailsAplicado = false;
+  let filtroEmailsAbierto = false;
+
+  if (btnFiltrarEmails) {
+    btnFiltrarEmails.addEventListener(
+      "click",
+      abrirCategoriasEmail
+    );
+  }
+
+  async function abrirCategoriasEmail(event) {
+    if (event) {
+      event.preventDefault();
+    }
+
+    if (filtroEmailsAbierto) {
+      return;
+    }
+
+    filtroEmailsAbierto = true;
+
+    try {
+      /*
+      * Solo se consulta el servidor la primera vez.
+      */
+      if (!categoriasEmailDisponibles.length) {
+        const response = await fetch(
+          "/api/emails-genericos",
+          {
+            method: "GET",
+            credentials: "include",
+            headers: {
+              Accept: "application/json"
+            }
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+          throw new Error(
+            data.error ||
+            "No se pudieron cargar las categorías"
+          );
+        }
+
+        categoriasEmailDisponibles =
+          Array.isArray(data.categorias)
+            ? data.categorias
+            : [];
+
+        categoriasEmailDisponibles =
+          categoriasEmailDisponibles.map(
+            categoria => ({
+              codigo: String(categoria.codigo),
+              nombre: String(
+                categoria.nombre ?? ""
+              ).trim(),
+
+              terminos: [
+                ...new Set(
+                  (categoria.terminos || [])
+                    .map(termino =>
+                      normalizarEmail(termino)
+                    )
+                    .filter(Boolean)
+                )
+              ]
+            })
+          );
+
+        categoriasEmailDisponibles.sort(
+          (categoriaA, categoriaB) =>
+            categoriaA.nombre.localeCompare(
+              categoriaB.nombre,
+              "es",
+              { sensitivity: "base" }
+            )
+        );
+
+        /*
+        * Inicialmente quedan todas seleccionadas.
+        */
+        if (categoriasEmailSeleccionadas === null) {
+          categoriasEmailSeleccionadas = new Set(
+            categoriasEmailDisponibles.map(
+              categoria => categoria.codigo
+            )
+          );
+        }
+      }
+
+    if (!categoriasEmailDisponibles.length) {
+      throw new Error(
+        "No hay categorías disponibles"
+      );
+    }
+
+    /*
+    * Si todavía no existe la selección,
+    * se seleccionan todas las categorías.
+    */
+    if (!(categoriasEmailSeleccionadas instanceof Set)) {
+      categoriasEmailSeleccionadas = new Set(
+        categoriasEmailDisponibles.map(
+          categoria => String(categoria.codigo)
+        )
+      );
+    }
+
+    const listaCategorias =
+      categoriasEmailDisponibles
+        .map(categoria => {
+          const codigo = String(
+            categoria.codigo
+          );
+
+          const seleccionada =
+            categoriasEmailSeleccionadas.has(
+              codigo
+            );
+
+          return `
+            <label class="email-filtro-item">
+              <input
+                type="checkbox"
+                class="email-filtro-checkbox"
+                value="${codigo}"
+                ${seleccionada ? "checked" : ""}
+              >
+
+              <span>
+                ${escapeHtml(categoria.nombre)}
+              </span>
+            </label>
+          `;
+        })
+        .join("");
+            
+
+      const resultado = await Swal.fire({
+        title: "Filtrar emails genéricos",
+        width: 650,
+
+        html: `
+          <div class="email-filtro-acciones">
+            <button
+              type="button"
+              id="seleccionar-todos-emails"
+            >
+              Seleccionar todos
+            </button>
+
+            <button
+              type="button"
+              id="deseleccionar-todos-emails"
+            >
+              Quitar todos
+            </button>
+          </div>
+
+          <div class="email-filtro-lista">
+            ${listaCategorias}
+          </div>
+        `,
+
+        showCancelButton: true,
+        confirmButtonText: "Aplicar filtro",
+        cancelButtonText: "Cancelar",
+
+        didOpen: () => {
+          const popup = Swal.getPopup();
+
+          const btnSeleccionarTodos =
+            popup.querySelector(
+              "#seleccionar-todos-emails"
+            );
+
+          const btnDeseleccionarTodos =
+            popup.querySelector(
+              "#deseleccionar-todos-emails"
+            );
+
+          btnSeleccionarTodos?.addEventListener(
+            "click",
+            () => {
+              popup
+                .querySelectorAll(
+                  ".email-filtro-checkbox"
+                )
+                .forEach(checkbox => {
+                  checkbox.checked = true;
+                });
+            }
+          );
+
+          btnDeseleccionarTodos?.addEventListener(
+            "click",
+            () => {
+              popup
+                .querySelectorAll(
+                  ".email-filtro-checkbox"
+                )
+                .forEach(checkbox => {
+                  checkbox.checked = false;
+                });
+            }
+          );
+        },
+
+        preConfirm: () => {
+          const popup = Swal.getPopup();
+
+          return Array.from(
+            popup.querySelectorAll(
+              ".email-filtro-checkbox:checked"
+            )
+          ).map(checkbox => checkbox.value);
+        }
+      });
+
+      if (!resultado.isConfirmed) {
+        return;
+      }
+
+      categoriasEmailSeleccionadas = new Set(
+        resultado.value || []
+      );
+
+      filtroEmailsAplicado = true;
+
+      /*
+      * Esta misma función ya aplica países
+      * y filtros de columnas.
+      */
+      filterRows();
+      actualizarBotonEmails();
+
+    } catch (error) {
+      console.error(
+        "Error cargando emails genéricos:",
+        error
+      );
+
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text:
+          error.message ||
+          "No se cargaron las categorías"
+      });
+
+    } finally {
+      filtroEmailsAbierto = false;
+    }
+  }
+
+  function escapeHtml(valor) {
+    const elemento = document.createElement("div");
+    elemento.textContent = valor ?? "";
+    return elemento.innerHTML;
+  }
+
+
+  const btnFiltrarPaises =
+    document.getElementById("btn-filtrar-paises");
+
+  let paisesSeleccionados = null;
+  let paisesDisponibles = [];
+  let filtroPaisesAbierto = false;
+
+  if (btnFiltrarPaises) {
+    btnFiltrarPaises.addEventListener(
+      "click",
+      abrirFiltroPaises
+    );
+  }
+
+
+  /**
+   * Carga los países una sola vez desde el servidor.
+   */
+  async function cargarPaisesDisponibles() {
+    if (paisesDisponibles.length > 0) {
+      return;
+    }
+
+    const textoAnterior =
+      btnFiltrarPaises.textContent;
+
+    btnFiltrarPaises.disabled = true;
+    btnFiltrarPaises.textContent =
+      "Cargando países...";
+
+    try {
+      const response = await fetch(
+        "/api/prospectos/paises",
+        {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            Accept: "application/json"
+          }
+        }
+      );
+
+      let data;
+
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error(
+          "El servidor no devolvió una respuesta válida"
+        );
+      }
+
+      if (!response.ok || !data.ok) {
+        throw new Error(
+          data.error ||
+          "No se pudieron cargar los países"
+        );
+      }
+
+      paisesDisponibles = Array.isArray(data.paises)
+        ? data.paises
+        : [];
+
+      /*
+      * Se eliminan valores vacíos y duplicados.
+      */
+      paisesDisponibles = [
+        ...new Set(
+          paisesDisponibles
+            .map(pais => String(pais ?? "").trim())
+            .filter(Boolean)
+        )
+      ];
+
+      /*
+      * Ordenar alfabéticamente.
+      */
+      paisesDisponibles.sort((paisA, paisB) =>
+        paisA.localeCompare(
+          paisB,
+          "es",
+          {
+            sensitivity: "base"
+          }
+        )
+      );
+
+      /*
+      * La primera vez quedan todos seleccionados.
+      */
+      if (paisesSeleccionados === null) {
+        paisesSeleccionados = new Set(
+          paisesDisponibles
+        );
+      }
+    } finally {
+      btnFiltrarPaises.disabled = false;
+      btnFiltrarPaises.textContent =
+        textoAnterior;
+    }
+  }
+
+
+  /**
+   * Abre el cuadro de selección de países.
+   */
+  async function abrirFiltroPaises(event) {
+    if (event) {
+      event.preventDefault();
+    }
+
+    /*
+    * Impide que dos clics rápidos abran dos peticiones
+    * o dos ventanas.
+    */
+    if (filtroPaisesAbierto) {
+      return;
+    }
+
+    filtroPaisesAbierto = true;
+
+    try {
+      await cargarPaisesDisponibles();
+
+      if (!paisesDisponibles.length) {
+        throw new Error(
+          "No hay países disponibles para filtrar"
+        );
+      }
+
+      const listaPaises = paisesDisponibles
+        .map(pais => {
+          const seleccionado =
+            paisesSeleccionados.has(pais);
+
+          return `
+            <label class="pais-filtro-item">
+              <input
+                type="checkbox"
+                class="pais-filtro-checkbox"
+                value="${escapeHtml(pais)}"
+                ${seleccionado ? "checked" : ""}
+              >
+
+              <span>
+                ${escapeHtml(pais)}
+              </span>
+            </label>
+          `;
+        })
+        .join("");
+
+      const resultado = await Swal.fire({
+        title: "Filtrar por países",
+        width: 650,
+
+        html: `
+          <div class="pais-filtro-acciones">
+            <button
+              type="button"
+              id="seleccionar-todos-paises"
+            >
+              Seleccionar todos
+            </button>
+
+            <button
+              type="button"
+              id="deseleccionar-todos-paises"
+            >
+              Quitar todos
+            </button>
+          </div>
+
+          <div class="pais-filtro-lista">
+            ${listaPaises}
+          </div>
+        `,
+
+        showCancelButton: true,
+        confirmButtonText: "Aplicar filtro",
+        cancelButtonText: "Cancelar",
+
+        didOpen: () => {
+          const popup = Swal.getPopup();
+
+          const btnSeleccionarTodos =
+            popup.querySelector(
+              "#seleccionar-todos-paises"
+            );
+
+          const btnDeseleccionarTodos =
+            popup.querySelector(
+              "#deseleccionar-todos-paises"
+            );
+
+          if (btnSeleccionarTodos) {
+            btnSeleccionarTodos.addEventListener(
+              "click",
+              () => {
+                popup
+                  .querySelectorAll(
+                    ".pais-filtro-checkbox"
+                  )
+                  .forEach(checkbox => {
+                    checkbox.checked = true;
+                  });
+              }
+            );
+          }
+
+          if (btnDeseleccionarTodos) {
+            btnDeseleccionarTodos.addEventListener(
+              "click",
+              () => {
+                popup
+                  .querySelectorAll(
+                    ".pais-filtro-checkbox"
+                  )
+                  .forEach(checkbox => {
+                    checkbox.checked = false;
+                  });
+              }
+            );
+          }
+        },
+
+        preConfirm: () => {
+          const popup = Swal.getPopup();
+
+          return Array.from(
+            popup.querySelectorAll(
+              ".pais-filtro-checkbox:checked"
+            )
+          ).map(checkbox => checkbox.value);
+        }
+      });
+
+      if (!resultado.isConfirmed) {
+        return;
+      }
+
+      paisesSeleccionados = new Set(
+        resultado.value || []
+      );
+
+      aplicarFiltroPaises();
+
+    } catch (error) {
+      console.error(
+        "Error cargando el filtro de países:",
+        error
+      );
+
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text:
+          error.message ||
+          "No se pudieron cargar los países"
+      });
+
+    } finally {
+      filtroPaisesAbierto = false;
+    }
+  }
+
+
+  /**
+   * Muestra u oculta las filas según el país seleccionado.
+   */
+  function aplicarFiltroPaises() {
+    filterRows();
+    actualizarBotonPaises();
+  }
+
+
+  /**
+   * Actualiza el texto del botón principal.
+   */
+  function actualizarBotonPaises() {
+    if (
+      !btnFiltrarPaises ||
+      paisesSeleccionados === null
+    ) {
+      return;
+    }
+
+    const seleccionados =
+      paisesSeleccionados.size;
+
+    const total =
+      paisesDisponibles.length;
+
+    if (seleccionados === total) {
+      btnFiltrarPaises.textContent =
+        "Países: todos";
+
+    } else if (seleccionados === 0) {
+      btnFiltrarPaises.textContent =
+        "Países: ninguno";
+
+    } else {
+      btnFiltrarPaises.textContent =
+        `Países: ${seleccionados} de ${total}`;
+    }
+  }
+
+
+  /**
+   * Normaliza los nombres para que las tildes,
+   * mayúsculas y espacios no afecten al filtro.
+   */
+  function normalizarPais(pais) {
+    return String(pais ?? "")
+      .trim()
+      .toLocaleLowerCase("es")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+
+  /**
+   * Evita introducir HTML procedente del servidor.
+   */
+  function escapeHtml(valor) {
+    return String(valor ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
   // ------- Menú en cabeceras (Asc/Desc/Buscar) -------
   document.addEventListener("click", (e) => {
     if (!table.contains(e.target)) closeAllMenus();
@@ -449,48 +1065,109 @@ document.addEventListener("DOMContentLoaded", () => {
     menu.className = "col-menu absolute right-2 top-full mt-1 w-40 rounded-xl border border-gray-200 bg-white shadow-lg p-2 z-50";
     if (tipo === "date") {
       menu.innerHTML = `
-        <button data-action="asc" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">↑ Asc.</button>
-        <button data-action="desc" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">↓ Desc.</button>
+        <button data-action="asc"
+                class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">
+          ↑ Asc.
+        </button>
+
+        <button data-action="desc"
+                class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">
+          ↓ Desc.
+        </button>
+
         <div class="mt-2 border-t border-gray-200 pt-2">
+
           <div class="px-2 mb-2">
-            <select class="date-operator w-full text-sm px-2 py-1 border border-gray-200 rounded-md">
-              <option value="=">= Igual</option>
-              <option value=">=">≥ Desde</option>
-              <option value="<=">≤ Hasta</option>
-            </select>
+            <label class="block text-xs text-gray-600 mb-1">
+              Desde
+            </label>
+
+            <input
+              type="date"
+              class="filter-from w-full text-sm px-2 py-1 border border-gray-200 rounded-md"
+            />
           </div>
-          <div class="px-2">
-            <input type="date" class="date-value w-full text-sm px-2 py-1 border border-gray-200 rounded-md" />
+
+          <div class="px-2 mb-2">
+            <label class="block text-xs text-gray-600 mb-1">
+              Hasta
+            </label>
+
+            <input
+              type="date"
+              class="filter-to w-full text-sm px-2 py-1 border border-gray-200 rounded-md"
+            />
           </div>
+
           <div class="flex gap-2 px-2 mt-2">
-            <button data-action="apply" class="px-2 py-1 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700">Aplicar</button>
-            <button data-action="clear" class="px-2 py-1 text-sm rounded-md bg-gray-100 hover:bg-gray-200">Limpiar</button>
+            <button data-action="apply"
+                    class="px-2 py-1 text-sm rounded-md bg-indigo-600 text-white">
+              Aplicar
+            </button>
+
+            <button data-action="clear"
+                    class="px-2 py-1 text-sm rounded-md bg-gray-100">
+              Limpiar
+            </button>
           </div>
+
         </div>
       `;
     }
     
     else if (tipo === "number") {
       menu.innerHTML = `
-        <button data-action="asc" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">↑ Asc.</button>
-        <button data-action="desc" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">↓ Desc.</button>
+        <button data-action="asc"
+                class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">
+          ↑ Asc.
+        </button>
+
+        <button data-action="desc"
+                class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">
+          ↓ Desc.
+        </button>
+
         <div class="mt-2 border-t border-gray-200 pt-2">
+
           <div class="px-2 mb-2">
-            <select class="num-operator w-full text-sm px-2 py-1 border border-gray-200 rounded-md">
-              <option value="=">= Igual</option>
-              <option value=">=">≥ Mayor o igual</option>
-              <option value="<=">≤ Menor o igual</option>
-            </select>
+            <label class="block text-xs text-gray-600 mb-1">
+              Desde
+            </label>
+
+            <input
+              type="text"
+              placeholder="Mínimo..."
+              class="filter-from w-full text-sm px-2 py-1 border border-gray-200 rounded-md"
+            />
           </div>
-          <div class="px-2">
-            <input type="text" placeholder="Valor..." class="num-value w-full text-sm px-2 py-1 border border-gray-200 rounded-md" />
+
+          <div class="px-2 mb-2">
+            <label class="block text-xs text-gray-600 mb-1">
+              Hasta
+            </label>
+
+            <input
+              type="text"
+              placeholder="Máximo..."
+              class="filter-to w-full text-sm px-2 py-1 border border-gray-200 rounded-md"
+            />
           </div>
+
           <div class="flex gap-2 px-2 mt-2">
-            <button data-action="apply" class="px-2 py-1 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700">Aplicar</button>
-            <button data-action="clear" class="px-2 py-1 text-sm rounded-md bg-gray-100 hover:bg-gray-200">Limpiar</button>
+            <button data-action="apply"
+                    class="px-2 py-1 text-sm rounded-md bg-indigo-600 text-white">
+              Aplicar
+            </button>
+
+            <button data-action="clear"
+                    class="px-2 py-1 text-sm rounded-md bg-gray-100">
+              Limpiar
+            </button>
           </div>
+
         </div>
       `;
+
     } else {
       menu.innerHTML = `
         <button data-action="asc" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">↑ Asc.</button>
@@ -509,8 +1186,9 @@ document.addEventListener("DOMContentLoaded", () => {
     th.appendChild(menu);
 
     
-    const input = menu.querySelector("input");
-    const operatorSelect = menu.querySelector(".num-operator, .date-operator");
+    const textInput = menu.querySelector(".text-value");
+    const inputFrom = menu.querySelector(".filter-from");
+    const inputTo = menu.querySelector(".filter-to");
     
 
     menu.addEventListener("click", (ev) => {
@@ -528,32 +1206,60 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (action === "apply") {
         if (tipo === "number" || tipo === "date") {
-          applyFilter(colIndex, input.value, operatorSelect.value);
+          applyRangeFilter(
+            colIndex,
+            inputFrom.value,
+            inputTo.value
+          );
         } else {
-          applyFilter(colIndex, input.value);
+          applyFilter(colIndex, textInput.value);
         }
+
         closeAllMenus();
       }
 
       if (action === "clear") {
-        input.value = "";
-        applyFilter(colIndex, "");
+        if (inputFrom) inputFrom.value = "";
+        if (inputTo) inputTo.value = "";
+        if (textInput) textInput.value = "";
+
+        activeFilters.delete(colIndex);
+        updateFilterIndicators();
+        filterRows();
         closeAllMenus();
       }
     });
 
-    input.addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter") {
+   const menuInputs = menu.querySelectorAll("input");
+
+    menuInputs.forEach((currentInput) => {
+      currentInput.addEventListener("keydown", (ev) => {
+        if (ev.key !== "Enter") return;
+
         if (tipo === "number" || tipo === "date") {
-          applyFilter(colIndex, input.value, operatorSelect.value);
+          applyRangeFilter(
+            colIndex,
+            inputFrom.value,
+            inputTo.value
+          );
         } else {
-          applyFilter(colIndex, input.value);
+          applyFilter(colIndex, textInput.value);
         }
+
         closeAllMenus();
-      }
+      });
     });
 
-    setTimeout(() => input.focus(), 0);
+    setTimeout(() => {
+      const firstInput = menu.querySelector("input");
+
+      if (firstInput) {
+        firstInput.focus();
+      }
+    }, 0);
+
+
+
   }
 
 
@@ -602,7 +1308,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function cellText(tr, colIndex) {
     const td = tr.children[colIndex];
-    return (td ? td.innerText : "").trim();
+    return (td ? td.textContent : "").trim();
   }
 
   function compareByType(a, b, tipo) {
@@ -636,6 +1342,14 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
+  function endOfDay(timestamp) {
+    const date = new Date(timestamp);
+
+    date.setHours(23, 59, 59, 999);
+
+    return date.getTime();
+  }
+
   function parseDateInput(value) {
     if (!value) return NaN;
 
@@ -658,7 +1372,150 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ------- Filtro por columna -------
-  const activeFilters = new Map(); // colIndex -> string
+  const activeFilters = new Map();
+  let cachedRows = [];
+
+  function buildRowsCache() {
+    cachedRows = Array.from(tbody.rows).map((tr) => {
+      const cells = Array.from(tr.cells);
+
+      return {
+        tr: tr,
+
+        paisNormalizado: normalizarPais(
+          tr.dataset.pais
+        ),
+
+        emailNormalizado: normalizarEmail(
+          tr.dataset.email
+        ),
+
+        texts: cells.map((td) => {
+          return (td.textContent || "").trim();
+        }),
+
+        normalizedTexts: cells.map((td) => {
+          return normalizeText(
+            td.textContent || ""
+          );
+        }),
+
+        numbers: cells.map((td) => {
+          const value =
+            td.dataset.sortValue ??
+            td.textContent ??
+            "";
+
+          return toNumberEs(
+            String(value).trim()
+          );
+        }),
+
+        dates: cells.map((td) => {
+          const value =
+            td.dataset.ts ??
+            td.dataset.sortValue ??
+            "";
+
+          if (!value) {
+            return NaN;
+          }
+
+          const timestamp = Date.parse(value);
+
+          return Number.isNaN(timestamp)
+            ? NaN
+            : timestamp;
+        })
+      };
+    });
+  }
+  buildRowsCache();
+
+
+  function applyRangeFilter(colIndex, fromValue, toValue) {
+    const tipo = getColumnType(colIndex);
+
+    if (tipo === "number") {
+      const from =
+        fromValue.trim() === ""
+          ? null
+          : toNumberEs(fromValue);
+
+      const to =
+        toValue.trim() === ""
+          ? null
+          : toNumberEs(toValue);
+
+      const fromValid =
+        from === null || !Number.isNaN(from);
+
+      const toValid =
+        to === null || !Number.isNaN(to);
+
+      if (!fromValid || !toValid) {
+        alert("Introduce valores numéricos válidos.");
+        return;
+      }
+
+      if (from !== null && to !== null && from > to) {
+        alert("El valor Desde no puede ser mayor que Hasta.");
+        return;
+      }
+
+      if (from === null && to === null) {
+        activeFilters.delete(colIndex);
+      } else {
+        activeFilters.set(colIndex, {
+          type: "number-range",
+          from: from,
+          to: to
+        });
+      }
+    }
+
+    else if (tipo === "date") {
+      const from =
+        fromValue === ""
+          ? null
+          : parseDateInput(fromValue);
+
+      const to =
+        toValue === ""
+          ? null
+          : parseDateInput(toValue);
+
+      const fromValid =
+        from === null || !Number.isNaN(from);
+
+      const toValid =
+        to === null || !Number.isNaN(to);
+
+      if (!fromValid || !toValid) {
+        alert("Introduce fechas válidas.");
+        return;
+      }
+
+      if (from !== null && to !== null && from > to) {
+        alert("La fecha Desde no puede ser posterior a Hasta.");
+        return;
+      }
+
+      if (from === null && to === null) {
+        activeFilters.delete(colIndex);
+      } else {
+        activeFilters.set(colIndex, {
+          type: "date-range",
+          from: from,
+          to: to
+        });
+      }
+    }
+
+    updateFilterIndicators();
+    filterRows();
+  }
+  
 
   function applyFilter(colIndex, value, operator = "contains") {
     const tipo = getColumnType(colIndex);
@@ -701,42 +1558,224 @@ document.addEventListener("DOMContentLoaded", () => {
     filterRows();
   }
 
+  function normalizarEmail(email) {
+  return String(email ?? "")
+      .trim()
+      .toLowerCase();
+  }
+
+  function actualizarBotonEmails() {
+    if (
+      !btnFiltrarEmails ||
+      categoriasEmailSeleccionadas === null
+    ) {
+      return;
+    }
+
+    const seleccionadas =
+      categoriasEmailSeleccionadas.size;
+
+    const total =
+      categoriasEmailDisponibles.length;
+
+    if (seleccionadas === total) {
+      btnFiltrarEmails.textContent =
+        "Emails: todos";
+
+    } else if (seleccionadas === 0) {
+      btnFiltrarEmails.textContent =
+        "Emails: ninguno";
+
+    } else {
+      btnFiltrarEmails.textContent =
+        `Emails: ${seleccionadas} de ${total}`;
+    }
+  }
+
+
   function filterRows() {
-    const filtros = Array.from(activeFilters.entries());
-    const filas = Array.from(tbody.querySelectorAll("tr"));
+    const filtrosColumnas = Array.from(
+      activeFilters.entries()
+    );
 
-    filas.forEach(tr => {
-      const visible = filtros.every(([colIndex, filter]) => {
-        if (filter.type === "number") {
-          const num = toNumberEs(cellText(tr, colIndex));
-          if (isNaN(num)) return false;
+    /*
+    * Si están seleccionados todos los países,
+    * el filtro de país queda desactivado.
+    */
+    const filtroPaisActivo =
+      paisesSeleccionados !== null &&
+      paisesSeleccionados.size <
+        paisesDisponibles.length;
 
-          switch (filter.operator) {
-            case "=": return num === filter.value;
-            case ">=": return num >= filter.value;
-            case "<=": return num <= filter.value;
-            default: return true;
+    /*
+    * Normalizamos una sola vez los países seleccionados.
+    */
+    const paisesNormalizados = new Set(
+      paisesSeleccionados === null
+        ? []
+        : Array.from(paisesSeleccionados).map(
+            normalizarPais
+          )
+    );
+
+    const categoriasEmailActivas =
+      filtroEmailsAplicado
+        ? categoriasEmailDisponibles.filter(
+            categoria =>
+              categoriasEmailSeleccionadas.has(
+                categoria.codigo
+              )
+          )
+        : [];
+
+    for (const row of cachedRows) {
+      let visible = true;
+
+      /*
+      * 1. Aplicar filtro de país.
+      */
+    // 1. País
+      if (filtroPaisActivo) {
+        visible = paisesNormalizados.has(
+          row.paisNormalizado
+        );
+      }
+
+      // 2. Email genérico
+      if (visible && filtroEmailsAplicado) {
+      /*
+      * Categorías genéricas con las que coincide
+      * el email de esta fila.
+      */
+      const categoriasCoincidentes =
+        categoriasEmailDisponibles.filter(
+          categoria =>
+            categoria.terminos.some(
+              termino =>
+                row.emailNormalizado.includes(
+                  termino
+                )
+            )
+        );
+
+      /*
+      * Si no coincide con ninguna categoría,
+      * es un email no genérico y se mantiene.
+      */
+      const esEmailGenerico =
+        categoriasCoincidentes.length > 0;
+
+      if (esEmailGenerico) {
+        /*
+        * Un email genérico solo se muestra si alguna
+        * de sus categorías está seleccionada.
+        */
+        visible = categoriasCoincidentes.some(
+          categoria =>
+            categoriasEmailSeleccionadas.has(
+              String(categoria.codigo)
+            )
+        );
+      }
+    }
+
+    // 3. Filtros de columnas
+   
+      if (visible) {
+        for (
+          const [colIndex, filter]
+          of filtrosColumnas
+        ) {
+          if (filter.type === "number-range") {
+            const num = row.numbers[colIndex];
+
+            if (Number.isNaN(num)) {
+              visible = false;
+              break;
+            }
+
+            if (
+              filter.from !== null &&
+              num < filter.from
+            ) {
+              visible = false;
+              break;
+            }
+
+            if (
+              filter.to !== null &&
+              num > filter.to
+            ) {
+              visible = false;
+              break;
+            }
+          }
+
+          else if (filter.type === "date-range") {
+            const timestamp =
+              row.dates[colIndex];
+
+            if (Number.isNaN(timestamp)) {
+              visible = false;
+              break;
+            }
+
+            if (
+              filter.from !== null &&
+              timestamp < filter.from
+            ) {
+              visible = false;
+              break;
+            }
+
+            if (
+              filter.to !== null &&
+              timestamp > endOfDay(filter.to)
+            ) {
+              visible = false;
+              break;
+            }
+          }
+
+          else if (filter.type === "number") {
+            const num = row.numbers[colIndex];
+
+            if (
+              Number.isNaN(num) ||
+              num !== filter.value
+            ) {
+              visible = false;
+              break;
+            }
+          }
+
+          else if (filter.type === "date") {
+            const timestamp =
+              row.dates[colIndex];
+
+            if (
+              Number.isNaN(timestamp) ||
+              !sameDay(timestamp, filter.value)
+            ) {
+              visible = false;
+              break;
+            }
+          }
+
+          else if (filter.type === "text") {
+            const text =
+              row.normalizedTexts[colIndex] || "";
+
+            if (!text.includes(filter.query)) {
+              visible = false;
+              break;
+            }
           }
         }
+      }
 
-        if (filter.type === "date") {
-          const ts = cellDateTs(tr, colIndex);
-          if (isNaN(ts)) return false;
-
-          switch (filter.operator) {
-            case "=": return sameDay(ts, filter.value);
-            case ">=": return ts >= filter.value;
-            case "<=": return ts <= filter.value;
-            default: return true;
-          }
-        }
-
-        const txt = normalizeText(cellText(tr, colIndex));
-        return txt.includes(filter.query);
-      });
-
-      tr.style.display = visible ? "" : "none";
-    });
+      row.tr.hidden = !visible;
+    }
   }
   // ------- Selección de filas (clic/teclado) -------
   function selectRow(tr, {focus=true, scroll=false} = {}) {
@@ -865,18 +1904,29 @@ document.getElementById('btn-todos').addEventListener('click', () => {
   goToEstado('Todos');
 });
 
-const btn = document.getElementById("btn-generar-target");
+
 
 if (btn) {
   btn.addEventListener("click", guardarTargetSeleccionado);
 }
 
-function getProspectIdsParaTarget() {
-  return Array.from(document.querySelectorAll("#mi-tabla tbody tr"))
-    .filter(tr => tr.style.display !== "none")
-    .map(tr => Number(tr.dataset.id))
-    .filter(Number.isFinite);
-}
+  function getProspectIdsParaTarget() {
+    const ids = Array.from(
+      document.querySelectorAll(
+        "#mi-tabla tbody tr"
+      )
+    )
+      .filter(tr => {
+        return (
+          !tr.hidden &&
+          tr.style.display !== "none"
+        );
+      })
+      .map(tr => Number(tr.dataset.id))
+      .filter(Number.isFinite);
+
+    return [...new Set(ids)];
+  }
 
 
 async function guardarTargetSeleccionado() {

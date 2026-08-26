@@ -490,48 +490,109 @@ document.addEventListener("DOMContentLoaded", () => {
     menu.className = "col-menu absolute right-2 top-full mt-1 w-40 rounded-xl border border-gray-200 bg-white shadow-lg p-2 z-50";
     if (tipo === "date") {
       menu.innerHTML = `
-        <button data-action="asc" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">↑ Asc.</button>
-        <button data-action="desc" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">↓ Desc.</button>
+        <button data-action="asc"
+                class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">
+          ↑ Asc.
+        </button>
+
+        <button data-action="desc"
+                class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">
+          ↓ Desc.
+        </button>
+
         <div class="mt-2 border-t border-gray-200 pt-2">
+
           <div class="px-2 mb-2">
-            <select class="date-operator w-full text-sm px-2 py-1 border border-gray-200 rounded-md">
-              <option value="=">= Igual</option>
-              <option value=">=">≥ Desde</option>
-              <option value="<=">≤ Hasta</option>
-            </select>
+            <label class="block text-xs text-gray-600 mb-1">
+              Desde
+            </label>
+
+            <input
+              type="date"
+              class="filter-from w-full text-sm px-2 py-1 border border-gray-200 rounded-md"
+            />
           </div>
-          <div class="px-2">
-            <input type="date" class="date-value w-full text-sm px-2 py-1 border border-gray-200 rounded-md" />
+
+          <div class="px-2 mb-2">
+            <label class="block text-xs text-gray-600 mb-1">
+              Hasta
+            </label>
+
+            <input
+              type="date"
+              class="filter-to w-full text-sm px-2 py-1 border border-gray-200 rounded-md"
+            />
           </div>
+
           <div class="flex gap-2 px-2 mt-2">
-            <button data-action="apply" class="px-2 py-1 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700">Aplicar</button>
-            <button data-action="clear" class="px-2 py-1 text-sm rounded-md bg-gray-100 hover:bg-gray-200">Limpiar</button>
+            <button data-action="apply"
+                    class="px-2 py-1 text-sm rounded-md bg-indigo-600 text-white">
+              Aplicar
+            </button>
+
+            <button data-action="clear"
+                    class="px-2 py-1 text-sm rounded-md bg-gray-100">
+              Limpiar
+            </button>
           </div>
+
         </div>
       `;
     }
     
     else if (tipo === "number") {
       menu.innerHTML = `
-        <button data-action="asc" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">↑ Asc.</button>
-        <button data-action="desc" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">↓ Desc.</button>
+        <button data-action="asc"
+                class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">
+          ↑ Asc.
+        </button>
+
+        <button data-action="desc"
+                class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">
+          ↓ Desc.
+        </button>
+
         <div class="mt-2 border-t border-gray-200 pt-2">
+
           <div class="px-2 mb-2">
-            <select class="num-operator w-full text-sm px-2 py-1 border border-gray-200 rounded-md">
-              <option value="=">= Igual</option>
-              <option value=">=">≥ Mayor o igual</option>
-              <option value="<=">≤ Menor o igual</option>
-            </select>
+            <label class="block text-xs text-gray-600 mb-1">
+              Desde
+            </label>
+
+            <input
+              type="text"
+              placeholder="Mínimo..."
+              class="filter-from w-full text-sm px-2 py-1 border border-gray-200 rounded-md"
+            />
           </div>
-          <div class="px-2">
-            <input type="text" placeholder="Valor..." class="num-value w-full text-sm px-2 py-1 border border-gray-200 rounded-md" />
+
+          <div class="px-2 mb-2">
+            <label class="block text-xs text-gray-600 mb-1">
+              Hasta
+            </label>
+
+            <input
+              type="text"
+              placeholder="Máximo..."
+              class="filter-to w-full text-sm px-2 py-1 border border-gray-200 rounded-md"
+            />
           </div>
+
           <div class="flex gap-2 px-2 mt-2">
-            <button data-action="apply" class="px-2 py-1 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700">Aplicar</button>
-            <button data-action="clear" class="px-2 py-1 text-sm rounded-md bg-gray-100 hover:bg-gray-200">Limpiar</button>
+            <button data-action="apply"
+                    class="px-2 py-1 text-sm rounded-md bg-indigo-600 text-white">
+              Aplicar
+            </button>
+
+            <button data-action="clear"
+                    class="px-2 py-1 text-sm rounded-md bg-gray-100">
+              Limpiar
+            </button>
           </div>
+
         </div>
       `;
+
     } else {
       menu.innerHTML = `
         <button data-action="asc" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">↑ Asc.</button>
@@ -550,8 +611,9 @@ document.addEventListener("DOMContentLoaded", () => {
     th.appendChild(menu);
 
     
-    const input = menu.querySelector("input");
-    const operatorSelect = menu.querySelector(".num-operator, .date-operator");
+    const textInput = menu.querySelector(".text-value");
+    const inputFrom = menu.querySelector(".filter-from");
+    const inputTo = menu.querySelector(".filter-to");
     
 
     menu.addEventListener("click", (ev) => {
@@ -569,32 +631,57 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (action === "apply") {
         if (tipo === "number" || tipo === "date") {
-          applyFilter(colIndex, input.value, operatorSelect.value);
+          applyRangeFilter(
+            colIndex,
+            inputFrom.value,
+            inputTo.value
+          );
         } else {
-          applyFilter(colIndex, input.value);
+          applyFilter(colIndex, textInput.value);
         }
+
         closeAllMenus();
       }
 
       if (action === "clear") {
-        input.value = "";
-        applyFilter(colIndex, "");
+        if (inputFrom) inputFrom.value = "";
+        if (inputTo) inputTo.value = "";
+        if (textInput) textInput.value = "";
+
+        activeFilters.delete(colIndex);
+        updateFilterIndicators();
+        filterRows();
         closeAllMenus();
       }
     });
 
-    input.addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter") {
-        if (tipo === "number" || tipo === "date") {
-          applyFilter(colIndex, input.value, operatorSelect.value);
-        } else {
-          applyFilter(colIndex, input.value);
-        }
-        closeAllMenus();
-      }
-    });
+    const menuInputs = menu.querySelectorAll("input");
 
-    setTimeout(() => input.focus(), 0);
+  menuInputs.forEach((currentInput) => {
+    currentInput.addEventListener("keydown", (ev) => {
+      if (ev.key !== "Enter") return;
+
+      if (tipo === "number" || tipo === "date") {
+        applyRangeFilter(
+          colIndex,
+          inputFrom.value,
+          inputTo.value
+        );
+      } else {
+        applyFilter(colIndex, textInput.value);
+      }
+
+      closeAllMenus();
+    });
+  });
+
+    setTimeout(() => {
+      const firstInput = menu.querySelector("input");
+
+      if (firstInput) {
+        firstInput.focus();
+      }
+    }, 0);
   }
 
   function cellSortValue(row, colIndex) {
@@ -609,28 +696,56 @@ document.addEventListener("DOMContentLoaded", () => {
     return cell.dataset.sortValue ?? cell.textContent.trim();
   }
 
-  // ------- Ordenación -------
-  function sortByColumn(colIndex, asc = true) {
-    const filas = Array.from(tbody.querySelectorAll("tr"));
+  const collatorEs = new Intl.Collator(
+    "es",
+    {
+      sensitivity: "base",
+      numeric: true
+    }
+  );
+
+  function sortByColumn(
+    colIndex,
+    asc = true
+  ) {
     const tipo = getColumnType(colIndex);
+    const direction = asc ? 1 : -1;
 
-    filas.sort((a, b) => {
-      if (tipo === "date") {
-        const aTs = cellDateTs(a, colIndex);
-        const bTs = cellDateTs(b, colIndex);
-        const res = compareNumbers(aTs, bTs);
+    cachedRows.sort((a, b) => {
+      let result = 0;
 
-        return asc ? res : -res;
+      if (tipo === "number") {
+        result = compareNumbers(
+          a.numbers[colIndex],
+          b.numbers[colIndex]
+        );
       }
 
-      const aValue = cellSortValue(a, colIndex);
-      const bValue = cellSortValue(b, colIndex);
-      const res = compareByType(aValue, bValue, tipo);
+      else if (tipo === "date") {
+        result = compareNumbers(
+          a.dates[colIndex],
+          b.dates[colIndex]
+        );
+      }
 
-      return asc ? res : -res;
+      else {
+        result = collatorEs.compare(
+          a.texts[colIndex] || "",
+          b.texts[colIndex] || ""
+        );
+      }
+
+      return result * direction;
     });
 
-    filas.forEach((fila) => tbody.appendChild(fila));
+    const fragment =
+      document.createDocumentFragment();
+
+    for (const row of cachedRows) {
+      fragment.appendChild(row.tr);
+    }
+
+    tbody.appendChild(fragment);
   }
 
   function getColumnType(colIndex) {
@@ -654,7 +769,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function cellText(tr, colIndex) {
     const td = tr.children[colIndex];
-    return (td ? td.innerText : "").trim();
+    return (td ? td.textContent : "").trim();
   }
 
   function compareByType(a, b, tipo) {
@@ -675,6 +790,14 @@ document.addEventListener("DOMContentLoaded", () => {
       return da - db;
     }
     return a.localeCompare(b, "es", { sensitivity: "base" });
+  }
+
+  function endOfDay(timestamp) {
+    const date = new Date(timestamp);
+
+    date.setHours(23, 59, 59, 999);
+
+    return date.getTime();
   }
 
   function sameDay(ts1, ts2) {
@@ -710,7 +833,138 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ------- Filtro por columna -------
-  const activeFilters = new Map(); // colIndex -> string
+  const activeFilters = new Map(); 
+  
+  let cachedRows = [];
+
+  function buildRowsCache() {
+    cachedRows = Array.from(tbody.rows).map((tr) => {
+      const cells = Array.from(tr.cells);
+
+      return {
+        tr: tr,
+
+        texts: cells.map((td) => {
+          return (td.textContent || "").trim();
+        }),
+
+        normalizedTexts: cells.map((td) => {
+          return normalizeText(td.textContent || "");
+        }),
+
+        numbers: cells.map((td) => {
+          const value =
+            td.dataset.sortValue ??
+            td.textContent ??
+            "";
+
+          return toNumberEs(String(value).trim());
+        }),
+
+        dates: cells.map((td) => {
+          const value =
+            td.dataset.ts ??
+            td.dataset.sortValue ??
+            "";
+
+          if (!value) {
+            return NaN;
+          }
+
+          const timestamp = Date.parse(value);
+
+          return Number.isNaN(timestamp)
+            ? NaN
+            : timestamp;
+        })
+      };
+    });
+  }
+
+  buildRowsCache();
+  
+  function applyRangeFilter(colIndex, fromValue, toValue) {
+    const tipo = getColumnType(colIndex);
+
+    if (tipo === "number") {
+      const from =
+        fromValue.trim() === ""
+          ? null
+          : toNumberEs(fromValue);
+
+      const to =
+        toValue.trim() === ""
+          ? null
+          : toNumberEs(toValue);
+
+      const fromValid =
+        from === null || !Number.isNaN(from);
+
+      const toValid =
+        to === null || !Number.isNaN(to);
+
+      if (!fromValid || !toValid) {
+        alert("Introduce valores numéricos válidos.");
+        return;
+      }
+
+      if (from !== null && to !== null && from > to) {
+        alert("El valor Desde no puede ser mayor que Hasta.");
+        return;
+      }
+
+      if (from === null && to === null) {
+        activeFilters.delete(colIndex);
+      } else {
+        activeFilters.set(colIndex, {
+          type: "number-range",
+          from: from,
+          to: to
+        });
+      }
+    }
+
+    else if (tipo === "date") {
+      const from =
+        fromValue === ""
+          ? null
+          : parseDateInput(fromValue);
+
+      const to =
+        toValue === ""
+          ? null
+          : parseDateInput(toValue);
+
+      const fromValid =
+        from === null || !Number.isNaN(from);
+
+      const toValid =
+        to === null || !Number.isNaN(to);
+
+      if (!fromValid || !toValid) {
+        alert("Introduce fechas válidas.");
+        return;
+      }
+
+      if (from !== null && to !== null && from > to) {
+        alert("La fecha Desde no puede ser posterior a Hasta.");
+        return;
+      }
+
+      if (from === null && to === null) {
+        activeFilters.delete(colIndex);
+      } else {
+        activeFilters.set(colIndex, {
+          type: "date-range",
+          from: from,
+          to: to
+        });
+      }
+    }
+
+    updateFilterIndicators();
+    filterRows();
+  }
 
   function applyFilter(colIndex, value, operator = "contains") {
     const tipo = getColumnType(colIndex);
@@ -755,40 +1009,81 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function filterRows() {
     const filtros = Array.from(activeFilters.entries());
-    const filas = Array.from(tbody.querySelectorAll("tr"));
 
-    filas.forEach(tr => {
-      const visible = filtros.every(([colIndex, filter]) => {
-        if (filter.type === "number") {
-          const num = toNumberEs(cellText(tr, colIndex));
-          if (isNaN(num)) return false;
+    for (const row of cachedRows) {
+      let visible = true;
 
-          switch (filter.operator) {
-            case "=": return num === filter.value;
-            case ">=": return num >= filter.value;
-            case "<=": return num <= filter.value;
-            default: return true;
+      for (const [colIndex, filter] of filtros) {
+
+        // FILTRO NUMÉRICO
+        if (filter.type === "number-range") {
+          const num = row.numbers[colIndex];
+
+          if (Number.isNaN(num)) {
+            visible = false;
+            break;
+          }
+
+          if (filter.from !== null && num < filter.from) {
+            visible = false;
+          }
+
+          if (filter.to !== null && num > filter.to) {
+            visible = false;
+          }
+        }
+        // FILTRO DE FECHA
+        else if (filter.type === "date-range") {
+          const timestamp = row.dates[colIndex];
+
+          if (Number.isNaN(timestamp)) {
+            visible = false;
+            break;
+          }
+
+          if (
+            filter.from !== null &&
+            timestamp < filter.from
+          ) {
+            visible = false;
+          }
+
+          if (
+            filter.to !== null &&
+            timestamp > endOfDay(filter.to)
+          ) {
+            visible = false;
           }
         }
 
-        if (filter.type === "date") {
-          const ts = cellDateTs(tr, colIndex);
-          if (isNaN(ts)) return false;
-
-          switch (filter.operator) {
-            case "=": return sameDay(ts, filter.value);
-            case ">=": return ts >= filter.value;
-            case "<=": return ts <= filter.value;
-            default: return true;
-          }
+        else if (filter.operator === ">=") {
+          visible =
+            timestamp >= filter.value;
         }
 
-        const txt = normalizeText(cellText(tr, colIndex));
-        return txt.includes(filter.query);
-      });
+        else if (filter.operator === "<=") {
+          visible =
+            timestamp <= filter.value;
+        }
+        
 
-      tr.style.display = visible ? "" : "none";
-    });
+        // FILTRO DE TEXTO
+        else {
+          const text =
+            row.normalizedTexts[colIndex] || "";
+
+          visible = text.includes(
+            filter.query
+          );
+        }
+
+        if (!visible) {
+          break;
+        }
+      }
+
+      row.tr.hidden = !visible;
+    }
   }
   // ------- Selección de filas (clic/teclado) -------
   function selectRow(tr, {focus=true, scroll=false} = {}) {

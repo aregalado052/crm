@@ -205,6 +205,24 @@
                 <i class="bi bi-bar-chart"></i>
               </a>
             </td>
+            <td>
+  
+              <button type="button"
+                      class="btn btn-sm btn-outline-danger btn-delete-history"
+                      data-campaign-id="{{ row.campaign_id }}"
+                      data-campaign-name="{{ row.campaign_name }}"
+                      title="Eliminar histórico">
+                <i class="bi bi-trash"></i>
+              </button>
+
+            </td>
+          
+
+
+
+
+
+
           </tr>          {% else %}
           <tr>
             <td colspan="4" class="text-center text-muted py-4">
@@ -398,33 +416,72 @@ document.addEventListener("DOMContentLoaded", function () {
         `
       });
     });
+ 
   });
 
-  document.querySelectorAll(".campaign-delete-form").forEach(form => {
+  document.querySelectorAll('.btn-delete-history').forEach(button => {
 
-    form.addEventListener("submit", function(e) {
-      e.preventDefault();
+    button.addEventListener('click', async function () {
 
-      Swal.fire({
-        title: "¿Borrar campaña?",
-        text: "Esta acción no se puede deshacer",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#d33",
-        cancelButtonColor: "#6c757d",
-        confirmButtonText: "Sí, borrar",
-        cancelButtonText: "Cancelar"
-      }).then((result) => {
+        const campaignId = this.dataset.campaignId;
+        const campaignName = this.dataset.campaignName;
+        // const campaignId = this.dataset.campaignId;
+        // const campaignName = this.dataset.campaignName;
 
-        if (result.isConfirmed) {
-          form.submit();
+        
+
+        const result = await Swal.fire({
+            title: '¿Eliminar histórico?',
+            html: `
+                Se eliminará la campaña <strong>${campaignName}</strong>
+                y todo su histórico.<br><br>
+                Esta acción no se puede deshacer.
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            reverseButtons: true
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+
+            const response = await fetch(
+                `/campaigns/${campaignId}/delete-history`,
+                { method: 'POST' }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Error eliminando histórico');
+            }
+
+            await Swal.fire({
+                title: 'Histórico eliminado',
+                text: data.message,
+                icon: 'success'
+            });
+
+            window.location.reload();
+
+        } catch (error) {
+
+            Swal.fire({
+                title: 'Error',
+                text: error.message,
+                icon: 'error'
+            });
+
         }
-
-      });
 
     });
 
   });
+
+
 
   
 

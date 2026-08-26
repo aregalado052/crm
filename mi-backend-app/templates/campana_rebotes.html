@@ -94,7 +94,9 @@
     <div class="card-body">
 
       <div class="table-responsive">
-        <table class="table table-striped table-hover align-middle">
+        <!-- <table class="table table-striped table-hover align-middle">-->
+        <table class="table table-striped table-hover align-middle w-100"
+       style="table-layout: fixed;"> 
 
           <thead>
             <tr>
@@ -153,7 +155,11 @@
                   {{ row.bounce_subtype or '—' }}
                 </td>
 
-                <td style="min-width: 280px; max-width: 500px;">
+                <td style="
+                    white-space: normal;
+                    overflow-wrap: anywhere;
+                    word-break: break-word;
+                ">
                   {% set diagnostic =
                     row.bounce_diagnostic
                     or row.error_message
@@ -218,14 +224,24 @@
                       </a>
                     {% endif %}
 
+                    {% if row.email_suppressed %}
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        disabled
+                    >
+                        Bloqueado
+                    </button>
+                {% else %}
                     <button
                         type="button"
                         class="btn btn-outline-danger btn-bloquear"
-                        data-entity-kind="{{ entity_kind }}"
+                        data-entity-kind="{{ row.entity_kind }}"
                         data-entity-id="{{ row.entity_id }}"
                     >
                         Bloquear
                     </button>
+                {% endif %}
 
                   </div>
                 </td>
